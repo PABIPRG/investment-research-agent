@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "target": "ES2023", "module": "NodeNext", "moduleResolution": "NodeNext",
+    "strict": true, "skipLibCheck": true, "outDir": "lib", "rootDir": ".", "allowJs": true,
+    "types": ["node"], "declaration": true, "jsx": "react-jsx"
+  },
+  "include": ["distribution/**/*.ts", "product/**/*.ts", "product/**/*.tsx", "tests/**/*.ts", "runtime/*.mjs"]
+}

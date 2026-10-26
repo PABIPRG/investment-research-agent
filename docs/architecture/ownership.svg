@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 700" role="img" aria-label="运行与状态所有权">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#587895"/></marker></defs>
+<rect width="1100" height="700" fill="#f7f9fb"/>
+<text x="65" y="58" font-size="30" font-weight="700" fill="#18364a">运行与状态所有权</text>
+<text x="65" y="94" font-size="16" fill="#526b7c">产品候选 · 固定 DSH · 单一权威实例</text>
+<path d="M505 200 H587" fill="none" stroke="#587895" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M285 255 V307" fill="none" stroke="#587895" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M815 255 V307" fill="none" stroke="#587895" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M285 425 V477" fill="none" stroke="#587895" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M815 425 V455 H285 V477" fill="none" stroke="#587895" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M505 540 H587" fill="none" stroke="#587895" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="65" y="145" width="440" height="110" rx="10" fill="white" stroke="#b6c8d6"/>
+<text x="85" y="180" font-size="20" font-weight="600" fill="#18364a">1. distribution</text>
+<text x="85" y="218" font-size="15" fill="#526b7c">安装、实例与后台进程生命周期</text>
+<rect x="595" y="145" width="440" height="110" rx="10" fill="white" stroke="#b6c8d6"/>
+<text x="615" y="180" font-size="20" font-weight="600" fill="#18364a">2. chat Profile</text>
+<text x="615" y="218" font-size="15" fill="#526b7c">DSH Agent / 会话 / 模型 / Skill</text>
+<rect x="65" y="315" width="440" height="110" rx="10" fill="white" stroke="#b6c8d6"/>
+<text x="85" y="350" font-size="20" font-weight="600" fill="#18364a">3. worker Profile</text>
+<text x="85" y="388" font-size="15" fill="#526b7c">一次有界 DSH 研究 · 单一工具</text>
+<rect x="595" y="315" width="440" height="110" rx="10" fill="white" stroke="#b6c8d6"/>
+<text x="615" y="350" font-size="20" font-weight="600" fill="#18364a">4. product</text>
+<text x="615" y="388" font-size="15" fill="#526b7c">UI、工具桥与权限 guard</text>
+<rect x="65" y="485" width="440" height="110" rx="10" fill="white" stroke="#b6c8d6"/>
+<text x="85" y="520" font-size="20" font-weight="600" fill="#18364a">5. sidecar</text>
+<text x="85" y="558" font-size="15" fill="#526b7c">实体 / 证据 / 委托 / 投资 / 通知</text>
+<rect x="595" y="485" width="440" height="110" rx="10" fill="white" stroke="#b6c8d6"/>
+<text x="615" y="520" font-size="20" font-weight="600" fill="#18364a">6. SQLite + DSH 存储</text>
+<text x="615" y="558" font-size="15" fill="#526b7c">业务状态与会话配置分层持久化</text>
+<text x="65" y="665" font-size="14" fill="#526b7c">火火 · 2026-10-26 接力候选 | 受控验证与真实研究、发布分开记录</text>
+</svg>

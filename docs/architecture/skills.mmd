@@ -1,0 +1,10 @@
+flowchart LR
+  input[用户表达] --> prompt[常驻：身份 / 权限 / 事实不变量]
+  prompt --> catalog[DSH 原生 Skill 摘要目录]
+  catalog --> choose[DSH 按当前任务选择]
+  choose --> load[原生 skill 工具加载正文]
+  load --> methods[研究 / 委托 / 投资事实方法]
+  methods --> tool[既有独立业务工具]
+  tool --> guard[工具白名单 + 参数与会话校验]
+  guard --> api[API / SQLite 正式状态]
+  api --> answer[事实与推断分开解释]

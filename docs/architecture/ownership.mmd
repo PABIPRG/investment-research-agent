@@ -1,0 +1,13 @@
+flowchart TB
+  cli[distribution：安装与产品生命周期] --> chat[huohuo-chat Profile：用户对话]
+  cli --> worker[有界 worker：领取 / 续租 / 回写]
+  cli --> api[sidecar：可信 API]
+  chat --> dsh[固定 DSH：Agent / 会话 / 模型 / Skill / 工具]
+  worker --> sdk[huohuo-worker Profile：一次 DSH 研究]
+  dsh --> tools[product：工具桥 / guard / UI]
+  sdk --> bounded[read_security_snapshot]
+  tools --> api
+  bounded --> api
+  api --> domains[实体确认 / 证据 / 委托 / 投资事实 / 通知]
+  domains --> db[(实例 SQLite)]
+  dsh --> sessions[(DSH 会话与本机模型配置)]

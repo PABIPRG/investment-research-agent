@@ -1,0 +1,54 @@
+- id: sdk-app-startup
+  config:
+    profile: huohuo-worker
+- id: tools
+  config:
+    mode: native
+- id: system-prompt
+  config:
+    personaPrefix: 你是火火投研伙伴的后台研究执行者，遵循产品提供的研究契约与执行边界。
+- insert:
+    - id: huohuo-research-tools
+      name: '@huohuo/research-agent'
+- id: skill-filesystem
+  config:
+    includeDefaultRoots: false
+    watch: false
+- id: tool-skill
+  disabled: true
+- id: tool-bash
+  disabled: true
+- id: tool-pwsh
+  disabled: true
+- id: tool-jobs
+  disabled: true
+- id: tool-fs
+  disabled: true
+- id: tool-fs-search
+  disabled: true
+- id: tool-working-directory
+  disabled: true
+- id: tool-web
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent-list-agents
+  disabled: true
+- id: tool-workflow
+  disabled: true
+- id: tool-todo
+  disabled: true
+- id: tool-goal
+  disabled: true
+- id: workspace-dependencies
+  disabled: true
+- id: skill-office
+  disabled: true
+- id: session-log-deepseek
+  disabled: true
+- id: plugin-package-inventory-deepseek
+  disabled: true

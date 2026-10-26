@@ -1,0 +1,81 @@
+{
+  "name": "@huohuo/research-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "火火投研伙伴：基于 DSH Profile 与 Bundle 的独立产品候选",
+  "exports": {
+    ".": "./lib/product/tools/index.js",
+    "./chat-tools": "./lib/product/chat/tools.js",
+    "./chat-guard": "./lib/product/chat/guard.js",
+    "./ui-host": "./lib/product/ui/host.js"
+  },
+  "bin": {
+    "huohuo": "./lib/distribution/cli.js"
+  },
+  "engines": {
+    "node": ">=24.8.0",
+    "dsh": "0.2.1-rc.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./product/bundle/cordis.patch.yml"
+    }
+  },
+  "files": [
+    "product/bundle",
+    "product/skills",
+    "sidecar/huohuo",
+    "third-party",
+    "README.md",
+    "npm-shrinkwrap.json",
+    "ui",
+    "product/ui/assets",
+    "sidecar/requirements.txt",
+    "sidecar/requirements.lock",
+    "lib/distribution",
+    "lib/product",
+    "lib/runtime",
+    "docs/阅读入口.md",
+    "docs/当前架构与装配.md",
+    "docs/启动指引.md",
+    "docs/开发指引.md",
+    "docs/交付与验收.md",
+    "docs/architecture"
+  ],
+  "scripts": {
+    "start": "node lib/distribution/cli.js",
+    "build": "npm run tools:generate && tsc && node scripts/build-chat-ui.mjs",
+    "check": "npm run tools:check && tsc --noEmit",
+    "test:python": "PYTHONPATH=sidecar python3 -m unittest discover -s tests -p 'test_*.py' -v",
+    "test:assembly": "node lib/tests/assembly.js",
+    "test:node": "node --test lib/tests/*.test.js",
+    "smoke": "node scripts/smoke.mjs",
+    "dsh:demo": "node scripts/smoke.mjs --observe",
+    "update:instance": "node scripts/update-instance.mjs",
+    "dev:start": "node scripts/start.mjs",
+    "tools:generate": "node scripts/generate-research-tools.mjs",
+    "tools:check": "node scripts/generate-research-tools.mjs --check",
+    "pack:release": "npm run check && npm run build && node scripts/package-release.mjs",
+    "smoke:skills": "node scripts/smoke-skills.mjs",
+    "handoff": "node scripts/export-handoff.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/dsh": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-agent": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-app-boot": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-sdk-client": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-skill": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.2"
+  },
+  "devDependencies": {
+    "@types/node": "24.7.2",
+    "@types/react": "18.3.26",
+    "esbuild": "0.25.11",
+    "typescript": "5.9.3"
+  }
+}

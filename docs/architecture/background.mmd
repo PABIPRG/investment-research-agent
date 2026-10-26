@@ -1,0 +1,12 @@
+flowchart TB
+  event[mandate.created 或资料版本事件] --> inbox[持久 outbox / inbox]
+  inbox --> route[有效依赖匹配与业务 job]
+  route --> exec[execution / attempt / lease]
+  exec --> dsh[有界 DSH 研究与证据]
+  dsh --> admit[主体 / 期间 / 指标 / attempt 准入]
+  admit --> baseline[基准或后续复核结果]
+  baseline --> condition[met / unmet / unknown / error]
+  condition --> decide[委托核心：联系资格与决定]
+  decide --> queue[通知：渠道 / 静默 / 队列 / 重试]
+  queue --> gate[发送前事务复核授权与代次]
+  gate --> receipt[投递回执 / unknown 对账]
