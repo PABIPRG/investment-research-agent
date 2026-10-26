@@ -38,6 +38,8 @@
     "lib/runtime",
     "docs/阅读入口.md",
     "docs/当前架构与装配.md",
+    "docs/架构对齐与验证.md",
+    "docs/设计基线",
     "docs/启动指引.md",
     "docs/开发指引.md",
     "docs/交付与验收.md",

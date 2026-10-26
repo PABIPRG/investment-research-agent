@@ -1,0 +1,27 @@
+{
+  "source": "docs/当前架构与装配.md",
+  "renderer": "@mermaid-js/mermaid-cli@11.12.0",
+  "config_sha256": "fd036404f9eccc5d884adfd0dc15c53b47defede57968d4313e1d3d976c11fe1",
+  "diagrams": {
+    "product-flow": {
+      "source_sha256": "f8fee9b877c85f6dfe578e1876dc8a2b36e4350ed64789e0d9e058bf788a5590",
+      "svg_sha256": "c33552bd68c96b3f5da785415f8eeaac11dc1caf8020d98054a493dd01a4aae4"
+    },
+    "business-architecture": {
+      "source_sha256": "f7b26b0fdb816d960dbcc6c203c9cbab1278ade35ebf0fa248b4efbbd03091b5",
+      "svg_sha256": "03091a2c1b27793f9e765cbde1eede85207308b44d7ded84c56452668f5a3dd8"
+    },
+    "ownership": {
+      "source_sha256": "6eec230ffc15220a35195879b9761d471edea317b3a364333c3a5044a154e679",
+      "svg_sha256": "ae7322b1dfa246130308c1c3271deecdf08c34260e6ea36df7db7ccf58c049da"
+    },
+    "skills": {
+      "source_sha256": "32527b89bdb48e767a6f6ba5d3cde77ab8bab946fa581fd1bf23517a6d420772",
+      "svg_sha256": "6fc8f262f3af2eca541a6a68608006ac2a0860070c287404fa5e9abe3351a8f9"
+    },
+    "background": {
+      "source_sha256": "54e83ff03049a6bee8597634d94e68b73dfc8537cce08bd24e95925095f895f3",
+      "svg_sha256": "dfe31f4e22a25a07e4a808b0b3cb7f32dbbf2dbc47c5e97b66d6227932eb39f5"
+    }
+  }
+}

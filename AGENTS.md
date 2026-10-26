@@ -1,6 +1,7 @@
 # 火火独立产品协作约定
 
-- 先读 README、docs/当前架构与装配.md 和本次改动对应的验证记录。
+- 先读 README、docs/设计基线/V1.4-团队Brief.md，再读 docs/当前架构与装配.md 和对应验证记录；完整契约见 docs/设计基线/V1.4-产品与架构设计.md。历史状态不冒充当前进度，工程装配图不能替换业务主图。
+- 图的唯一结构源是文档中的 Mermaid；scripts/render-architecture.py 直接渲染 SVG，禁止另手写一套近似节点/边。修改图后执行其 --check 并检查实际 SVG。精选导出须保留可移植设计基线，不因原稿含本地路径整组排除。
 - DSH 拥有完整 Agent、会话、工具和 Skill 基础；product 只装配与适配；sidecar 拥有正式业务状态、证据和有界研究；distribution 拥有实例与进程生命周期。不得恢复旧 Python 全功能 Agent。
 - 身份、权限、版本、取消代次、租约、幂等、证据准入和通知资格由程序强制。Skill 不授予权限。unknown/error 不折叠成 false；通知 unknown 不自动重发。
 - 一项独立任务使用独立特性分支、worktree、主要写入者及端口/实例/缓存。写前核对目录、HEAD、状态、远端和分配，保留不相关改动。默认分支以实际仓库为准，不沿用来源仓的跨仓 remote 规则。

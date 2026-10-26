@@ -12,7 +12,7 @@ const out=join(root,'artifacts/handoff'),dest=join(out,'investment-research-agen
 const roots=['distribution','product','runtime','sidecar','tests','third-party']
 const files=['.gitignore','AGENTS.md','README.md','package.json','npm-shrinkwrap.json','tsconfig.json',
  'scripts/build-chat-ui.mjs','scripts/generate-research-tools.mjs','scripts/start.mjs','scripts/update-instance.mjs','scripts/smoke.mjs','scripts/smoke-provenance.mjs','scripts/smoke-skills.mjs','scripts/uat-skills.mjs','scripts/package-release.mjs','scripts/export-handoff.mjs','scripts/export-handoff-guard.mjs','scripts/render-architecture.py','scripts/verify-release.mjs',
- 'docs/阅读入口.md','docs/当前架构与装配.md','docs/启动指引.md','docs/开发指引.md','docs/交付与验收.md']
+ 'docs/阅读入口.md','docs/当前架构与装配.md','docs/架构对齐与验证.md','docs/启动指引.md','docs/开发指引.md','docs/交付与验收.md']
 const forbidden=/(^|\/)(?:node_modules|lib|artifacts|__pycache__|\.git|\.venv|\.instance|\.cache)(\/|$)|(?:^|\/)(?:instance|credentials|secrets)\.json$|(?:^|\/)\.env(?:\.|$)|\.(?:pyc|sqlite3?|db|tgz|pem|key)$/i
 async function walk(rel){for(const item of await readdir(join(root,rel),{withFileTypes:true})){
  const path=`${rel}/${item.name}`
@@ -22,7 +22,7 @@ async function walk(rel){for(const item of await readdir(join(root,rel),{withFil
  if(['tests/final-package-startup.mjs','tests/worker-finish-runtime.mjs','tests/night-research-runtime.mjs'].includes(path))continue
  if(item.isDirectory())await walk(path);else files.push(path)
 }}
-for(const dir of [...roots,'docs/architecture'])await walk(dir)
+for(const dir of [...roots,'docs/architecture','docs/设计基线'])await walk(dir)
 const manifest=[]
 for(const path of [...new Set(files)].sort()){
  if(forbidden.test(path))throw Error('禁止路径 '+path)
