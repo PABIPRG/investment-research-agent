@@ -84,8 +84,8 @@ def fund_lookup(call: ToolCall):
     found = frame
     if code and "基金代码" in frame.columns:
         found = frame[frame["基金代码"].astype(str).str.zfill(6) == code]
-    if not len(found) and name and "基金简称" in frame.columns:
-        found = frame[frame["基金简称"].astype(str).str.contains(name, na=False)]
+    if name and (not code or not len(found)) and "基金简称" in frame.columns:
+        found = frame[frame["基金简称"].astype(str).str.contains(name, na=False, regex=False)]
     if not len(found):
         return empty(
             call, reason=f"基金名录中没有匹配项：{code or name}", source="akshare.fund_name_em"
@@ -202,7 +202,7 @@ def index_lookup(call: ToolCall):
         if code and "代码" in frame.columns:
             found = frame[frame["代码"].astype(str).str.contains(code, na=False)]
         if not len(found) and name and "名称" in frame.columns:
-            found = frame[frame["名称"].astype(str).str.contains(name, na=False)]
+            found = frame[frame["名称"].astype(str).str.contains(name, na=False, regex=False)]
     if found is None or not len(found):
         if entity is None:
             return empty(

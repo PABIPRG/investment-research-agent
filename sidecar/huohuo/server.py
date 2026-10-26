@@ -113,6 +113,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.authorized("user")
                 inv, principal = self.server.investment, config["principal"]
                 if self.command == "GET" and parts == ["investment"]: return self.reply(200, inv.read(principal))
+                if self.command == "GET" and len(parts)==3 and parts[1]=="previews": return self.reply(200,inv.inspect_preview(principal,parts[2]))
                 if self.command == "POST":
                     body=self.body()
                     if parts == ["investment","bind-collection"]: return self.reply(200,self.server.mandates.investment_binding.bind(principal,body))

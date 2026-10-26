@@ -20,11 +20,11 @@ if (bad.length) throw new Error(`产物含禁止内容：${bad.join(', ')}`)
 const required = ['lib/distribution/cli.js', 'lib/distribution/instance.js', 'lib/distribution/worker.js', 'lib/distribution/chat.js', 'lib/runtime/python.mjs', 'lib/product/tools/index.js',
   'lib/product/chat/tools.js', 'lib/product/ui/host.js', 'product/bundle/cordis.patch.yml', 'product/bundle/chat.patch.yml',
   'product/skills/chat/research-chat/SKILL.md', 'ui/client.js', 'ui/host.js', 'ui/package.json',
-  'npm-shrinkwrap.json', 'sidecar/requirements.lock', 'sidecar/requirements.txt', 'third-party/DSH-LICENSE']
+  'docs/Skill与Tool能力目录.md', 'docs/聊天业务操作实施计划.md', 'docs/聊天业务操作验收.md', 'npm-shrinkwrap.json', 'sidecar/requirements.lock', 'sidecar/requirements.txt', 'third-party/DSH-LICENSE']
 async function sourceFiles(directory) {
   const result = []
   for (const entry of await readdir(join(root, directory), { withFileTypes: true })) {
-    if (entry.name === '__pycache__' || entry.name.endsWith('.pyc')) continue
+    if (entry.name === '__pycache__' || entry.name === '.npmignore' || entry.name.endsWith('.pyc')) continue
     const path = `${directory}/${entry.name}`
     if (entry.isSymbolicLink()) throw new Error(`源码目录不能依赖符号链接：${path}`)
     if (entry.isDirectory()) result.push(...await sourceFiles(path)); else result.push(path)

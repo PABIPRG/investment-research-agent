@@ -10,6 +10,8 @@ import {checkChatPort} from '../lib/distribution/chat.js'
 import {workerLoop} from '../lib/distribution/worker.js'
 import {resolvePython} from '../runtime/python.mjs'
 const root=fileURLToPath(new URL('../',import.meta.url)),out=join(root,'artifacts/skills-smoke')
+const business=process.argv.includes('--business')
+if(business&&!process.argv.includes('--serve'))throw Error('业务交互回放必须 --serve，由真实用户交互确认')
 const keep=process.argv.includes('--serve'),port=Number(process.env.HUOHUO_SMOKE_PORT??18810),webPort=Number(process.env.HUOHUO_SMOKE_WEB_PORT??18811)
 assert.notEqual(port,webPort)
 await mkdir(out,{recursive:true});await checkChatPort(port);await checkChatPort(webPort)
@@ -32,9 +34,9 @@ for(const [dir,bundles] of [[workerProfile,['@deepseek-ai/dsh-base','@deepseek-a
 const bundle=join(out,'chat-bundle');await mkdir(bundle,{recursive:true})
 await writeFile(join(bundle,'package.json'),JSON.stringify({name:'@huohuo/chat-bundle',version:'1.0.0',private:true,dsh:{bundle:{patch:'./cordis.patch.yml'}},engines:{dsh:'0.2.1-rc.2'}}))
 await copyFile(join(root,'product/bundle/chat.patch.yml'),join(bundle,'cordis.patch.yml'));await link(bundle,join(modules,'@huohuo/chat-bundle'))
-const disabled='- id: llm-deepseek\n  disabled: true\n- id: llm-deepseek-account\n  disabled: true\n- id: llm-pi-ai\n  disabled: true\n'
+const disabled='- id: ui-settings-models\n  config:\n    credentialOnboarding: false\n- id: llm-deepseek\n  disabled: true\n- id: llm-deepseek-account\n  disabled: true\n- id: llm-pi-ai\n  disabled: true\n'
 await writeFile(join(workerProfile,'cordis.patch.yml'),disabled+`- insert:\n    - id: controlled-worker-model\n      name: '${join(root,'lib/tests/followup-model.js')}'\n`)
-await writeFile(join(chatProfile,'cordis.patch.yml'),disabled+`- id: agent-default-model\n  config:\n    provider: huohuo-skills-fixture\n    model: controlled\n- insert:\n    - id: controlled-chat-model\n      name: '${join(root,'lib/tests/progressive-model.js')}'\n${keep?'':`    - id: controlled-audit\n      name: '${join(root,'lib/tests/progressive-runtime-audit.js')}'\n`}`)
+await writeFile(join(chatProfile,'cordis.patch.yml'),disabled+`- id: agent-default-model\n  config:\n    provider: huohuo-skills-fixture\n    model: controlled\n- insert:\n    - id: controlled-chat-model\n      name: '${join(root,business?'lib/tests/business-model.js':'lib/tests/progressive-model.js')}'\n${keep?'':`    - id: controlled-audit\n      name: '${join(root,'lib/tests/progressive-runtime-audit.js')}'\n`}`)
 const proof=join(instance,'proof.jsonl'),report=join(instance,'report.json')
 const env={PATH:process.env.PATH,HOME:join(instance,'home'),TMPDIR:join(instance,'tmp'),LANG:'en_US.UTF-8',DSH_TELEMETRY_DISABLED:'1',DSH_HOME:config.dsh_home,HUOHUO_SKILLS_PROOF:proof,HUOHUO_SKILLS_REPORT:report}
 await mkdir(env.TMPDIR,{recursive:true});await mkdir(env.HOME,{recursive:true})
@@ -48,12 +50,12 @@ try{
  await new Promise((res,rej)=>{const t=setTimeout(()=>rej(Error('API startup timed out')),15000);api.stdout.once('data',()=>{clearTimeout(t);res()});api.once('exit',()=>{clearTimeout(t);rej(Error(apiLog))});api.once('error',rej)})
  if(keep)worker=workerLoop(config,controller.signal).catch(e=>{if(!controller.signal.aborted)throw e})
  let launchUrl
- web=spawn(process.execPath,[join(modules,'@deepseek-ai/dsh/lib/bin.js'),'--profile','huohuo-chat','--host','127.0.0.1','--port',String(webPort),'--no-open'],{cwd:config.workspace,env:{...env,HUOHUO_CHAT_API:`http://127.0.0.1:${port}`,HUOHUO_USER_TOKEN:config.user_token},stdio:['ignore','pipe','pipe']})
+ web=spawn(process.execPath,[join(modules,'@deepseek-ai/dsh/lib/bin.js'),'--profile','huohuo-chat','--host','127.0.0.1','--port',String(webPort),'--no-open'],{cwd:config.workspace,env:{...env,HUOHUO_CHAT_API:`http://127.0.0.1:${port}`,HUOHUO_USER_TOKEN:config.user_token,HUOHUO_CHAT_WEB_ORIGIN:`http://127.0.0.1:${webPort}`},stdio:['ignore','pipe','pipe']})
  for(const stream of [web.stdout,web.stderr])stream.on('data',d=>{const raw=String(d);launchUrl??=raw.match(/http:\/\/127\.0\.0\.1:\d+\/\?token=[^\s\u001b]+/)?.[0];webLog+=raw.replace(/\?token=[^\s\u001b]+/g,'?token=[redacted]')})
  for(let i=0;i<300&&!launchUrl;i++){if(web.exitCode!==null)throw Error('Web exited: '+webLog.slice(-4000));await delay(100)}
  assert.ok(launchUrl,'Web startup timed out: '+webLog.slice(-4000))
  await writeFile(join(out,'runtime.json'),JSON.stringify({instance,launchUrl,api:port,web:webPort,model:'controlled',provider:'synthetic',source_linked:true}),{mode:0o600})
- if(keep){console.log('受控 UI 就绪；入口存于 artifacts/skills-smoke/runtime.json；Ctrl+C 只停止本次服务。');await new Promise(r=>controller.signal.addEventListener('abort',r,{once:true}))}
+ if(keep){console.log('内部回放环境已就绪：仅接受回放编号，不支持自然语言或填写真实 API Key。用户冒烟请使用 docs/启动指引.md 的持久实例入口。回放入口存于 artifacts/skills-smoke/runtime.json；Ctrl+C 只停止本次服务。');await new Promise(r=>controller.signal.addEventListener('abort',r,{once:true}))}
  else{
   let result
   for(let i=0;i<1200;i++){try{result=JSON.parse(await readFile(report,'utf8'));break}catch{}await delay(100)}

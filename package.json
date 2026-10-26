@@ -37,18 +37,21 @@
     "lib/product",
     "lib/runtime",
     "docs/阅读入口.md",
+    "docs/Skill与Tool能力目录.md",
     "docs/当前架构与装配.md",
     "docs/架构对齐与验证.md",
     "docs/设计基线",
     "docs/启动指引.md",
     "docs/开发指引.md",
     "docs/交付与验收.md",
-    "docs/architecture"
+    "docs/architecture",
+    "docs/聊天业务操作实施计划.md",
+    "docs/聊天业务操作验收.md"
   ],
   "scripts": {
     "start": "node lib/distribution/cli.js",
     "build": "npm run tools:generate && tsc && node scripts/build-chat-ui.mjs",
-    "check": "npm run tools:check && tsc --noEmit",
+    "check": "npm run tools:check && npm run capabilities:check && tsc --noEmit",
     "test:python": "PYTHONPATH=sidecar python3 -m unittest discover -s tests -p 'test_*.py' -v",
     "test:assembly": "node lib/tests/assembly.js",
     "test:node": "node --test lib/tests/*.test.js",
@@ -60,7 +63,8 @@
     "tools:check": "node scripts/generate-research-tools.mjs --check",
     "pack:release": "npm run check && npm run build && node scripts/package-release.mjs",
     "smoke:skills": "node scripts/smoke-skills.mjs",
-    "handoff": "node scripts/export-handoff.mjs"
+    "handoff": "node scripts/export-handoff.mjs",
+    "capabilities:check": "node scripts/check-capabilities.mjs"
   },
   "dependencies": {
     "@deepseek-ai/cordis": "4.0.5",
