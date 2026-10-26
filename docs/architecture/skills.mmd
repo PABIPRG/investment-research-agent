@@ -1,0 +1,13 @@
+flowchart TB
+  input["用户表达 + 可信上下文"] --> agent["DSH Agent<br/>常驻不变量、Skill 摘要目录、工具 schema"]
+  agent -->|"无需工具即可回答"| answer["回答<br/>区分事实、推断、未知与实际回执"]
+  agent -->|"需要方法正文"| skillguard["聊天 guard<br/>工具白名单 + Skill 名称/参数限制"]
+  skillguard --> loader["DSH 原生 skill loader<br/>仅包内三个产品 Skill"]
+  loader -->|"正文进入上下文；可加载多个"| agent
+  agent -->|"需要业务读写"| toolguard["聊天 guard<br/>允许的工具名称"]
+  toolguard --> bridge["工具桥<br/>参数、可信会话、幂等请求键"]
+  bridge --> api["sidecar 业务校验<br/>主体、确认回执、授权、版本、证据"]
+  api -->|"业务事实与持久回执"| agent
+  skillguard -->|"不允许"| rejected["拒绝并返回错误<br/>不执行所请求能力"]
+  toolguard -->|"不允许"| rejected
+  rejected --> agent

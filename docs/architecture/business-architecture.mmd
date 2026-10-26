@@ -1,0 +1,43 @@
+flowchart TB
+    subgraph UX["产品交互"]
+        CHAT["AI 对话"]
+        MANAGE["委托查询"]
+        PORT["持仓与自选"]
+        CONFIG["消推配置"]
+    end
+
+    AGENT["DSH Agent<br/>理解、澄清、规划、工具选择、解释"]
+    ACCESS["产品接入层<br/>Plugin、Skill、Bundle、可信上下文"]
+
+    subgraph DOMAIN["业务领域"]
+        RESEARCH["研究实体与能力<br/>身份、范围、资料、计算、证据"]
+        CORE["委托核心<br/>版本、依赖、任务、条件、联系决定"]
+        FACTS["投资事实<br/>持仓、自选、成交、修订"]
+        NOTICE["通知<br/>渠道、静默、投递、重试、回执"]
+    end
+
+    EVENTS["时间与外部资料事件"]
+    STORE[("实例持久化<br/>各领域拥有自己的正式数据")]
+
+    CHAT <--> AGENT
+    AGENT <--> ACCESS
+    MANAGE <--> ACCESS
+    PORT <--> ACCESS
+    CONFIG <--> ACCESS
+
+    ACCESS <--> RESEARCH
+    ACCESS <--> CORE
+    ACCESS <--> FACTS
+    ACCESS <--> NOTICE
+
+    EVENTS --> CORE
+    CORE -->|"派发研究"| AGENT
+    AGENT -->|"提交结果与证据引用"| CORE
+    FACTS -->|"事实修订与版本"| CORE
+    CORE -->|"批准的联系意图"| NOTICE
+    NOTICE -->|"发送前核验、投递回执"| CORE
+
+    RESEARCH <--> STORE
+    CORE <--> STORE
+    FACTS <--> STORE
+    NOTICE <--> STORE

@@ -1,0 +1,25 @@
+flowchart TB
+  life["distribution<br/>安装、实例、产品进程生命周期"]
+  chat["huohuo-chat Profile<br/>交互式 DSH Agent"]
+  worker["后台 worker<br/>领取、续租、结果回写"]
+  sdk["huohuo-worker Profile<br/>一次 DSH 研究"]
+  ui["product/ui<br/>委托、投资事实、消推页面"]
+  tools["product/chat<br/>工具桥与聊天 guard"]
+  bounded["product/tools<br/>read_security_snapshot"]
+  api["sidecar API<br/>身份、权限与业务接口"]
+  domains["sidecar 各领域<br/>研究 / 委托核心 / 投资事实 / 通知"]
+  db[("实例 SQLite<br/>各领域正式状态")]
+  sessions[("DSH 会话与模型配置<br/>与业务库分别持久化")]
+  life -.->|"管理进程"| chat
+  life -.->|"管理进程"| worker
+  life -.->|"管理进程"| api
+  chat <-->|"对话与工具调用"| tools
+  chat <--> sessions
+  ui <-->|"受控 Host 接口"| api
+  tools <-->|"业务命令与查询"| api
+  worker -->|"启动一次执行"| sdk
+  sdk <-->|"本次 Scope"| bounded
+  bounded <-->|"有界研究"| api
+  worker <-->|"发现、领取、续租、回写"| api
+  api <--> domains
+  domains <--> db

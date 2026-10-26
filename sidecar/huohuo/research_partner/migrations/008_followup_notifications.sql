@@ -1,0 +1,6 @@
+CREATE TABLE source_versions (event_id TEXT PRIMARY KEY, principal TEXT NOT NULL, subject TEXT NOT NULL, scope_key TEXT NOT NULL, source TEXT NOT NULL, version TEXT NOT NULL, document TEXT NOT NULL, observed_at TEXT NOT NULL, UNIQUE(principal,scope_key,source,version));
+CREATE TABLE source_checks (principal TEXT NOT NULL, scope_key TEXT NOT NULL, checked_at REAL NOT NULL, status TEXT NOT NULL, detail TEXT NOT NULL, PRIMARY KEY(principal,scope_key));
+CREATE TABLE notification_config (principal TEXT PRIMARY KEY, revision INTEGER NOT NULL, enabled INTEGER NOT NULL, updated_at TEXT NOT NULL);
+CREATE TABLE notification_config_audit (id INTEGER PRIMARY KEY, principal TEXT NOT NULL, revision INTEGER NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE notification_queue (decision_id TEXT PRIMARY KEY REFERENCES contact_decisions(decision_id), principal TEXT NOT NULL, mandate_id TEXT NOT NULL, revision INTEGER NOT NULL, generation INTEGER NOT NULL, channel TEXT NOT NULL, status TEXT NOT NULL, eligible_at REAL NOT NULL, expires_at REAL NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, detail TEXT NOT NULL DEFAULT '', permit_id TEXT, updated_at REAL NOT NULL);
+CREATE TABLE notification_receipts (id INTEGER PRIMARY KEY, decision_id TEXT NOT NULL, permit_id TEXT NOT NULL, status TEXT NOT NULL, detail TEXT NOT NULL, created_at REAL NOT NULL);

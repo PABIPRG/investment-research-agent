@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-26",
+  "transform": "添加存档说明；个人绝对路径及本地文件链接改为历史来源文字；V0.2 到 V1.4 使用仓内相对链接；其余正文与全部 Mermaid 块保留",
+  "files": [
+    {
+      "original_filename": "火火投研伙伴-产品与架构设计-2026-10-23-V1.4.md",
+      "original_sha256": "8f336bfbcf5120d8c8e1729c21dd8ccfb8aae3d7e5841cbde2a5b3d4e8158bd4",
+      "portable_file": "V1.4-产品与架构设计.md",
+      "portable_sha256": "3d67e4a44729c9a557892f73ff77b38f3466656cf3eed758efb511b503539622",
+      "mermaid_blocks_preserved": 8
+    },
+    {
+      "original_filename": "基于V1.4的能力接入实施计划-V0.2.md",
+      "original_sha256": "d96b5943f1b32cb16a70b375a8056a3ec24c8daf3fb5f67ce61a04a621c9a247",
+      "portable_file": "V0.2-能力接入实施计划.md",
+      "portable_sha256": "4e3c27adb89c23793eb48ba669e35299cdc1685113742d18b1df678cc3c3d86c",
+      "mermaid_blocks_preserved": 1
+    }
+  ]
+}

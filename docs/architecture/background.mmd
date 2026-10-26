@@ -1,0 +1,31 @@
+flowchart TB
+  event["委托命令 / 资料版本 / 时间事件"] --> inbox["持久 outbox / inbox"]
+  inbox --> route{"当前委托有效并命中依赖？"}
+  route -->|"否"| wait["保留记录，等待下一事件"]
+  route -->|"是"| kind{"业务任务类型"}
+  kind -->|"到期提醒"| reminder["程序核对到期与有效约定<br/>无需额外模型研究"]
+  kind -->|"初次研究 / 后续复核 / 成果交付"| ready{"后续复核且初次研究<br/>仍在排队或运行？"}
+  ready -->|"是：等待进行中的初次研究"| wait
+  ready -->|"否：当前门禁允许继续"| exec["job → execution / attempt / lease"]
+  exec --> dsh["DSH 调用有界能力<br/>返回结果与证据引用"]
+  dsh --> admit{"主体、范围、版本、attempt、证据有效？"}
+  admit -->|"否"| invalid["失败 / 失效 / 缺口<br/>不冒充成功结果"]
+  admit -->|"是"| result["保存基准或复核结果<br/>按任务类型处理"]
+  result --> decide["委托核心<br/>核验约定、结果与四值条件，保存联系决定"]
+  reminder --> decide
+  decide -->|"不联系 / 条件未知 / 等待"| wait
+  decide -->|"可联系或静默延期"| queue["通知：渠道、静默、队列、去重"]
+  queue --> gate{"发送前事务复核<br/>版本、暂停、代次、渠道与时效"}
+  gate -->|"过期 / 撤销 / 不允许"| invalid
+  gate -->|"尚在静默期"| deferred["同一通知队列延期<br/>等待 eligible_at"]
+  deferred -->|"到期后重新核验原队列"| gate
+  gate -->|"许可"| send["持发送许可执行投递"]
+  send --> receipt{"投递结果"}
+  receipt -->|"已送达"| visit["携原委托入口回访<br/>继续对话或调整委托"]
+  receipt -->|"accepted"| accepted["渠道已受理，送达未确认<br/>保存受理回执"]
+  receipt -->|"不可重试失败"| failed["保存投递失败终态"]
+  receipt -->|"明确可重试失败"| retry["按既定策略重试并再次核验"]
+  retry --> queue
+  receipt -->|"unknown"| reconcile["保留未知并对账<br/>不自动重发"]
+  visit --> event
+  wait -.->|"新事件或到期重评"| event
