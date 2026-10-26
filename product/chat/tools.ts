@@ -9,10 +9,13 @@ import { createHash } from 'node:crypto'
 import { createEntityConfirmationTool, nativeEntityQuestion, entityToolName } from './entity-tools.js'
 import { createResearchTools, researchToolNames } from '../tools/research-tools.js'
 import { createInvestmentTools, investmentToolNames } from './investment-tools.js'
+import { createNotificationTools, notificationToolNames } from './notification-tools.js'
+import { createNavigationTools, navigationToolNames } from './navigation-tools.js'
+import type { Ask } from './business-tools.js'
 import { createMandateTools, mandateToolNames } from './mandate-tools.js'
 
 export const chatToolNames = ['submit_quote_research', 'list_research', 'get_research', 'research_events',
-  'research_evidence', 'cancel_research', 'retry_research', ...mandateToolNames, ...researchToolNames, ...investmentToolNames]
+  'research_evidence', 'cancel_research', 'retry_research', ...mandateToolNames, ...researchToolNames, ...investmentToolNames, ...notificationToolNames, ...navigationToolNames]
 export const nativeChatToolNames = ['ask_user_question', 'skill']
 export const allowedChatToolNames = [...chatToolNames, ...nativeChatToolNames, entityToolName]
 export const inject = ['tools', 'skills', 'systemPrompt']
@@ -25,7 +28,7 @@ function exact(value: unknown, keys: string[]): Record<string, any> {
   return value as Record<string, any>
 }
 
-export function createChatTools(address: string, token: string): ToolDefinition[] {
+export function createChatTools(address: string, token: string, ask?: Ask): ToolDefinition[] {
   const base = new URL(address)
   if (base.protocol !== 'http:' || base.hostname !== '127.0.0.1' || !base.port || base.pathname !== '/'
     || base.username || base.password || base.search || base.hash || !token) throw new Error('聊天 API 配置无效')
@@ -83,11 +86,11 @@ export function createChatTools(address: string, token: string): ToolDefinition[
           guidance: '后台连接中断。写操作可能已被接受；先查询最近任务核对，不要创建另一项重复研究。' }
       }
     },
-  })), ...createMandateTools(address, token), ...createResearchTools(address, token), ...createInvestmentTools(address, token)]
+  })), ...createMandateTools(address, token, ask), ...createResearchTools(address, token), ...createInvestmentTools(address, token, ask), ...createNotificationTools(address, token, ask), ...createNavigationTools(address, token)]
 }
 
 export async function apply(ctx: Context): Promise<void> {
-  for (const tool of createChatTools(process.env.HUOHUO_CHAT_API ?? '', process.env.HUOHUO_USER_TOKEN ?? '')) ctx.tools.register(tool)
+  for (const tool of createChatTools(process.env.HUOHUO_CHAT_API ?? '', process.env.HUOHUO_USER_TOKEN ?? '', nativeEntityQuestion(ctx))) ctx.tools.register(tool)
   ctx.tools.register(createEntityConfirmationTool(process.env.HUOHUO_CHAT_API ?? '', process.env.HUOHUO_USER_TOKEN ?? '', nativeEntityQuestion(ctx)))
   ctx.plugin(skillFilesystem, { providerName: 'huohuo-bundled', includeDefaultRoots: false,
     bundledSkillDir: fileURLToPath(new URL('../../../product/skills/chat/', import.meta.url)), watch: false })

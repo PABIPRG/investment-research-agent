@@ -18,3 +18,7 @@ description: 当用户明确交代持续研究，或查询、修改、暂停、�
 
 
 联系条件、渠道、期限以用户明确约定及程序回执为准；资料发现与通知是否可用，以实际实例状态和记录为准。配置或工具存在不代表已经监控、已经发送。unknown/error 不变成 false，不把应用内 delivered 说成外部送达或已读。
+
+## 页面操作与聊天等价
+
+manage_mandate 的 definition 现在支持 reminder_time（北京时间每日 HH:MM，null 关闭，省略保留）和 contact_channels（app/wecom/serverchan/email）。先读取当前委托及通知配置，不猜版本。修改这些字段时工具会等待真实原生确认；选择外部渠道须先完成安全配置。普通 contact_note 仍只是备注，不代表任意自然语言规则已编译。投资集合关联先读 read_investment_collection，再调用 bind_mandate_investment_collection；固定与动态含义须明确，不扩大单证券执行范围。需要页面复核用 open_product_view，返回链接由用户点击。

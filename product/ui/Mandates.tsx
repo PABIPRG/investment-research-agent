@@ -29,6 +29,7 @@ export function MandatesPage({ goChat, legacy }: { goChat: () => void; legacy: (
     return ()=>controller.abort()
   },[refresh])
   useEffect(()=>{if(items.some(x=>x.executions.some(e=>['queued','running'].includes(e.status))||x.mandate.status==='tracking'&&!x.executions.length)){const timer=setTimeout(()=>setRefresh(x=>x+1),3000);return ()=>clearTimeout(timer)}},[items])
+  useEffect(()=>{const open=(e:Event)=>{setSelected((e as CustomEvent<string>).detail);setRefresh(x=>x+1)};window.addEventListener('huohuo-mandate-view',open);return()=>window.removeEventListener('huohuo-mandate-view',open)},[])
   const returnDecision=(()=>{try{return JSON.parse(sessionStorage.getItem('huohuo-return')||'{}').decision}catch{return undefined}})()
   const current=items.find(x=>x.mandate.mandate_id===selected)
   useEffect(()=>{if(current&&returnDecision){const el=document.getElementById(returnDecision);el?.scrollIntoView({block:'center'});el?.focus()}},[current,returnDecision])

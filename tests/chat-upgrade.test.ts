@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto'
 import { installChat, validateChatUpgrade } from '../distribution/chat.js'
 import { packageRoot, type Instance } from '../distribution/instance.js'
 
-for (const baseline of ['chat-legacy.patch.yml', 'chat-query.patch.yml', 'chat-before-interactions.patch.yml', 'chat-before-skills.patch.yml']) test(`${baseline} 升级先完整预检，再迁移受管文件并保留用户状态`, async () => {
+for (const baseline of ['chat-legacy.patch.yml', 'chat-query.patch.yml', 'chat-before-interactions.patch.yml', 'chat-before-skills.patch.yml', 'chat-before-api-key.patch.yml', 'chat-before-model-menu.patch.yml']) test(`${baseline} 升级先完整预检，再迁移受管文件并保留用户状态`, async () => {
   const temp = await mkdtemp(join(tmpdir(), 'huohuo-upgrade-'))
   const config = { dsh_home: join(temp, 'dsh') } as Instance
   const profile = join(config.dsh_home, 'profiles/huohuo-chat')
@@ -54,4 +54,17 @@ for (const baseline of ['chat-legacy.patch.yml', 'chat-query.patch.yml', 'chat-b
     await installChat(config)
     assert.equal(await readFile(join(profile, 'chat-bundle/cordis.patch.yml.before-chat-shell'), 'utf8'), legacy)
   } finally { await rm(temp, { recursive: true, force: true }) }
+})
+
+test('人工冒烟保留 API 模型入口，去掉平台登录；回放仅在测试启动器显式替换', async () => {
+  const patch = await readFile(join(packageRoot, 'product/bundle/chat.patch.yml'), 'utf8')
+  for (const id of ['ui-settings-account', 'account-controller', 'llm-deepseek-account', 'deepseek-account']) assert.ok(patch.includes(`- id: ${id}\n  disabled: true`), id)
+  assert.ok(patch.includes('credentialOnboarding: true'))
+  assert.ok(patch.includes('- id: ui-model-selection\n  disabled: false'))
+  assert.ok(patch.includes('- id: ui-commands\n  disabled: false'))
+  assert.ok(!patch.includes('controlled-chat-model'))
+  assert.ok(!patch.includes('- id: llm-deepseek\n  disabled: true'))
+  const smoke = await readFile(join(packageRoot, 'scripts/smoke-skills.mjs'), 'utf8')
+  assert.ok(smoke.includes('credentialOnboarding: false'))
+  assert.ok(smoke.includes('仅接受回放编号'))
 })

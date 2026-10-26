@@ -1,3 +1,4 @@
+import { installProductNavigation } from './navigation.js'
 import { useEffect, useRef, useState } from 'react'
 import type { DshUiContext } from './dsh-face.js'
 import { read, states, eventNames, label, time, safeSource, message, type Execution, type ExecutionList, type Evidence, type BusinessEvent } from './model.js'
@@ -157,6 +158,7 @@ function brandMetadata() {
 }
 export function apply(ctx: DshUiContext): void {
   installShell(ctx)
+  installProductNavigation(ctx)
   ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'huohuo-notifications', label: '消推配置', inject: () => ({ visit: (mandate: string, decision: string) => { sessionStorage.setItem('huohuo-return', JSON.stringify({mandate,decision})); ctx.layout.selectPanel('huohuo-research') } }) }, NotificationsPage))
   ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'huohuo-investment', label: '持仓与自选' }, InvestmentPage))
   ctx.effect(() => { const style = document.createElement('style'); style.dataset.huohuo = 'query'; style.textContent = __HUOHUO_CSS__; document.head.append(style); return () => style.remove() }, '火火样式')
