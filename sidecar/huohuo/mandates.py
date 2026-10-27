@@ -22,23 +22,44 @@ from .investment.service import Investment
 from .investment.binding import InvestmentBinding
 
 _DEFAULT_CONDITION={'type':'semantic','claim':'notable_change','evidence_required':True}
+# 报价条件只接受程序能从快照直接核对的三个指标；历史序列类条件不在此列。
+_QUOTE_METRICS={'price':'CNY/share','change':'CNY','change_percent':'%'}
+_NUMERIC_OPERATORS={'>','>=','<','<=','==','!='}
 
-def contact_condition(raw):
-    """把用户明确说出的持续联系条件保存成可执行语义条件。
+def contact_condition(raw, operation):
+    """把用户明确说出的持续联系条件保存成可执行条件。
 
-    只接受语义条件：数值条件需要程序侧指标口径，当前研究结果没有可供
-    程序核对的指标，接受会变成永远 unknown 的假承诺。条件必须有证据，
-    模型单方面的“满足”不构成联系依据；无法举证时按 unknown 保持安静。
+    语义条件必须有证据，模型单方面的“满足”不构成联系依据；无法举证时按
+    unknown 保持安静。报价类数值条件只接受用户明确给出的单点阈值，数值由
+    程序从报价快照核对，不采信模型自报的数字。均线、回撤、分位需要历史
+    序列，当前没有该数据，直接拒绝而不是存成永远 unknown 的规则。
     """
     if raw is None:return dict(_DEFAULT_CONDITION)
     if not isinstance(raw,dict):raise Invalid('contact condition must be an object')
-    if raw.get('type','semantic')!='semantic':raise Invalid('contact condition must be semantic')
-    if set(raw)-{'type','claim','expected','min_confidence'}:raise Invalid('invalid contact condition fields')
-    claim=raw.get('claim')
-    if not isinstance(claim,str) or not claim.strip() or len(claim)>80:raise Invalid('contact condition claim is required')
-    condition={'type':'semantic','claim':claim.strip(),'evidence_required':True}
-    if 'expected' in raw:condition['expected']=raw['expected']
-    if 'min_confidence' in raw:condition['min_confidence']=raw['min_confidence']
+    kind=raw.get('type','semantic')
+    if kind=='semantic':
+        if set(raw)-{'type','claim','expected','min_confidence'}:raise Invalid('invalid contact condition fields')
+        claim=raw.get('claim')
+        if not isinstance(claim,str) or not claim.strip() or len(claim)>80:raise Invalid('contact condition claim is required')
+        condition={'type':'semantic','claim':claim.strip(),'evidence_required':True}
+        if 'expected' in raw:condition['expected']=raw['expected']
+        if 'min_confidence' in raw:condition['min_confidence']=raw['min_confidence']
+    elif kind=='numeric':
+        if operation!='quote_snapshot':raise Invalid('数值条件目前只支持报价委托（price、change、change_percent）')
+        if set(raw)-{'type','metric','operator','threshold','unit'}:raise Invalid('invalid contact condition fields')
+        metric=raw.get('metric')
+        if metric not in _QUOTE_METRICS:raise Invalid('报价条件指标只支持 price、change、change_percent')
+        if raw.get('operator') not in _NUMERIC_OPERATORS:raise Invalid('不支持的比较符')
+        threshold=raw.get('threshold')
+        if isinstance(threshold,bool) or not isinstance(threshold,(int,float)):raise Invalid('threshold 必须是数值')
+        unit=raw.get('unit',_QUOTE_METRICS[metric])
+        if unit!=_QUOTE_METRICS[metric]:raise Invalid('条件单位与指标不一致')
+        condition={'type':'numeric','metric':metric,'operator':raw['operator'],'threshold':threshold,'unit':unit,
+                   'basis_ref':'用户明确约定','method_version':'quote_snapshot_v1','period':'source_quote_vs_previous_close'}
+    elif kind in {'percentile','drawdown'}:
+        raise Invalid('价格分位与回撤条件需要历史序列，暂不支持；请改用明确的价格或涨跌幅阈值')
+    else:
+        raise Invalid('不支持的接触条件类型')
     try:validate_condition_definition(condition)
     except ConditionDefinitionError as exc:raise Invalid(str(exc))
     return condition
@@ -60,7 +81,7 @@ class Mandates:
         allowed={'request_key','goal','scope','contact_note','session_id','confirmation_id','contact_condition'}
         if not set(body)<=allowed or not {'request_key','goal','scope','contact_note'}<=set(body): raise Invalid('invalid mandate fields')
         scope=validate_scope(body['scope']);text(body['contact_note'],'contact note',1000)
-        condition=contact_condition(body.get('contact_condition'))
+        condition=contact_condition(body.get('contact_condition'),scope['operation'])
         with self.store.transaction():
             db=self.store._connect()
             old=db.execute('SELECT * FROM entity_mandate_receipts WHERE principal=? AND request_key=?',(principal,body['request_key'])).fetchone()
@@ -91,8 +112,8 @@ class Mandates:
         view['baseline_revision']=baseline['mandate_revision'] if baseline else None
         view['baseline']=(json.loads(baseline[0]) or None) if baseline else None
         operation=view['revision']['scope']['operation']
-        details={'financial_summary':'每 30 分钟检查已确认范围的财务摘要内容版本；来源失败不视为无变化。','company_profile':'每 6 小时检查已确认公司的资料内容版本；来源失败不视为无变化。'}
-        view['monitoring']={'enabled':operation in details,'detail':details.get(operation,'报价类持续发现需要用户先给出可判定的数值阈值，当前未开放；来源失败不视为无变化。')}
+        details={'financial_summary':'每 30 分钟检查已确认范围的财务摘要内容版本；来源失败不视为无变化。','company_profile':'每 6 小时检查已确认公司的资料内容版本；来源失败不视为无变化。','quote_snapshot':'沪深交易时段内每 15 分钟检查一次报价内容版本；收盘、周末与节假日不轮询；来源失败不视为无变化。'}
+        view['monitoring']={'enabled':operation in details,'detail':details.get(operation,'当前范围没有自动发现来源；来源失败不视为无变化。')}
         view['decisions']=[d.model_dump(mode='json') for d in self.store.list_contact_decisions(mid)]
         view['notifications']=[x for x in self.notifications.list(principal)['items'] if x['mandate_id']==mid]
         view['sources']=[{'event_id':r['event_id'],'version':r['version'],'source':r['source'],'observed_at':r['observed_at']} for r in db.execute('SELECT * FROM source_versions WHERE principal=? AND scope_key=? ORDER BY observed_at DESC',(principal,digest(view['revision']['scope'])))]
@@ -133,7 +154,7 @@ class Mandates:
                         policy={'mode':'due_reminder','channels':policy.get('channels',['app']),'max_retries':0,'schedule':{'cron':f'{minute} {hour} * * *','timezone':'Asia/Shanghai','catchup_seconds':3600,'trading_days_only':False},'reminder_time':reminder}
                 if 'contact_condition' in body:
                     if body.get('reminder_time') is not None:raise Invalid('到期提醒与条件联系不能同时设置')
-                    policy['condition']=contact_condition(body['contact_condition'])
+                    policy['condition']=contact_condition(body['contact_condition'],sc['operation'])
                 if 'contact_channels' in body:
                     from .notifications.configuration import validate_channels
                     channels=validate_channels(body['contact_channels'])
@@ -225,10 +246,31 @@ class Mandates:
         decision=ContactDecisionService(self.store).evaluate(self.store.get_job(row['job_id']),result)
         self.notifications.enqueue(decision,row['generation'])
 
+    def authoritative_quote_metrics(self, db, row, result):
+        """报价数值由程序从本次绑定的来源快照读取，不采信模型自报的数字。"""
+        try: scope=json.loads(row['scope_json'] or '{}')
+        except ValueError: return result
+        if scope.get('operation')!='quote_snapshot' or result.get('status')!='succeeded': return result
+        src=db.execute('SELECT s.event_id,s.document FROM research_jobs j JOIN source_versions s ON s.event_id=j.trigger_event_id WHERE j.job_id=?',(row['job_id'],)).fetchone()
+        if not src: return result
+        try:
+            values=json.loads(src['document']).get('values') or {}
+            metrics={'price':{'value':float(values['price']),'unit':'CNY/share'},
+                     'change':{'value':float(values['change']),'unit':'CNY'},
+                     'change_percent':{'value':float(values['change_percent']),'unit':'%'}}
+        except (KeyError,TypeError,ValueError): return result
+        for entry in metrics.values():
+            entry.update({'method_version':'quote_snapshot_v1','period':'source_quote_vs_previous_close','source_ref':src['event_id']})
+        structured=result.get('structured_result') if isinstance(result.get('structured_result'),dict) else {}
+        held=result.get('metrics') if isinstance(result.get('metrics'),dict) else {}
+        merged={**held,**metrics}
+        # 条件判定读取结果顶层的 metrics；模型自报的数字不参与覆盖。
+        return {**result,'metrics':merged,'structured_result':{**structured,'metrics':merged}}
+
     def receive_results(self,db):
-        rows=db.execute('SELECT o.*,a.execution_id,x.job_id,x.mandate_id,x.revision,x.generation,m.current_revision,m.status,g.generation AS current_generation FROM result_outbox o JOIN attempts a ON a.id=o.attempt_id JOIN execution_jobs x ON x.execution_id=a.execution_id JOIN mandates m ON m.mandate_id=x.mandate_id JOIN mandate_generation g ON g.mandate_id=x.mandate_id WHERE o.received=0').fetchall()
+        rows=db.execute('SELECT o.*,a.execution_id,x.job_id,x.mandate_id,x.revision,x.generation,v.scope_json,m.current_revision,m.status,g.generation AS current_generation FROM result_outbox o JOIN attempts a ON a.id=o.attempt_id JOIN execution_jobs x ON x.execution_id=a.execution_id JOIN mandate_revisions v ON v.mandate_id=x.mandate_id AND v.revision=x.revision JOIN mandates m ON m.mandate_id=x.mandate_id JOIN mandate_generation g ON g.mandate_id=x.mandate_id WHERE o.received=0').fetchall()
         for r in rows:
-            result=json.loads(r['result']);stale=r['status']!='tracking' or r['current_revision']!=r['revision'] or r['current_generation']!=r['generation']
+            result=self.authoritative_quote_metrics(db,r,json.loads(r['result']));stale=r['status']!='tracking' or r['current_revision']!=r['revision'] or r['current_generation']!=r['generation']
             result_id='RES_'+r['attempt_id'].replace('-','');at=datetime.now(timezone.utc).isoformat()
             db.execute('INSERT INTO research_job_results VALUES (?,?,?,?,?,?,?,?,?,?,?)',(result_id,r['job_id'],r['attempt_id'],'completed' if result['status']=='succeeded' else 'failed',canonical(result),digest(result.get('evidence_ids',[])),canonical([]),result.get('summary',''),canonical(result.get('contact_suggestion',{})),int(stale),at))
             if not stale:

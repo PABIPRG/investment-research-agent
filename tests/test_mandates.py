@@ -99,6 +99,25 @@ class MandateIntegrationTests(unittest.TestCase):
         from huohuo.contracts import Invalid
         with self.assertRaises(Invalid):
             self.core.create('alice',{'session_id':'test-chat','confirmation_id':self.confirmation,'request_key':'condition-002','goal':'跌破100元才联系','scope':SCOPE,'contact_note':'跌破100','contact_condition':{'type':'numeric','metric':'close','operator':'<','threshold':100}})
+    def test_numeric_quote_condition_is_persisted_with_program_metrics(self):
+        view=self.core.create('alice',{'session_id':'test-chat','confirmation_id':self.confirmation,'request_key':'condition-003','goal':'价格不高于1500元才联系','scope':SCOPE,'contact_note':'用户约定 price <= 1500','contact_condition':{'type':'numeric','metric':'price','operator':'<=','threshold':1500}})
+        condition=view['revision']['contact_policy']['condition']
+        self.assertEqual(condition['type'],'numeric')
+        self.assertEqual(condition['unit'],'CNY/share')
+        self.assertEqual(condition['basis_ref'],'用户明确约定')
+        self.core.tick();job=self.repo.claim('worker')
+        self.assertIn('"threshold":1500',job['question'])
+    def test_numeric_condition_rejects_series_and_wrong_unit(self):
+        from huohuo.contracts import Invalid
+        from huohuo.mandates import contact_condition
+        with self.assertRaises(Invalid):
+            contact_condition({'type':'percentile','series':'close','operator':'<','threshold':0.1},'quote_snapshot')
+        with self.assertRaises(Invalid):
+            contact_condition({'type':'numeric','metric':'price','operator':'<','threshold':10,'unit':'%'},'quote_snapshot')
+        with self.assertRaises(Invalid):
+            contact_condition({'type':'numeric','metric':'price','operator':'<','threshold':10},'financial_summary')
+        with self.assertRaises(Invalid):
+            contact_condition({'type':'numeric','metric':'price','operator':'~','threshold':10},'quote_snapshot')
     def test_reminder_and_condition_cannot_be_combined(self):
         from huohuo.contracts import Invalid
         m=self.create();mid=m['mandate']['mandate_id']

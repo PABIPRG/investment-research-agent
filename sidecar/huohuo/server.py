@@ -6,6 +6,7 @@ import json
 import secrets
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -237,6 +238,46 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(500, {"error": "internal_error"})
 
 
+def _parent_pipe_closed(kernel32, wintypes, handle):
+    """Windows：非阻塞判断父进程管道的写端是否全部关闭。
+
+    不能在后台线程里阻塞读 stdin：在 Windows 上它与请求线程中的大型 C 扩展
+    导入（numpy/pandas 等）会互相卡死，实例随即停止接受连接，所有研究工具
+    调用都变成“结果未确认”。stdin 不是管道（控制台/文件）时返回 False，
+    让进程依赖 SIGTERM 正常退出，而不是自行关停。
+    """
+    import ctypes
+
+    if kernel32.GetFileType(handle) != 3:  # FILE_TYPE_PIPE
+        return False
+    available = wintypes.DWORD()
+    if kernel32.PeekNamedPipe(handle, None, 0, None, ctypes.byref(available), None):
+        return False
+    return ctypes.get_last_error() == 109  # ERROR_BROKEN_PIPE
+
+
+def parent_lifetime(shutdown):
+    if sys.platform != 'win32':
+        try:
+            sys.stdin.buffer.read()
+        except OSError:
+            pass
+        shutdown()
+        return
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    try:
+        handle = wintypes.HANDLE(msvcrt.get_osfhandle(sys.stdin.fileno()))
+    except (OSError, ValueError):
+        return
+    while not _parent_pipe_closed(kernel32, wintypes, handle):
+        time.sleep(1)
+    shutdown()
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
@@ -245,10 +286,7 @@ def main():
     config = json.loads(Path(args.config).read_text())
     with Service(config) as service:
         if args.parent_pipe:
-            def parent_lifetime():
-                sys.stdin.buffer.read()
-                service.shutdown()
-            threading.Thread(target=parent_lifetime, daemon=True).start()
+            threading.Thread(target=parent_lifetime, args=(service.shutdown,), daemon=True).start()
         print(canonical({"event": "listening", "port": service.server_port}), flush=True)
         service.serve_forever(poll_interval=0.2)
 

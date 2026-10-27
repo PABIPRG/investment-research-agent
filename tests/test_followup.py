@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from huohuo.execution import Repository, Conflict
 from huohuo.mandates import Mandates
 from huohuo.research_entities.bounded import collect
@@ -21,9 +22,9 @@ class FollowupTests(unittest.TestCase):
         self.tmp=tempfile.TemporaryDirectory();self.repo=Repository(Path(self.tmp.name)/'business.sqlite');self.core=Mandates(self.repo,'test')
         self.core.entities.directory=lambda:{'status':'ok','rows':[{'code':'600519','name':'贵州茅台'}],'source':{'provider':'fixture'}}
     def tearDown(self):self.core.store.close();self.tmp.cleanup()
-    def create(self,principal='alice',key='create-first'):
+    def create(self,principal='alice',key='create-first',**extra):
         r=self.core.entities.resolve(principal,'test','600519');c=self.core.entities.confirm(principal,'test',r['snapshot_id'],r['version'],{r['mentions'][0]['mention_id']:SCOPE['entity_id']},'fixture')
-        return self.core.create(principal,{'session_id':'test','confirmation_id':c['confirmations'][0]['confirmation_id'],'request_key':key,'goal':'合成验收：跟进已确认范围变化','scope':self.scope,'contact_note':'仅应用内'})
+        return self.core.create(principal,{'session_id':'test','confirmation_id':c['confirmations'][0]['confirmation_id'],'request_key':key,'goal':'合成验收：跟进已确认范围变化','scope':self.scope,'contact_note':'仅应用内',**extra})
     def document(self,value=100):
         if self.scope['operation']=='quote_snapshot':
             return snapshot(self.scope,lambda _: ({'data':{'diff':[{'f12':'600519','f2':value,'f18':99,'f124':1792713600}]}},'https://example.invalid/quote'))
@@ -165,6 +166,40 @@ class FollowupTests(unittest.TestCase):
         self.assertEqual(self.core.sources.discover(lambda _: changed)['status'],'ok')
         self.core.tick()
         self.assertTrue(any(r['action']=='event_review' for r in self.jobs()))
+    def test_quote_discovery_emits_versioned_event_only_when_price_changes(self):
+        self.scope=QUOTE_SCOPE
+        self.core.repo.clock=lambda: datetime(2026,10,26,10,0,tzinfo=ZoneInfo('Asia/Shanghai')).timestamp()
+        view=self.create(key='quote-discovery')
+        self.assertTrue(view['monitoring']['enabled'])
+        self.assertEqual(self.core.sources.discover(lambda _: self.document(100))['status'],'ok')
+        db=self.core.store._connect()
+        self.assertEqual(db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0],1)
+        self.assertEqual(db.execute('SELECT hook_type FROM domain_events').fetchone()[0],'quote.snapshot_changed')
+        with self.core.store.transaction():db.execute('UPDATE source_checks SET checked_at=checked_at-901')
+        self.assertEqual(self.core.sources.discover(lambda _: self.document(100))['status'],'ok')
+        self.assertEqual(db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0],1)
+        with self.core.store.transaction():db.execute('UPDATE source_checks SET checked_at=checked_at-901')
+        self.assertEqual(self.core.sources.discover(lambda _: self.document(97))['status'],'ok')
+        self.assertEqual(db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0],2)
+    def test_quote_discovery_skips_outside_trading_session(self):
+        self.scope=QUOTE_SCOPE
+        self.core.repo.clock=lambda: datetime(2026,10,26,12,0,tzinfo=ZoneInfo('Asia/Shanghai')).timestamp()
+        self.create(key='quote-lunch')
+        self.assertFalse(self.core.sources.discover(lambda _: self.document(100)).get('checked'))
+        self.assertEqual(self.core.store._connect().execute('SELECT COUNT(*) FROM source_versions').fetchone()[0],0)
+    def test_numeric_quote_condition_uses_program_metrics(self):
+        self.scope=QUOTE_SCOPE
+        view=self.create(key='quote-numeric',contact_condition={'type':'numeric','metric':'price','operator':'<=','threshold':98})
+        mid=view['mandate']['mandate_id']
+        self.core.tick();self.result()
+        self.core.sources.accept('alice',self.document(95));self.core.tick();self.core.tick()
+        job=self.repo.claim('test-worker');self.assertIsNotNone(job)
+        ev=self.repo.save_evidence(job['attempt_id'],job['lease_token'],self.document(95))
+        # 模型结果不含任何数字；判定只使用程序从来源快照读到的价格。
+        self.repo.finish(job['attempt_id'],job['lease_token'],{'status':'succeeded','execution_id':job['execution_id'],'scope':self.scope,'summary':'报价复核','evidence_ids':[ev['evidence_id']]})
+        self.core.tick()
+        decisions=self.core.get('alice',mid)['decisions']
+        self.assertTrue(any(d['condition_result']=='met' for d in decisions))
     def test_failed_source_no_success_event(self):
         self.create();self.core.sources.discover(lambda _: {'status':'unavailable','reason':'period_not_covered','scope':SCOPE})
         self.assertEqual(self.core.store._connect().execute('SELECT count(*) FROM source_versions').fetchone()[0],0)
