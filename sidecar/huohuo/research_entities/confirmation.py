@@ -68,6 +68,12 @@ class EntityConfirmation:
                     item['execution_entity_id']='SEC:CN:A:'+code
                     item['exchange']='SSE' if code.startswith(('600','601','603','605','688','689')) else 'SZSE'
                     item['operations']=['company_profile','financial_summary'] if eid.startswith('CO:') else ['quote_snapshot','company_profile','financial_summary']
+                elif eid.startswith('FUND:CN:'):
+                    # 场内 ETF/LOF 与股票共用报价通道，但不提供公司资料与财务报表操作。
+                    code=eid.split(':')[-1]
+                    item['execution_entity_id']='FUND:CN:'+code
+                    item['exchange']='SSE' if code.startswith(('5','6')) else 'SZSE'
+                    item['operations']=['quote_snapshot']
                 else:item['operations']=[]
                 db.execute('INSERT INTO entity_confirmations VALUES(?,?,?,?,?,?,?,?,?,1)',(cid,principal,session,sid,mid,eid,canonical(item),source_call,snapshot['expires_at']))
                 selected.append(item)

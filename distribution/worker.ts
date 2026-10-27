@@ -165,10 +165,17 @@ export async function runAttempt(config: Instance, job: any, signal: AbortSignal
 export async function workerLoop(config: Instance, signal: AbortSignal, observer?: RuntimeObserver): Promise<void> {
   const workerId = randomUUID()
   while (!signal.aborted) {
-    await request(config, '/worker/recover', {}, 'worker')
-    await request(config, '/worker/discover', {}, 'worker')
-    const job = await request(config, '/worker/claim', { worker_id: workerId }, 'worker')
-    if (job) await runAttempt(config, job, signal, observer)
-    else await delay(500, undefined, { signal }).catch(() => {})
+    try {
+      await request(config, '/worker/recover', {}, 'worker')
+      await request(config, '/worker/discover', {}, 'worker')
+      const job = await request(config, '/worker/claim', { worker_id: workerId }, 'worker')
+      if (job) await runAttempt(config, job, signal, observer)
+      else await delay(500, undefined, { signal }).catch(() => {})
+    } catch (error) {
+      // 单次来源采集或网络超时只能让本轮退避，不能终止整个产品的后台与聊天。
+      if (signal.aborted) return
+      console.error(`worker 轮询失败，5 秒后重试：${error instanceof Error ? error.message : String(error)}`)
+      await delay(5_000, undefined, { signal }).catch(() => {})
+    }
   }
 }

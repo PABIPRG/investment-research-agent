@@ -6,6 +6,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { createServer } from 'node:net'
 import { packageRoot, request, runProcess, type Instance } from './instance.js'
 import { runtimeEnvironment } from './worker.js'
+import { npmCommand } from '../runtime/npm.mjs'
 
 export const chatProfileName = 'huohuo-chat'
 function sameConfig(name: string, current: string, expected: string): boolean {
@@ -78,7 +79,8 @@ export async function installChat(config: Instance, refresh = false): Promise<vo
     await access(join(directory, 'node_modules/@huohuo/research-agent/lib/product/chat/tools.js'))
     await access(join(directory, 'node_modules/@deepseek-ai/dsh/lib/bin.js'))
   } catch {
-    await runProcess('npm', ['install', '@huohuo/research-agent@file:../../../product.tgz', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', '--prefer-offline', '--cache', join(config.dsh_home, '../cache/npm')], directory)
+    const npm = npmCommand()
+    await runProcess(npm.command, [...npm.prefix, 'install', '@huohuo/research-agent@file:../../../product.tgz', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', '--prefer-offline', '--cache', join(config.dsh_home, '../cache/npm')], directory)
     await writeFile(join(directory, 'installed.json'), JSON.stringify({ version: '1.0.0', complete: true, ui_revision: revision }), { mode: 0o600 })
   }
 }

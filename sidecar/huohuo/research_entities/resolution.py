@@ -40,6 +40,11 @@ class DirectoryRepository:
         for row in rows:
             code = row['code']; name = row.get('name') or row.get('canonical_name')
             if not name: continue
+            if code.startswith(('15', '16', '50', '51', '52', '56', '58')):
+                # 场内基金代码不生成股票/公司身份，否则会把 ETF 当成 A 股研究。
+                self.entities['FUND:CN:'+code] = EntityInstance(entity_id='FUND:CN:'+code,entity_type_code='ENTITY_01_02',canonical_name=name,
+                    aliases=row.get('aliases',[]),identifiers={'fund_code':code},source='基金目录关联')
+                continue
             for eid, kind in [('SEC:CN:A:'+code,'ENTITY_01_01'), ('CO:CN:A:'+code,'ENTITY_02_01')]:
                 self.entities[eid] = EntityInstance(entity_id=eid,entity_type_code=kind,canonical_name=name,
                     aliases=row.get('aliases',[]),identifiers={'security_code':code,'company_code':code},source='证券目录关联上市公司')

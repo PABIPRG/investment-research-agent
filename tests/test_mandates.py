@@ -25,6 +25,18 @@ class MandateIntegrationTests(unittest.TestCase):
         result={'status':'succeeded','execution_id':job['execution_id'],'scope':SCOPE,'summary':'测试来源的报价','evidence_ids':[ev['evidence_id']]}
         self.repo.finish(job['attempt_id'],job['lease_token'],result)
         return result
+    def test_etf_quote_mandate_is_supported(self):
+        self.core.entities.directory=lambda:{'status':'ok','rows':[{'code':'513130','name':'恒生科技ETF'}],'source':{'provider':'fixture'}}
+        r=self.core.entities.resolve('alice','etf-chat','513130')
+        eid=r['mentions'][0]['candidates'][0]['entity_id'];self.assertEqual(eid,'FUND:CN:513130')
+        receipt=self.core.entities.confirm('alice','etf-chat',r['snapshot_id'],r['version'],{r['mentions'][0]['mention_id']:eid},'fixture-answer')
+        confirmation=receipt['confirmations'][0]
+        self.assertEqual(confirmation['operations'],['quote_snapshot'])
+        scope={'entity_id':eid,'exchange':confirmation['exchange'],'operation':'quote_snapshot'}
+        view=self.core.create('alice',{'session_id':'etf-chat','confirmation_id':confirmation['confirmation_id'],'request_key':'etf-create-001','goal':'跟踪恒生科技ETF报价','scope':scope,'contact_note':'仅应用内'})
+        self.assertEqual(view['revision']['scope']['entity_id'],'FUND:CN:513130')
+        self.core.tick();self.assertIsNotNone(self.repo.claim('worker'))
+
     def test_event_chain_and_crash_before_core_receive(self):
         m=self.create(); self.assertEqual(m['mandate']['mandate_id'],self.create()['mandate']['mandate_id'])
         self.core.tick()
@@ -76,6 +88,22 @@ class MandateIntegrationTests(unittest.TestCase):
         self.core.command('alice',mid,'revise',{'request_key':'revision-001','expected_revision':1,'expected_generation':0,'goal':current['revision']['goal'],'scope':SCOPE,'contact_note':'只改变备注'})
         self.core.tick();self.assertIsNone(self.repo.claim('worker'))
         self.assertEqual(self.core.get('alice',mid)['baseline_revision'],1)
+    def test_semantic_contact_condition_is_persisted_and_given_to_worker(self):
+        view=self.core.create('alice',{'session_id':'test-chat','confirmation_id':self.confirmation,'request_key':'condition-001','goal':'出现重组公告才联系','scope':SCOPE,'contact_note':'重组公告','contact_condition':{'claim':'公告出现重大资产重组'}})
+        mid=view['mandate']['mandate_id']
+        self.assertEqual(view['revision']['contact_policy']['condition']['claim'],'公告出现重大资产重组')
+        self.assertTrue(view['revision']['contact_policy']['condition']['evidence_required'])
+        self.core.tick();job=self.repo.claim('worker')
+        self.assertIn('公告出现重大资产重组',job['question'])
+    def test_numeric_contact_condition_is_rejected_instead_of_faked(self):
+        from huohuo.contracts import Invalid
+        with self.assertRaises(Invalid):
+            self.core.create('alice',{'session_id':'test-chat','confirmation_id':self.confirmation,'request_key':'condition-002','goal':'跌破100元才联系','scope':SCOPE,'contact_note':'跌破100','contact_condition':{'type':'numeric','metric':'close','operator':'<','threshold':100}})
+    def test_reminder_and_condition_cannot_be_combined(self):
+        from huohuo.contracts import Invalid
+        m=self.create();mid=m['mandate']['mandate_id']
+        with self.assertRaises(Invalid):
+            self.core.command('alice',mid,'revise',{'request_key':'revision-002','expected_revision':1,'expected_generation':0,'goal':m['revision']['goal'],'scope':SCOPE,'contact_note':'到期提醒','reminder_time':'09:00','contact_condition':{'claim':'公告出现重大资产重组'}})
     def test_confirmed_scope_not_reparsed_from_goal(self):
         self.core.create('alice',{'session_id':'test-chat','confirmation_id':self.confirmation,'request_key':'confirmed-001','goal':'原句提到000001，但确认仅研究600519','scope':SCOPE,'contact_note':'在产品中查看'})
         self.core.tick();job=self.repo.claim('worker');self.assertEqual(job['scope'],SCOPE)

@@ -39,7 +39,7 @@ export function apply(ctx: Context) {
         if (step === 0) {
           assert.ok(whole.includes('<available_skills>'), '真实 DSH Skill 目录必须进入请求')
           assert.ok(chatSkillNames.every(n => whole.includes(n)))
-          assert.ok(!whole.includes('本实例逐个注册 48 个研究工具'), '首次请求不得塞入方法正文')
+          assert.ok(!whole.includes('本实例逐个注册 66 个研究工具'), '首次请求不得塞入方法正文')
         }
         const sequence: readonly string[] = id === 'U01' ? ['huohuo-research-chat', 'huohuo-mandates', 'resolve_research_scope', 'confirm_research_entities', 'create_mandate'] : scenarios.find(s => s[0] === id)![2]
         const action = sequence[step]

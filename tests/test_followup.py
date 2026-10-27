@@ -14,6 +14,7 @@ from huohuo.research_partner.models import EventEnvelope
 
 SCOPE={'entity_id':'SEC:CN:A:600519','exchange':'SSE','operation':'financial_summary','period':'20260630','metric':'营业总收入','basis':'source_abstract'}
 QUOTE_SCOPE={'entity_id':'SEC:CN:A:600519','exchange':'SSE','operation':'quote_snapshot'}
+PROFILE_SCOPE={'entity_id':'SEC:CN:A:600519','exchange':'SSE','operation':'company_profile'}
 class FollowupTests(unittest.TestCase):
     def setUp(self):
         self.scope=SCOPE
@@ -26,6 +27,8 @@ class FollowupTests(unittest.TestCase):
     def document(self,value=100):
         if self.scope['operation']=='quote_snapshot':
             return snapshot(self.scope,lambda _: ({'data':{'diff':[{'f12':'600519','f2':value,'f18':99,'f124':1792713600}]}},'https://example.invalid/quote'))
+        if self.scope['operation']=='company_profile':
+            return collect(PROFILE_SCOPE,lambda _: {'code':'600519','records':[{'公司名称':'贵州茅台','主营业务':'白酒'}]})
         return collect(SCOPE,lambda _: {'code':'600519','records':[{'指标':'营业总收入','20260630':value}]})
     def result(self,verdict=None,fail=False):
         job=self.repo.claim('test-worker');self.assertIsNotNone(job)
@@ -37,6 +40,23 @@ class FollowupTests(unittest.TestCase):
         self.core.tick()
     def enable(self):return self.core.notifications.save('alice',{'expected_revision':0,'enabled':True,'channels':['app'],'timezone':'Asia/Shanghai','quiet_hours':None})
     def jobs(self):return self.core.store._connect().execute('SELECT * FROM research_jobs').fetchall()
+    def test_failed_baseline_blocks_reviews_and_is_retried(self):
+        self.core.sources.accept('alice',self.document(101));m=self.create();self.core.tick()
+        self.result(fail=True)
+        reviews=[r for r in self.jobs() if r['action']=='event_review']
+        self.assertTrue(reviews and all(r['status']=='pending' for r in reviews))
+        # 失败后没有派发任何执行：事件复核必须等基准成功。
+        self.assertIsNone(self.repo.claim('probe'))
+        with self.core.store.transaction():
+            self.core.store._connect().execute("UPDATE research_jobs SET next_run_at=? WHERE action='baseline_review'",(datetime.now(timezone.utc).isoformat(),))
+        self.core.tick()
+        retry=self.repo.claim('probe');self.assertIsNotNone(retry);self.assertIn('baseline_review',retry['question'])
+        self.assertIsNone(self.repo.claim('probe-2'))
+        ev=self.repo.save_evidence(retry['attempt_id'],retry['lease_token'],self.document())
+        self.repo.finish(retry['attempt_id'],retry['lease_token'],{'status':'succeeded','execution_id':retry['execution_id'],'scope':self.scope,'summary':'基准重试成功','evidence_ids':[ev['evidence_id']]})
+        self.core.tick()
+        self.assertEqual(self.core.get('alice',m['mandate']['mandate_id'])['baseline']['summary'],'基准重试成功')
+
     def test_source_duplicate_correction_and_principal_isolation(self):
         self.create();self.create('bob');self.core.tick()
         first=self.core.sources.accept('alice',self.document());self.assertEqual(first,self.core.sources.accept('alice',self.document()))
@@ -129,6 +149,22 @@ class FollowupTests(unittest.TestCase):
         reminders=[r for r in self.jobs() if r['action']=='due_reminder'];self.assertEqual(len(reminders),1);self.assertEqual(reminders[0]['status'],'completed')
         self.assertTrue(any(d['reason_code']=='due_reminder' for d in view['decisions']))
         self.assertTrue(any(r['structured_result'].get('kind')=='explicit_due_reminder' for r in view['results']))
+    def test_company_profile_discovery_emits_versioned_event(self):
+        self.scope=PROFILE_SCOPE
+        view=self.create();mid=view['mandate']['mandate_id']
+        self.assertTrue(self.core.get('alice',mid)['monitoring']['enabled'])
+        document=collect(PROFILE_SCOPE,lambda _: {'code':'600519','records':[{'公司名称':'贵州茅台','主营业务':'白酒'}]})
+        result=self.core.sources.discover(lambda _: document)
+        self.assertEqual(result['status'],'ok')
+        db=self.core.store._connect()
+        self.assertEqual(db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0],1)
+        self.assertEqual(db.execute('SELECT hook_type FROM domain_events').fetchone()[0],'company.profile_changed')
+        self.core.tick();self.result()
+        changed=collect(PROFILE_SCOPE,lambda _: {'code':'600519','records':[{'公司名称':'贵州茅台','主营业务':'白酒、金融'}]})
+        with self.core.store.transaction():self.core.store._connect().execute('UPDATE source_checks SET checked_at=checked_at-21700')
+        self.assertEqual(self.core.sources.discover(lambda _: changed)['status'],'ok')
+        self.core.tick()
+        self.assertTrue(any(r['action']=='event_review' for r in self.jobs()))
     def test_failed_source_no_success_event(self):
         self.create();self.core.sources.discover(lambda _: {'status':'unavailable','reason':'period_not_covered','scope':SCOPE})
         self.assertEqual(self.core.store._connect().execute('SELECT count(*) FROM source_versions').fetchone()[0],0)

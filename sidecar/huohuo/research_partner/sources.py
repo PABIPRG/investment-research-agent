@@ -9,28 +9,64 @@ from .models import EventEnvelope
 from .router import EventRouter
 
 HOOK = 'financial.summary_changed'
+PROFILE_HOOK = 'company.profile_changed'
+_PROFILE_SOURCE = 'akshare.stock_profile_cninfo'
+_PROFILE_URL = 'https://webapi.cninfo.com.cn/'
+# 公司资料变化很慢，避免与财务摘要共用 30 分钟轮询。
+DISCOVERY_INTERVAL = {'financial_summary': 1800, 'company_profile': 21600}
 
 def trigger(scope):
-    return [{'hook_type':HOOK,'scope_key':digest(scope)}] if scope['operation']=='financial_summary' else []
+    operation = scope['operation']
+    if operation == 'financial_summary':
+        return [{'hook_type': HOOK, 'scope_key': digest(scope)}]
+    if operation == 'company_profile':
+        return [{'hook_type': PROFILE_HOOK, 'scope_key': digest(scope)}]
+    return []
+
+def validate_profile_document(document, binding):
+    """公司资料同样只接受与本次范围、主体和内容指纹一致的来源文档。"""
+    if document.get('scope') != binding:
+        raise Invalid('profile evidence scope mismatch')
+    raw = document.get('raw')
+    if not isinstance(raw, dict) or raw.get('code') != binding['entity_id'].split(':')[-1]:
+        raise Invalid('profile evidence subject mismatch')
+    if document.get('source_hash') != digest(raw):
+        raise Invalid('profile evidence source hash mismatch')
+    rows = raw.get('records')
+    if not isinstance(rows, list) or not rows or any(not isinstance(row, dict) for row in rows):
+        raise Invalid('profile evidence schema invalid')
+    if document.get('values') != {'code': raw['code'], 'profile': rows[:1]}:
+        raise Invalid('profile evidence semantics mismatch')
+    if document.get('source') != _PROFILE_SOURCE or document.get('source_url') != _PROFILE_URL:
+        raise Invalid('profile evidence source mismatch')
+    try:
+        observed = datetime.fromisoformat(document.get('observed_at', ''))
+        if observed.tzinfo is None:
+            raise ValueError
+    except (TypeError, ValueError):
+        raise Invalid('profile evidence observation time missing') from None
 
 class Sources:
     def __init__(self, core): self.core=core; self.store=core.store
 
     def accept(self, principal, document):
         sc=document.get('scope',{})
-        if sc.get('operation')!='financial_summary' or document.get('status')!='ok':
-            raise Invalid('仅接受成功的财务摘要来源文档')
-        validate_financial_document(document, validate_scope(sc))
+        operation=sc.get('operation')
+        if operation not in DISCOVERY_INTERVAL or document.get('status')!='ok':
+            raise Invalid('仅接受成功的财务摘要或公司资料来源文档')
+        binding=validate_scope(sc)
+        if operation=='financial_summary': validate_financial_document(document, binding)
+        else: validate_profile_document(document, binding)
         raw=document.get('raw')
-        if not isinstance(raw,dict) or raw.get('code')!=sc['entity_id'].split(':')[-1]: raise Invalid('来源主体不匹配')
         version=digest(raw)
         if document.get('source_hash')!=version: raise Invalid('来源内容指纹不匹配')
+        hook=HOOK if operation=='financial_summary' else PROFILE_HOOK
         key=digest(sc); eid='SRC_'+digest([principal,key,document['source'],version])
         now=datetime.now(timezone.utc)
         with self.store.transaction():
             db=self.store._connect()
             db.execute('INSERT OR IGNORE INTO source_versions VALUES(?,?,?,?,?,?,?,?)',(eid,principal,sc['entity_id'],key,document['source'],version,canonical(document),now.isoformat()))
-            self.store.record_event(EventEnvelope(event_id=eid,hook_type=HOOK,producer='financial-source',occurred_at=now,observed_at=now,source_version=version,content_hash=version,subject_ids=[sc['entity_id']],payload={'principal':principal,'scope_key':key,'version_kind':'content_hash','source_version':version}))
+            self.store.record_event(EventEnvelope(event_id=eid,hook_type=hook,producer='financial-source' if operation=='financial_summary' else 'profile-source',occurred_at=now,observed_at=now,source_version=version,content_hash=version,subject_ids=[sc['entity_id']],payload={'principal':principal,'scope_key':key,'version_kind':'content_hash','source_version':version}))
         return eid
 
     def catch_up(self, principal, mid):
@@ -49,9 +85,10 @@ class Sources:
             selected=None
             for row in candidates:
                 sc=json.loads(row['scope_json'])
-                if sc.get('operation')!='financial_summary':continue
+                interval=DISCOVERY_INTERVAL.get(sc.get('operation'))
+                if interval is None:continue
                 key=digest(sc);old=db.execute('SELECT checked_at FROM source_checks WHERE principal=? AND scope_key=?',(row['principal_id'],key)).fetchone()
-                if old and now-old[0]<1800:continue
+                if old and now-old[0]<interval:continue
                 selected=(row['principal_id'],sc,key)
                 db.execute("INSERT INTO source_checks VALUES(?,?,?,'collecting','正在读取来源') ON CONFLICT(principal,scope_key) DO UPDATE SET checked_at=excluded.checked_at,status=excluded.status,detail=excluded.detail",(row['principal_id'],key,now));break
         if selected is None:return {'checked':False}
