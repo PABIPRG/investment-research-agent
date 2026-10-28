@@ -32,15 +32,16 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 
 聊天 Skill 从 `product/skills/chat/` 加载，允许名单在 `product/chat/policy.ts`；guard 校验名称与参数，默认 home/cwd 扫描关闭。后台 Skill 由 `product/tools/index.ts` 注册。后台的名称保留了报价历史命名，具体范围以可信 operation 为准。
 
-## 3. 当前 Tool：聊天 94 个，后台另有 1 个
+## 3. 当前 Tool：聊天 95 个，后台另有 1 个
 
-聊天组成：62 个研究工具 + 1 个市场资料工具 + 7 个单次任务工具 + 7 个实体/委托工具 + 5 个投资事实/集合工具 + 4 个通知工具 + 1 个页面入口工具 + 2 个策略业务工具 + 1 个产业链管理工具 + 2 个旧数据迁入工具 + 2 个原生交互工具。统计的是允许暴露的名称，不是全部通过真实数据验收的数量。
+聊天组成：62 个研究工具 + 1 个市场资料工具 + 7 个单次任务工具 + 7 个实体/委托工具 + 6 个投资事实/集合/偏好工具 + 4 个通知工具 + 1 个页面入口工具 + 2 个策略业务工具 + 1 个产业链管理工具 + 2 个旧数据迁入工具 + 2 个原生交互工具。统计的是允许暴露的名称，不是全部通过真实数据验收的数量。
 
 | 分类 | 名称 | 用途与边界 |
 |---|---|---|
 | 单次研究任务（7） | `submit_quote_research`、`list_research`、`get_research`、`research_events`、`research_evidence`、`cancel_research`、`retry_research` | 提交、读取最近任务/详情/事件/证据、显式取消或重试；queued 不等于完成 |
 | 实体与委托（7） | `resolve_research_scope`、`search_securities`、`confirm_research_entities`、`create_mandate`、`list_mandates`、`get_mandate`、`manage_mandate` | 解析、候选搜索、保存真实选择、委托生命周期；确认对象不自动授予持续研究或通知许可 |
 | 投资事实/集合（5） | `read_investment_facts`、`preview_investment_change`、`commit_investment_change`、`read_investment_collection`、`bind_mandate_investment_collection` | 同一台账的查询、预览、真实确认保存与集合关联；版本冲突及提交未知不当成功 |
+| 风险偏好（1） | `assess_risk_preference` | 原生三题／八题问卷，程序计分、再次确认后保存到同一投资档案；读取及未知回执复用投资事实工具，不自动影响委托或仓位 |
 | 旧数据迁入（2） | `read_legacy_imports`、`import_legacy_data` | 从设置上传文件后，读取候选/回执/只读档案；生成分类差异并经原生确认后原子导入，不继承旧授权或运行队列 |
 | 市场资料（1） | `query_market` | 行情、扫描、日线技术指标、新闻、盘前/盘后资料包；news/brief 可显式 include_slow 扩展全市场来源，逐源报告失败；只读结果留存证据，不自动创建监控 |
 | `manage_industry_chain` | 管理实例产业链资料与研报增量 | 状态只读；下载、刷新、删除与增量需原生确认；增量绑定本会话证据 |

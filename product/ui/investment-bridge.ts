@@ -19,6 +19,7 @@ export function createInvestmentBridge(address: string, token: string) {
       Response.json(value, { status, headers: { 'Cache-Control': 'no-store' } })
     const url = new URL(request.url)
     let path = '/investment'
+    let method = 'GET'
     let body: unknown
     if (request.method === 'GET' && url.pathname === investmentPaths[0] && !url.search) {
       /* read */
@@ -37,16 +38,34 @@ export function createInvestmentBridge(address: string, token: string) {
         !input ||
         typeof input !== 'object' ||
         Array.isArray(input) ||
-        !['preview', 'commit', 'snapshot', 'collection', 'bind-collection'].includes(input.action)
+        ![
+          'preview',
+          'commit',
+          'snapshot',
+          'collection',
+          'bind-collection',
+          'inspect-preview',
+        ].includes(input.action)
       )
         return reply(400, { detail: '不支持的投资操作' })
       const { action, ...payload } = input
-      path += '/' + action
-      body = payload
+      if (action === 'inspect-preview') {
+        if (
+          Object.keys(payload).length !== 1 ||
+          typeof payload.preview_id !== 'string' ||
+          !/^[0-9a-f-]{36}$/.test(payload.preview_id)
+        )
+          return reply(400, { detail: '预览标识无效' })
+        path += '/previews/' + payload.preview_id
+      } else {
+        path += '/' + action
+        body = payload
+        method = 'POST'
+      }
     } else return reply(405, { detail: '不支持的请求' })
     try {
       const response = await fetch(new URL(path, base), {
-        method: body ? 'POST' : 'GET',
+        method,
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined,
         redirect: 'error',

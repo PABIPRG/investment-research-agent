@@ -11,7 +11,14 @@ import { useInvestment } from './investment/useInvestment.js'
 import { WatchlistTable } from './investment/WatchlistTable.js'
 import type { MandateView } from './mandates/model.js'
 import { request } from './shared/api.js'
-const tabs = { holdings: '持仓', watchlist: '自选', trades: '操作记录', history: '修订历史' }
+import { RiskPreference } from './investment/RiskPreference.js'
+const tabs = {
+  holdings: '持仓',
+  watchlist: '自选',
+  trades: '操作记录',
+  history: '修订历史',
+  risk: '风险偏好',
+}
 export function InvestmentPage({ visit }: { visit?: (mandate: string) => void }) {
   const { facts, loading, error, refresh } = useInvestment()
   const [tab, setTab] = useState<keyof typeof tabs>('holdings'),
@@ -51,14 +58,14 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
           <h1>持仓与自选</h1>
           <p className={business.note}>
             {facts ? `${date(facts.updated_at)} 更新 · 记录 v${facts.version}` : '正在读取投资记录'}{' '}
-            · 金额单位：元
+            {tab !== 'risk' && '· 金额单位：元'}
           </p>
         </div>
         <div className={business.tools}>
           <button disabled={loading} onClick={reload}>
             刷新
           </button>
-          {tab !== 'history' && (
+          {tab !== 'history' && tab !== 'risk' && (
             <button data-variant="primary" disabled={!facts || loading} onClick={open}>
               {tab === 'watchlist' ? '添加自选' : tab === 'trades' ? '记录成交' : '添加持仓'}
             </button>
@@ -91,7 +98,7 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
             {facts && (key === 'holdings' || key === 'watchlist') ? ` ${facts[key].length}` : ''}
           </button>
         ))}
-        {tab !== 'history' && (
+        {tab !== 'history' && tab !== 'risk' && (
           <label className={css.search}>
             搜索证券
             <input
@@ -115,6 +122,7 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
       {common && tab === 'watchlist' && <WatchlistTable {...common} />}{' '}
       {common && tab === 'trades' && <TradesTable {...common} />}{' '}
       {common && tab === 'history' && <RevisionHistory {...common} />}
+      {facts && tab === 'risk' && <RiskPreference facts={facts} />}
       {edit && (
         <InvestmentEditor
           target={edit}

@@ -5,6 +5,10 @@ const number={type:'number',minimum:0,maximum:1e12}
 const payload={type:'object',additionalProperties:false,properties:{ticker:{type:'string',pattern:'^[0-9]{6}$'},name:textField,quantity:number,cost_price:{anyOf:[number,{type:'null'}]},effective_at:textField,reason:{type:'string',maxLength:500},remove:{type:'boolean'},side:{type:'string',enum:['buy','sell']},price:{...number,exclusiveMinimum:0},fees:number,traded_at:textField,affects_holdings:{type:'boolean'},trade_request_id:textField,operation:{type:'string',enum:['amend','void']}}}
 const labels:Record<string,string>={holding:'持仓录入/校正',watchlist:'自选变更',trade:'实际成交记录',revision:'成交更正/撤销'}
 export function investmentQuestion(p:any):string{
+  if(p.command==='risk_profile'){
+    const r=p.after.risk_profile
+    return `确认保存风险偏好？${r.label}，${r.score}/${r.max_score} 分。\n${r.answers.map((x:any)=>x.label).join('\n')}\n仅供研究背景，不改变持仓、委托、通知或交易。`
+  }
   const a=p.payload, code=a.ticker||p.impact?.entry?.ticker
   const before=p.before.holdings.find((x:any)=>x.ticker===code), after=p.after.holdings.find((x:any)=>x.ticker===code)
   const unit=after?.quantity_unit||before?.quantity_unit||'股/份'

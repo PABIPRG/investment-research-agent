@@ -42,6 +42,7 @@ class ApiTests(unittest.TestCase):
         from unittest.mock import patch
         from huohuo.research_entities.security_search import reset_cache
         reset_cache()
+
         with patch("huohuo.research_entities.security_search.load_catalog", return_value=[{"code":"002518","name":"科士达"}]):
             self.assertEqual(403,self.call("/entities/search", {"query":"科士达"},token="worker-secret")[0])
             status,result=self.call("/entities/search", {"query":"科士达"})
@@ -52,6 +53,25 @@ class ApiTests(unittest.TestCase):
             self.assertEqual([],self.call("/executions")[1]["executions"])
             self.assertEqual(400,self.call("/entities/search", {"query":"科士达","url":"https://evil.invalid"})[0])
         reset_cache()
+
+    def test_risk_questionnaire_uses_user_api_and_persistent_preview_receipt(self):
+        status, facts = self.call('/investment')
+        self.assertEqual(status, 200)
+        body = {'command': 'risk_profile', 'payload': {'tier': 'quick', 'answers': [
+            {'qid': q['qid'], 'option': 2} for q in facts['risk_questionnaire']['quick']]}}
+        self.assertEqual(self.call('/investment/preview', body, token='worker-secret')[0], 403)
+        status, p = self.call('/investment/preview', body)
+        self.assertEqual(status, 200)
+        self.assertEqual(self.call('/investment')[1]['version'], 0)
+        commit = {'preview_id': p['preview_id'], 'request_key': p['preview_id']}
+        status, result = self.call('/investment/commit', commit)
+        self.assertEqual(status, 200)
+        self.assertEqual(result['facts']['risk_profile']['score'], 9)
+        receipt = self.call('/investment/previews/' + p['preview_id'])[1]['receipt']
+        self.assertEqual(receipt, result)
+        self.assertEqual(self.call('/investment/commit', commit)[1], result)
+        self.assertEqual(self.call('/investment')[1]['holdings_status'], 'not_recorded')
+        self.assertEqual(self.call('/mandates')[1]['items'], [])
 
     def create(self):
         status, job = self.call("/executions", {"request_key": "create", "scope": SCOPE, "question": "查看当前报价"})

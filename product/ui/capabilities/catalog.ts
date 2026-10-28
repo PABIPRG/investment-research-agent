@@ -7,6 +7,7 @@ import { researchToolCatalog } from '../../tools/research-tools.generated.js'
 import type { Capability, CapabilityCatalog } from './model.js'
 
 const toolTitles: Record<string, string> = {
+  assess_risk_preference: '填写风险偏好问卷',
   read_legacy_imports: '查看旧数据与导入回执',
   import_legacy_data: '导入已上传的旧数据',
   manage_industry_chain: '管理产业链资料与研报增量',
