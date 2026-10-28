@@ -63,7 +63,8 @@ class InstrumentConfirmationTests(unittest.TestCase):
             confirmed = self.choose(code, eid)
             self.assertEqual(confirmed['identifiers']['fund_code'], code)
             self.assertEqual(confirmed['identifiers']['exchange'], exchange)
-            self.assertEqual(confirmed['operations'], [])
+            self.assertEqual(confirmed['operations'], ['quote_snapshot'])
+            self.assertEqual(confirmed['execution_entity_id'],'FUND:CN:'+code)
 
     def test_numeric_collision_preserves_index_and_stock_until_native_selection(self):
         result = resolve('000300', {'rows': [{'code': '000300', 'name': '合成同码证券'}],

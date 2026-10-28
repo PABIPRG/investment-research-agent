@@ -274,6 +274,100 @@ _TOOLS: list[ToolDefinition] = [
         "按主题名称匹配同花顺概念板块，抓取涨幅排序的前若干页成分股；不是完整成分列表。",
         supported_entity_types=["ENTITY_03_02"],
     ),
+    # ── 全市场 / 板块 / 市场情绪 ───────────────────────────────────
+    _tool(
+        "sector_ranking_lookup", "板块排行", "行业", "configured",
+        "toolbox.handlers.market.sector_ranking_lookup + 同花顺行业一览/概念资金流",
+        "同花顺行业与概念板块当日涨幅、净流入、上涨家数与成交额排行，可按涨幅、跌幅等排序；不绑定具体板块实体。",
+    ),
+    _tool(
+        "sector_fund_flow_lookup", "板块资金流排行", "资金", "configured",
+        "toolbox.handlers.market.sector_fund_flow_lookup + 同花顺行业/概念资金流（地域回退东方财富）",
+        "行业/概念/地域板块主力净流入排行，支持今日、5日、10日周期。",
+    ),
+    _tool(
+        "market_overview_lookup", "市场概览", "行情", "configured",
+        "toolbox.handlers.market.market_overview_lookup + 新浪指数快照/乐咕赚钱效应/东方财富全 A",
+        "主要宽基指数快照与全市场涨跌家数、涨停跌停等情绪指标；部分来源失败时明确告警。",
+    ),
+    _tool(
+        "hot_stock_rank_lookup", "个股人气榜", "行情", "configured",
+        "toolbox.handlers.market.hot_stock_rank_lookup + akshare.stock_hot_*",
+        "东方财富人气榜/飙升榜，反映股吧关注度，不代表资金或基本面。",
+    ),
+    _tool(
+        "limit_pool_lookup", "涨停板股池", "行情", "configured",
+        "toolbox.handlers.market.limit_pool_lookup + akshare.stock_zt_pool_*",
+        "涨停、跌停、强势与炸板股池，含连板数、封板资金与所属行业；自动回溯最近交易日。",
+    ),
+    _tool(
+        "market_news_lookup", "市场快讯", "事件", "configured",
+        "toolbox.handlers.market.market_news_lookup + akshare.stock_info_global_em/cls",
+        "东方财富全球财经快讯与财联社电报，可按关键词过滤；快讯是未核实线索。",
+    ),
+    _tool(
+        "etf_ranking_lookup", "ETF 排行", "基金", "configured",
+        "toolbox.handlers.market.etf_ranking_lookup + akshare.fund_etf_category_sina",
+        "场内 ETF 实时行情排行，可按涨幅、跌幅、成交额与成交量排序或按名称过滤。",
+    ),
+    _tool(
+        "performance_forecast_lookup", "业绩预告", "业绩", "configured",
+        "toolbox.handlers.valuation.performance_forecast_lookup + akshare.stock_yjyg_em",
+        "按报告期列示 A 股业绩预告，含预告类型、变动幅度与原因；可按类型排序或按名称检索。",
+    ),
+    _tool(
+        "market_valuation_lookup", "市场估值", "估值", "configured",
+        "toolbox.handlers.valuation.market_valuation_lookup + 乐咕乐股 stock_a_ttm_lyr/stock_index_pe_lg",
+        "全 A 或主要宽基指数的市盈率水平与历史分位，用于判断整体估值位置。",
+    ),
+    _tool(
+        "stock_valuation_lookup", "个股估值", "估值", "configured",
+        "toolbox.handlers.valuation.stock_valuation_lookup + akshare.stock_zh_valuation_baidu",
+        "单只 A 股的市值、市盈率、市净率、市现率时间序列与所选区间分位。",
+        supported_entity_types=["ENTITY_01_01"],
+    ),
+    # ── 卖方观点 / 公告正文 / 海外市场 / 衍生品 ─────────────────────
+    _tool(
+        "research_report_lookup", "研报与一致预期", "研究", "configured",
+        "toolbox.handlers.coverage.research_report_lookup + akshare.stock_research_report_em",
+        "个股卖方研报清单、东财评级、机构与年度盈利预测（一致预期线索）；评级是卖方观点，不是事实。",
+    ),
+    _tool(
+        "announcement_document_lookup", "公告正文链接", "公告", "configured",
+        "toolbox.handlers.coverage.announcement_document_lookup + akshare.stock_zh_a_disclosure_report_cninfo",
+        "巨潮公告清单与原文链接，可按日期与关键词过滤；不解析 PDF 正文。",
+    ),
+    _tool(
+        "performance_express_lookup", "业绩快报", "业绩", "configured",
+        "toolbox.handlers.coverage.performance_express_lookup + akshare.stock_yjkb_em",
+        "按报告期列示 A 股业绩快报的营收、净利润与同比，可按名称或行业检索；是初步核算数。",
+    ),
+    _tool(
+        "overseas_quote_lookup", "港美股行情", "行情", "configured",
+        "toolbox.handlers.coverage.overseas_quote_lookup + akshare.stock_hk_daily/stock_us_daily",
+        "港股与美股的历史日线行情与区间摘要，当地货币计价。",
+    ),
+    _tool(
+        "forex_rate_lookup", "人民币汇率", "宏观", "configured",
+        "toolbox.handlers.coverage.forex_rate_lookup + akshare.forex_spot_em",
+        "外汇即期快照（含人民币货币对），可按名称过滤；不是银行牌价或远期汇率。",
+    ),
+    _tool(
+        "minute_bar_lookup", "分钟线", "行情", "configured",
+        "toolbox.handlers.coverage.minute_bar_lookup + akshare.stock_zh_a_minute",
+        "A 股 1/5/15/30/60 分钟线，覆盖最近几个交易日，未复权。",
+        supported_entity_types=["ENTITY_01_01"],
+    ),
+    _tool(
+        "bond_yield_curve_lookup", "债券收益率曲线", "债券", "configured",
+        "toolbox.handlers.coverage.bond_yield_curve_lookup + akshare.bond_china_yield",
+        "国债、国开债与中短期票据收益率曲线，按曲线名称与期限返回；引用必须写明曲线。",
+    ),
+    _tool(
+        "ipo_detail_lookup", "IPO 发行信息", "新股", "configured",
+        "toolbox.handlers.coverage.ipo_detail_lookup + akshare.stock_ipo_summary_cninfo",
+        "单只新股的发行日期、发行价、发行市盈率、募资净额与主承销商。",
+    ),
     # ── 可转债 ──────────────────────────────────────────────────────
     _tool(
         "convertible_bond_lookup", "可转债查询", "债券", "configured",

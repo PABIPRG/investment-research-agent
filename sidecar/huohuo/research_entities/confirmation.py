@@ -72,6 +72,9 @@ class EntityConfirmation:
                     item['execution_entity_id']='SEC:CN:A:'+code
                     item['exchange']='SSE' if code.startswith(('600','601','603','605','688','689')) else 'SZSE'
                     item['operations']=['company_profile','financial_summary','news'] if eid.startswith('CO:') else ['quote_snapshot','company_profile','financial_summary','market_quote','market_technical','news','market_brief']
+                elif item['entity_type_code']=='ENTITY_01_02' and item['identifiers'].get('exchange') in {'SSE','SZSE'}:
+                    code=item['identifiers'].get('fund_code')
+                    item.update(execution_entity_id='FUND:CN:'+code,exchange=item['identifiers']['exchange'],operations=['quote_snapshot'])
                 else:item['operations']=[]
                 db.execute('INSERT INTO entity_confirmations VALUES(?,?,?,?,?,?,?,?,?,1)',(cid,principal,session,sid,mid,eid,canonical(item),source_call,snapshot['expires_at']))
                 selected.append(item)
@@ -86,5 +89,8 @@ class EntityConfirmation:
             expected=item['entity_id']
             if expected.startswith('CO:CN:A:') and operation in ('company_profile','financial_summary','news'):
                 expected=expected.replace('CO:CN:A:','SEC:CN:A:')
+            if item.get('entity_type_code')=='ENTITY_01_02' and operation=='quote_snapshot' and item.get('execution_entity_id'):
+                expected=item['execution_entity_id']
+            if operation is not None and operation not in item.get('operations',[]):raise Invalid('已确认对象不支持此研究操作')
             if expected!=eid:raise Invalid('研究对象与用户确认不一致')
             return item

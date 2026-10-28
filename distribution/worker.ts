@@ -172,12 +172,18 @@ export async function workerLoop(config: Instance, signal: AbortSignal, observer
   const strategies = strategyLoop(config, workerId + ':strategies', stop.signal)
   try {
     while (!stop.signal.aborted) {
+      try {
       await request(config, '/worker/recover', {}, 'worker', undefined, stop.signal)
       try { await request(config, '/worker/discover', {}, 'worker', undefined, stop.signal) }
       catch { if (stop.signal.aborted) break /* 来源失败不会阻塞已有研究领取。 */ }
       const job = await request(config, '/worker/claim', { worker_id: workerId }, 'worker', undefined, stop.signal)
       if (job) await runAttempt(config, job, stop.signal, observer)
       else await delay(500, undefined, { signal: stop.signal }).catch(() => {})
+      } catch {
+        if (stop.signal.aborted) break
+        console.error('研究任务轮询暂时失败，5 秒后重试；已发送执行不会自动重放。')
+        await delay(5_000, undefined, { signal: stop.signal }).catch(() => {})
+      }
     }
   } finally {
     stop.abort(); signal.removeEventListener('abort', stopping); await strategies

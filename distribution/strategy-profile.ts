@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { packageRoot, runProcess, type Instance } from './instance.js'
+import { npmCommand } from '../runtime/npm.mjs'
 async function profileFiles(config: Instance) {
   const directory = join(config.dsh_home, 'profiles', 'huohuo-strategy-worker')
   const files = {
@@ -33,6 +34,7 @@ export async function installStrategyProfile(config: Instance, refresh = false):
   }
   try { await writeFile(join(directory, 'cordis.patch.yml'), '[]\n', { flag: 'wx', mode: 0o600 }) }
   catch (error: any) { if (error.code !== 'EEXIST') throw error }
-  await runProcess('npm', ['install', ...(refresh ? ['@huohuo/research-agent@file:../../../product.tgz'] : []), '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', '--prefer-offline', '--cache', join(config.dsh_home, '../cache/npm')], directory)
+  const npm = npmCommand()
+  await runProcess(npm.command, [...npm.prefix, 'install', ...(refresh ? ['@huohuo/research-agent@file:../../../product.tgz'] : []), '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', '--prefer-offline', '--cache', join(config.dsh_home, '../cache/npm')], directory)
   await access(join(directory, 'node_modules/@huohuo/research-agent/lib/product/strategy-worker.js'))
 }

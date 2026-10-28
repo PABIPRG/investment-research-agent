@@ -30,3 +30,6 @@ manage_mandate 的 definition 现在支持 reminder_time（北京时间每日 HH
 contact_rule 支持条件联系、每日定时交付、定时条件检查、到时直接提醒。数值指标须来自对应行情/技术范围，阈值和 AND/OR 关系向用户解释并确认；未知不当作不满足或已命中。日历未知时等候，不以工作日猜测交易日。条件重试预算默认为零。规则保存产生版本、撤销旧执行资格；不会自行订阅持仓之外的新证券或发送未启用的外部渠道。
 
 首次研究失败或中断时，没有成功基准就不开始后续复核。用户明确要求后用 manage_mandate 的 retry_baseline 重建基准；不自动重复费用。暂停、恢复、修改、结束仍以真实版本和代次为准。
+
+
+兼容旧报价与公司资料委托：quote_snapshot 在可靠交易日历确认的交易时段每15分钟发现变化，company_profile 每6小时检查；日历未知时不猜测交易日。contact_rule 支持用户明确说出的简短语义 claim（默认 notable_change），也支持 quote_snapshot 的 price/change/change_percent 单点阈值；后者数字由本 attempt 的有效来源证据核对。新调用使用 contact_rule；旧 contact_condition 仅由 API 兼容，不混用两套字段。基准失败不会自动追加模型调用；查询后经用户确认使用 retry_baseline。

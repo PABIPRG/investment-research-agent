@@ -50,10 +50,26 @@ _TTL_BY_TOOL = {
     "index_constituents_lookup": 300,
     "style_constituents_lookup": 300,
     "fund_holdings_lookup": 300,
+    # 全市场快照：分钟级
+    "sector_ranking_lookup": 300,
+    "sector_fund_flow_lookup": 300,
+    "market_overview_lookup": 180,
+    "hot_stock_rank_lookup": 300,
+    "limit_pool_lookup": 600,
+    "etf_ranking_lookup": 300,
+    # 业绩与估值：公告与估值序列变化慢
+    "performance_forecast_lookup": 3600,
+    "market_valuation_lookup": 21600,
+    "stock_valuation_lookup": 21600,
+    "research_report_lookup": 21600,
+    "performance_express_lookup": 3600,
+    "ipo_detail_lookup": 86400,
     # 新闻与公告：十几分钟
     "announcement_search": 900,
+    "announcement_document_lookup": 900,
     "event_timeline_lookup": 900,
     "macro_event_search": 900,
+    "market_news_lookup": 300,
     "policy_search": 900,
     "regional_policy_search": 900,
     # 财务、公司资料与产业链：小时到天级
@@ -71,6 +87,11 @@ _TTL_BY_TOOL = {
     "commodity_price_lookup": 3600,
     "inventory_lookup": 3600,
     "official_document_search": 21600,
+    # 海外行情、分钟线与汇率：分钟级
+    "overseas_quote_lookup": 900,
+    "minute_bar_lookup": 300,
+    "forex_rate_lookup": 300,
+    "bond_yield_curve_lookup": 3600,
 }
 
 

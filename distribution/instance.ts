@@ -5,6 +5,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { installStrategyProfile } from './strategy-profile.js'
 import { resolvePython } from '../runtime/python.mjs'
+import { npmCommand } from '../runtime/npm.mjs'
 
 export const packageRoot = fileURLToPath(new URL('../../', import.meta.url))
 export const profileName = 'huohuo-worker'
@@ -82,7 +83,8 @@ async function completeInitialization(root: string, config: Instance, state: Ini
       await runProcess(python.executable, ['-m', 'venv', join(root, 'python')], root)
     }],
     ['python-dependencies', 'Python 依赖', () => runProcess(config.python,
-      ['-m', 'pip', 'install', '--index-url', 'https://pypi.org/simple', '--cache-dir', join(root, 'cache', 'pip'), '-r', join(packageRoot, 'sidecar/requirements.lock')], root)],
+      ['-m', 'pip', 'install', '--index-url', process.env.HUOHUO_PIP_INDEX ?? 'https://pypi.org/simple',
+        '--retries', '10', '--timeout', '60', '--cache-dir', join(root, 'cache', 'pip'), '-r', join(packageRoot, 'sidecar/requirements.lock')], root)],
     ['worker-dependencies', 'worker 依赖', () => installWorker(config)],
   ] as const
   for (const [stage, label, install] of stages.slice(stages.findIndex(([stage]) => stage === startAt))) {
@@ -143,7 +145,8 @@ export async function installWorker(config: Instance, refresh = false): Promise<
     try { await writeFile(join(profile, name), content, { flag: 'wx', mode: 0o600 }) }
     catch (error: any) { if (error.code !== 'EEXIST') throw error }
   }
-  await runProcess('npm', ['install', ...(refresh ? ['@huohuo/research-agent@file:../../../product.tgz'] : []), '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', '--prefer-offline', '--cache', join(config.dsh_home, '../cache/npm')], profile)
+  const npm = npmCommand()
+  await runProcess(npm.command, [...npm.prefix, 'install', ...(refresh ? ['@huohuo/research-agent@file:../../../product.tgz'] : []), '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', '--prefer-offline', '--cache', join(config.dsh_home, '../cache/npm')], profile)
   await access(join(profile, 'node_modules/@huohuo/research-agent/lib/distribution/cli.js'))
   await access(join(profile, 'node_modules/@deepseek-ai/dsh/lib/bin.js'))
   await installStrategyProfile(config, refresh)

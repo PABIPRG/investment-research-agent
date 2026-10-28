@@ -14,7 +14,7 @@ export async function serve(config: Instance, configFile: string, signal?: Abort
   await ensureInstalled(config)
   const controller = new AbortController()
   const child = spawn(config.python, ['-m', 'huohuo.server', '--config', configFile, '--parent-pipe'], {
-    cwd: config.workspace, env: { ...process.env, PYTHONPATH: join(packageRoot, 'sidecar'), PYTHONDONTWRITEBYTECODE: '1' },
+    cwd: config.workspace, env: { ...process.env, PYTHONPATH: join(packageRoot, 'sidecar'), PYTHONDONTWRITEBYTECODE: '1', PYTHONUTF8: '1' },
     stdio: ['pipe', 'pipe', 'inherit'],
   })
   const exit = new Promise<void>(resolveExit => { child.once('exit', () => resolveExit()); child.once('error', () => resolveExit()) })

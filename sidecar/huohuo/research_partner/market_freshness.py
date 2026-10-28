@@ -14,6 +14,8 @@ def fresh_for_contact(document, scope, now, calendar=None):
             parsed = datetime.fromisoformat(stamp)
             return parsed.tzinfo is not None and -60 <= now-parsed.timestamp() <= seconds
         except (ValueError, TypeError): return False
+    if operation=='quote_snapshot':
+        return age(document.get('data_as_of'),900) and age(document.get('observed_at'),900) and data.get('currency')=='CNY' and data.get('price_unit')=='CNY/share'
     if operation == 'market_brief':
         return age(document.get('observed_at'),300) and calendar is not None and validate_brief_basis(raw, scope['period'], calendar, now=at)['status']=='ok'
     if raw.get('complete') is not True or raw.get('stale') is not False or raw.get('cache')=='stale': return False

@@ -6,11 +6,16 @@ from ..execution import digest, Conflict
 from ..research_entities.bounded import collect, validate_financial_document
 from ..contracts import scope as validate_scope
 from ..market.source_transitions import record_source_transition
+from ..research import snapshot
+from .source_adapters import validate_quote_document, validate_profile_document, quote_session
 from .models import EventEnvelope
 from .router import EventRouter
 from .market_sources import MARKET_OPERATIONS, HOOKS, collect_market, content_version, validate_market_document
 
 HOOK = 'financial.summary_changed'
+LEGACY_OPERATIONS={'financial_summary','company_profile','quote_snapshot'}
+HOOKS={**HOOKS,'company_profile':'company.profile_changed','quote_snapshot':'quote.snapshot_changed'}
+DISCOVERY_INTERVAL={'financial_summary':1800,'company_profile':21600,'quote_snapshot':900}
 
 def trigger(scope, policy=None):
     if policy and policy.get('mode', 'condition') != 'condition': return []
@@ -23,15 +28,17 @@ class Sources:
     def accept(self, principal, document):
         sc=document.get('scope',{})
         operation=sc.get('operation')
-        if operation not in {'financial_summary'} | MARKET_OPERATIONS or document.get('status')!='ok':
+        if operation not in LEGACY_OPERATIONS | MARKET_OPERATIONS or document.get('status')!='ok':
             raise Invalid('仅接受已验证且成功的来源文档')
         sc=validate_scope(sc)
         if operation in MARKET_OPERATIONS:validate_market_document(document,sc)
+        elif operation=='company_profile':validate_profile_document(document,sc)
+        elif operation=='quote_snapshot':validate_quote_document(document,sc)
         else:validate_financial_document(document,sc)
         raw=document.get('raw')
         if operation=='financial_summary' and (not isinstance(raw,dict) or raw.get('code')!=sc['entity_id'].split(':')[-1]): raise Invalid('来源主体不匹配')
         if document.get('source_hash')!=digest(raw): raise Invalid('来源内容指纹不匹配')
-        version=content_version(document) if operation in MARKET_OPERATIONS else digest(raw)
+        version=content_version(document) if operation in MARKET_OPERATIONS else digest(document['values']) if operation=='quote_snapshot' else digest(raw)
         key=digest(sc)
         now=datetime.now(timezone.utc)
         with self.store.transaction():
@@ -60,16 +67,22 @@ class Sources:
             for row in candidates:
                 if json.loads(row['contact_policy_json']).get('mode', 'condition') != 'condition': continue
                 sc=json.loads(row['scope_json'])
-                if sc.get('operation') not in {'financial_summary'} | MARKET_OPERATIONS:continue
+                if sc.get('operation') not in LEGACY_OPERATIONS | MARKET_OPERATIONS:continue
                 key=digest(sc);old=db.execute('SELECT checked_at FROM source_checks WHERE principal=? AND scope_key=?',(row['principal_id'],key)).fetchone()
-                interval=60 if sc['operation']=='market_quote' else 300 if sc['operation'] in MARKET_OPERATIONS else 1800
+                interval=DISCOVERY_INTERVAL.get(sc['operation'],60 if sc['operation']=='market_quote' else 300)
+                if sc['operation']=='quote_snapshot':
+                    try:
+                        if not quote_session(now,self.core.service.calendar):continue
+                    except Exception:
+                        db.execute("INSERT INTO source_checks VALUES(?,?,?,'unavailable','交易日历不可用，暂缓报价检查') ON CONFLICT(principal,scope_key) DO UPDATE SET checked_at=excluded.checked_at,status=excluded.status,detail=excluded.detail",(row['principal_id'],key,now))
+                        continue
                 if old and now-old[0]<interval:continue
                 selected=(row['principal_id'],sc,key)
                 db.execute("INSERT INTO source_checks VALUES(?,?,?,'collecting','正在读取来源') ON CONFLICT(principal,scope_key) DO UPDATE SET checked_at=excluded.checked_at,status=excluded.status,detail=excluded.detail",(row['principal_id'],key,now));break
         if selected is None:return {'checked':False}
         principal,sc,key=selected
         try:
-            doc=loader(sc) if loader else collect_market(sc,self.core.market,self.core.service.calendar) if sc['operation'] in MARKET_OPERATIONS else collect(sc)
+            doc=loader(sc) if loader else collect_market(sc,self.core.market,self.core.service.calendar) if sc['operation'] in MARKET_OPERATIONS else snapshot(sc) if sc['operation']=='quote_snapshot' else collect(sc)
             if doc.get('scope') != sc:
                 raise Invalid('来源没有返回本次请求的研究范围')
             if doc.get('status')=='ok':self.accept(principal,doc)

@@ -2,6 +2,45 @@
 export const researchToolCatalog = [
   {
     "availability": "configured",
+    "category": "公告",
+    "description": "公告正文链接：巨潮公告清单与原文链接，可按日期与关键词过滤；不解析 PDF 正文。 返回真实状态、来源、时间及证据编号。",
+    "name": "announcement_document_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmation_id": {
+          "description": "当前对话用户已选择的实体确认回执 ID；不能使用其他会话回执",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "days": {
+          "maximum": 1095,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "keyword": {
+          "description": "公开资料检索关键词",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "confirmation_id"
+      ],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "公告正文链接"
+  },
+  {
+    "availability": "configured",
     "category": "披露",
     "description": "公告检索：按公司代码/名称在最近 N 天公告列表中检索；不抓取公告正文。 返回真实状态、来源、时间及证据编号。",
     "name": "announcement_search",
@@ -127,6 +166,31 @@ export const researchToolCatalog = [
     },
     "requires_authorization": false,
     "title": "转债条款"
+  },
+  {
+    "availability": "configured",
+    "category": "债券",
+    "description": "债券收益率曲线：国债、国开债与中短期票据收益率曲线，按曲线名称与期限返回；引用必须写明曲线。 返回真实状态、来源、时间及证据编号。",
+    "name": "bond_yield_curve_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "days": {
+          "maximum": 1095,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "债券收益率曲线"
   },
   {
     "availability": "configured",
@@ -358,6 +422,41 @@ export const researchToolCatalog = [
     "title": "龙虎榜"
   },
   {
+    "availability": "configured",
+    "category": "基金",
+    "description": "ETF 排行：场内 ETF 实时行情排行，可按涨幅、跌幅、成交额与成交量排序或按名称过滤。 返回真实状态、来源、时间及证据编号。",
+    "name": "etf_ranking_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "etf_sort": {
+          "enum": [
+            "涨幅",
+            "跌幅",
+            "成交额",
+            "成交量"
+          ],
+          "type": "string"
+        },
+        "keyword": {
+          "description": "公开资料检索关键词",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "ETF 排行"
+  },
+  {
     "availability": "external_service",
     "category": "事件",
     "description": "事件监控设置：写入监控规则必须由用户明确授权；服务未启动时不写入。 返回真实状态、来源、时间及证据编号。当前独立实例未接通此项授权流程，调用只返回 needs_authorization，不会执行。",
@@ -431,6 +530,32 @@ export const researchToolCatalog = [
     },
     "requires_authorization": false,
     "title": "财务数据"
+  },
+  {
+    "availability": "configured",
+    "category": "宏观",
+    "description": "人民币汇率：外汇即期快照（含人民币货币对），可按名称过滤；不是银行牌价或远期汇率。 返回真实状态、来源、时间及证据编号。",
+    "name": "forex_rate_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "keyword": {
+          "description": "公开资料检索关键词",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "人民币汇率"
   },
   {
     "availability": "configured",
@@ -536,6 +661,33 @@ export const researchToolCatalog = [
     },
     "requires_authorization": false,
     "title": "基金表现"
+  },
+  {
+    "availability": "configured",
+    "category": "行情",
+    "description": "个股人气榜：东方财富人气榜/飙升榜，反映股吧关注度，不代表资金或基本面。 返回真实状态、来源、时间及证据编号。",
+    "name": "hot_stock_rank_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "rank_type": {
+          "enum": [
+            "人气榜",
+            "飙升榜"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "个股人气榜"
   },
   {
     "availability": "configured",
@@ -811,6 +963,68 @@ export const researchToolCatalog = [
   },
   {
     "availability": "configured",
+    "category": "新股",
+    "description": "IPO 发行信息：单只新股的发行日期、发行价、发行市盈率、募资净额与主承销商。 返回真实状态、来源、时间及证据编号。",
+    "name": "ipo_detail_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmation_id": {
+          "description": "当前对话用户已选择的实体确认回执 ID；不能使用其他会话回执",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "confirmation_id"
+      ],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "IPO 发行信息"
+  },
+  {
+    "availability": "configured",
+    "category": "行情",
+    "description": "涨停板股池：涨停、跌停、强势与炸板股池，含连板数、封板资金与所属行业；自动回溯最近交易日。 返回真实状态、来源、时间及证据编号。",
+    "name": "limit_pool_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "days": {
+          "maximum": 1095,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "pool_type": {
+          "enum": [
+            "涨停",
+            "跌停",
+            "强势",
+            "炸板"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "涨停板股池"
+  },
+  {
+    "availability": "configured",
     "category": "宏观",
     "description": "宏观事件检索：基于新闻关键词检索宏观事件，不是结构化事件库。 返回真实状态、来源、时间及证据编号。",
     "name": "macro_event_search",
@@ -900,6 +1114,123 @@ export const researchToolCatalog = [
   },
   {
     "availability": "configured",
+    "category": "事件",
+    "description": "市场快讯：东方财富全球财经快讯与财联社电报，可按关键词过滤；快讯是未核实线索。 返回真实状态、来源、时间及证据编号。",
+    "name": "market_news_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "keyword": {
+          "description": "公开资料检索关键词",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "news_source": {
+          "enum": [
+            "全部",
+            "财联社",
+            "东方财富"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "市场快讯"
+  },
+  {
+    "availability": "configured",
+    "category": "行情",
+    "description": "市场概览：主要宽基指数快照与全市场涨跌家数、涨停跌停等情绪指标；部分来源失败时明确告警。 返回真实状态、来源、时间及证据编号。",
+    "name": "market_overview_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {},
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "市场概览"
+  },
+  {
+    "availability": "configured",
+    "category": "估值",
+    "description": "市场估值：全 A 或主要宽基指数的市盈率水平与历史分位，用于判断整体估值位置。 返回真实状态、来源、时间及证据编号。",
+    "name": "market_valuation_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "index_name": {
+          "enum": [
+            "全A",
+            "沪深300",
+            "上证50",
+            "中证500",
+            "中证1000",
+            "中证800"
+          ],
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "市场估值"
+  },
+  {
+    "availability": "configured",
+    "category": "行情",
+    "description": "分钟线：A 股 1/5/15/30/60 分钟线，覆盖最近几个交易日，未复权。 返回真实状态、来源、时间及证据编号。",
+    "name": "minute_bar_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmation_id": {
+          "description": "当前对话用户已选择的实体确认回执 ID；不能使用其他会话回执",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "minute_period": {
+          "enum": [
+            "1",
+            "5",
+            "15",
+            "30",
+            "60"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "confirmation_id"
+      ],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "分钟线"
+  },
+  {
+    "availability": "configured",
     "category": "政策",
     "description": "官方文件检索：中国政府网政策文件库检索（国务院/部门文件），返回标题、文号、发布机构与原文链接。 返回真实状态、来源、时间及证据编号。",
     "name": "official_document_search",
@@ -947,6 +1278,44 @@ export const researchToolCatalog = [
   },
   {
     "availability": "configured",
+    "category": "行情",
+    "description": "港美股行情：港股与美股的历史日线行情与区间摘要，当地货币计价。 返回真实状态、来源、时间及证据编号。",
+    "name": "overseas_quote_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "description": "公开数据源代码；查询候选用，不表示已确认对象",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "days": {
+          "maximum": 1095,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "market": {
+          "enum": [
+            "港股",
+            "美股"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "港美股行情"
+  },
+  {
+    "availability": "configured",
     "category": "基准",
     "description": "可比公司构建：按本地行业归属与市值构建可比组，未做业务相似度核验。 返回真实状态、来源、时间及证据编号。",
     "name": "peer_group_builder",
@@ -972,6 +1341,83 @@ export const researchToolCatalog = [
     },
     "requires_authorization": false,
     "title": "可比公司构建"
+  },
+  {
+    "availability": "configured",
+    "category": "业绩",
+    "description": "业绩快报：按报告期列示 A 股业绩快报的营收、净利润与同比，可按名称或行业检索；是初步核算数。 返回真实状态、来源、时间及证据编号。",
+    "name": "performance_express_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "keyword": {
+          "description": "公开资料检索关键词",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "report_period": {
+          "description": "报告期，形如 20260930",
+          "pattern": "^20\\d{2}(0331|0630|0930|1231)$",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "业绩快报"
+  },
+  {
+    "availability": "configured",
+    "category": "业绩",
+    "description": "业绩预告：按报告期列示 A 股业绩预告，含预告类型、变动幅度与原因；可按类型排序或按名称检索。 返回真实状态、来源、时间及证据编号。",
+    "name": "performance_forecast_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "forecast_type": {
+          "enum": [
+            "全部",
+            "预增",
+            "预减",
+            "扭亏",
+            "首亏",
+            "续盈",
+            "续亏",
+            "略增",
+            "略减",
+            "不确定"
+          ],
+          "type": "string"
+        },
+        "keyword": {
+          "description": "公开资料检索关键词",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "report_period": {
+          "description": "报告期，形如 20260930",
+          "pattern": "^20\\d{2}(0331|0630|0930|1231)$",
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "业绩预告"
   },
   {
     "availability": "configured",
@@ -1117,6 +1563,34 @@ export const researchToolCatalog = [
   },
   {
     "availability": "configured",
+    "category": "研究",
+    "description": "研报与一致预期：个股卖方研报清单、东财评级、机构与年度盈利预测（一致预期线索）；评级是卖方观点，不是事实。 返回真实状态、来源、时间及证据编号。",
+    "name": "research_report_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmation_id": {
+          "description": "当前对话用户已选择的实体确认回执 ID；不能使用其他会话回执",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "confirmation_id"
+      ],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "研报与一致预期"
+  },
+  {
+    "availability": "configured",
     "category": "公司",
     "description": "限售解禁：查询个股在给定窗口内的限售解禁记录；计划可能随公告调整。 返回真实状态、来源、时间及证据编号。",
     "name": "restricted_release_lookup",
@@ -1155,6 +1629,79 @@ export const researchToolCatalog = [
     },
     "requires_authorization": false,
     "title": "限售解禁"
+  },
+  {
+    "availability": "configured",
+    "category": "资金",
+    "description": "板块资金流排行：行业/概念/地域板块主力净流入排行，支持今日、5日、10日周期。 返回真实状态、来源、时间及证据编号。",
+    "name": "sector_fund_flow_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "flow_type": {
+          "enum": [
+            "行业资金流",
+            "概念资金流",
+            "地域资金流"
+          ],
+          "type": "string"
+        },
+        "indicator": {
+          "enum": [
+            "今日",
+            "5日",
+            "10日"
+          ],
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "板块资金流排行"
+  },
+  {
+    "availability": "configured",
+    "category": "行业",
+    "description": "板块排行：同花顺行业与概念板块当日涨幅、净流入、上涨家数与成交额排行，可按涨幅、跌幅等排序；不绑定具体板块实体。 返回真实状态、来源、时间及证据编号。",
+    "name": "sector_ranking_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "sector_sort": {
+          "enum": [
+            "涨幅",
+            "跌幅",
+            "净流入",
+            "上涨家数",
+            "成交额"
+          ],
+          "type": "string"
+        },
+        "sector_type": {
+          "enum": [
+            "行业",
+            "概念"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "板块排行"
   },
   {
     "availability": "configured",
@@ -1210,6 +1757,54 @@ export const researchToolCatalog = [
     },
     "requires_authorization": false,
     "title": "股东户数"
+  },
+  {
+    "availability": "configured",
+    "category": "估值",
+    "description": "个股估值：单只 A 股的市值、市盈率、市净率、市现率时间序列与所选区间分位。 返回真实状态、来源、时间及证据编号。",
+    "name": "stock_valuation_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmation_id": {
+          "description": "当前对话用户已选择的实体确认回执 ID；不能使用其他会话回执",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "limit": {
+          "maximum": 1000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "valuation_indicator": {
+          "enum": [
+            "总市值",
+            "市盈率(TTM)",
+            "市盈率(静)",
+            "市净率",
+            "市现率"
+          ],
+          "type": "string"
+        },
+        "valuation_period": {
+          "enum": [
+            "近一年",
+            "近三年",
+            "近五年",
+            "近十年",
+            "全部"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "confirmation_id"
+      ],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "个股估值"
   },
   {
     "availability": "configured",

@@ -96,9 +96,15 @@ def bound_metrics(db, attempt_id, result, scope):
         if not row:
             continue
         doc = json.loads(row[0])
-        validate_market_document(doc, scope)
+        if scope['operation']=='quote_snapshot':
+            from .source_adapters import validate_quote_document
+            validate_quote_document(doc,scope)
+        else:validate_market_document(doc, scope)
         values = doc['values']
-        if scope['operation'] == 'market_quote':
+        if scope['operation']=='quote_snapshot':
+            stamp=doc.get('data_as_of')
+            values={k:float(values[k]) for k in ('price','change','change_percent')}
+        elif scope['operation'] == 'market_quote':
             values = values['items'][0]
             stamp = values.get('as_of')
         elif scope['operation'] == 'market_technical':
@@ -110,7 +116,7 @@ def bound_metrics(db, attempt_id, result, scope):
             continue
         try:
             when = datetime.fromisoformat(stamp)
-            if scope['operation']=='market_quote' and when.tzinfo is None:continue
+            if scope['operation'] in {'quote_snapshot','market_quote'} and when.tzinfo is None:continue
             candidates.append((when.timestamp() if when.tzinfo else when.toordinal(),ref,values))
         except (ValueError, TypeError):continue
     if not candidates:return output
@@ -120,6 +126,6 @@ def bound_metrics(db, attempt_id, result, scope):
     for metric, (_, unit) in METRICS.items():
         numbers = [values.get(metric) for _,values in selected]
         if all(type(v) in (int,float) and math.isfinite(v) for v in numbers) and len(set(numbers))==1:
-            output[metric] = {'value':numbers[0], 'unit':unit, 'method_version':'market_v1',
+            output[metric] = {'value':numbers[0], 'unit':unit, 'method_version':'quote_snapshot_v1' if scope['operation']=='quote_snapshot' else 'market_v1',
                               'evidence_refs':sorted({ref for ref,_ in selected})}
     return output

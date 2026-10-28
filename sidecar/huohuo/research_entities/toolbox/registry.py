@@ -11,7 +11,7 @@ from typing import Callable
 
 from ..registry.tools import TOOL_REGISTRY
 from .contracts import ToolCall
-from .handlers import bond, equity, evolution, fund_index, local, macro, service
+from .handlers import bond, coverage, equity, evolution, fund_index, local, macro, market, service, valuation
 
 Handler = Callable[[ToolCall], object]
 
@@ -54,6 +54,27 @@ HANDLERS: dict[str, Handler] = {
     "style_constituents_lookup": fund_index.style_constituents_lookup,
     "industry_performance_lookup": fund_index.industry_performance_lookup,
     "theme_constituents_lookup": fund_index.theme_constituents_lookup,
+    # 全市场 / 板块 / 市场情绪
+    "sector_ranking_lookup": market.sector_ranking_lookup,
+    "sector_fund_flow_lookup": market.sector_fund_flow_lookup,
+    "market_overview_lookup": market.market_overview_lookup,
+    "hot_stock_rank_lookup": market.hot_stock_rank_lookup,
+    "limit_pool_lookup": market.limit_pool_lookup,
+    "market_news_lookup": market.market_news_lookup,
+    "etf_ranking_lookup": market.etf_ranking_lookup,
+    # 业绩与估值
+    "performance_forecast_lookup": valuation.performance_forecast_lookup,
+    "market_valuation_lookup": valuation.market_valuation_lookup,
+    "stock_valuation_lookup": valuation.stock_valuation_lookup,
+    # 卖方观点 / 公告 / 海外 / 衍生品
+    "research_report_lookup": coverage.research_report_lookup,
+    "announcement_document_lookup": coverage.announcement_document_lookup,
+    "performance_express_lookup": coverage.performance_express_lookup,
+    "overseas_quote_lookup": coverage.overseas_quote_lookup,
+    "forex_rate_lookup": coverage.forex_rate_lookup,
+    "minute_bar_lookup": coverage.minute_bar_lookup,
+    "bond_yield_curve_lookup": coverage.bond_yield_curve_lookup,
+    "ipo_detail_lookup": coverage.ipo_detail_lookup,
     # 可转债
     "convertible_bond_lookup": bond.convertible_bond_lookup,
     "bond_terms_lookup": bond.bond_terms_lookup,

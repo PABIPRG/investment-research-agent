@@ -270,7 +270,7 @@ class ToolContext:
             raise ToolUnavailable(f"{label} 调用超时（>{timeout:.0f}s）")
         error = box.get("error")
         if error is not None:
-            raise ToolUnavailable(f"{label} 调用失败：{type(error).__name__}: {error}")
+            raise ToolUnavailable(f"{label} 调用失败：{type(error).__name__}")
         return box.get("value")
 
     def _session(self) -> Any:

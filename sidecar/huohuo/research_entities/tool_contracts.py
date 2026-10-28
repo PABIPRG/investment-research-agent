@@ -43,6 +43,23 @@ FIELDS = {
     'depth_down': {'type': 'integer', 'minimum': 0, 'maximum': 3},
     'top_up': {'type': 'integer', 'minimum': 1, 'maximum': 20},
     'top_down': {'type': 'integer', 'minimum': 1, 'maximum': 20},
+    'sector_type': {'type': 'string', 'enum': ['行业', '概念']},
+    'sector_sort': {'type': 'string', 'enum': ['涨幅', '跌幅', '净流入', '上涨家数', '成交额']},
+    'flow_type': {'type': 'string', 'enum': ['行业资金流', '概念资金流', '地域资金流']},
+    'indicator': {'type': 'string', 'enum': ['今日', '5日', '10日']},
+    'rank_type': {'type': 'string', 'enum': ['人气榜', '飙升榜']},
+    'pool_type': {'type': 'string', 'enum': ['涨停', '跌停', '强势', '炸板']},
+    'news_source': {'type': 'string', 'enum': ['全部', '财联社', '东方财富']},
+    'etf_sort': {'type': 'string', 'enum': ['涨幅', '跌幅', '成交额', '成交量']},
+    'report_period': {'type': 'string', 'pattern': '^20\\d{2}(0331|0630|0930|1231)$',
+                      'description': '报告期，形如 20260930'},
+    'forecast_type': {'type': 'string',
+                      'enum': ['全部', '预增', '预减', '扭亏', '首亏', '续盈', '续亏', '略增', '略减', '不确定']},
+    'index_name': {'type': 'string', 'enum': ['全A', '沪深300', '上证50', '中证500', '中证1000', '中证800']},
+    'valuation_indicator': {'type': 'string', 'enum': ['总市值', '市盈率(TTM)', '市盈率(静)', '市净率', '市现率']},
+    'valuation_period': {'type': 'string', 'enum': ['近一年', '近三年', '近五年', '近十年', '全部']},
+    'market': {'type': 'string', 'enum': ['港股', '美股']},
+    'minute_period': {'type': 'string', 'enum': ['1', '5', '15', '30', '60']},
 }
 WINDOW = 'start_date end_date days limit'
 # 对象工具不开放 code/name 覆盖：实体由本会话确认回执绑定。
@@ -66,12 +83,35 @@ PARAMS = {
     'commodity_price_lookup': WINDOW, 'supply_demand_lookup': '', 'inventory_lookup': 'limit',
     'policy_search': 'keyword days limit', 'official_document_search': 'keyword doc_type page limit sort',
     'regional_policy_search': 'keyword days limit',
+    'sector_ranking_lookup': 'sector_type sector_sort limit',
+    'sector_fund_flow_lookup': 'flow_type indicator limit',
+    'market_overview_lookup': '',
+    'hot_stock_rank_lookup': 'rank_type limit',
+    'limit_pool_lookup': 'pool_type days limit',
+    'market_news_lookup': 'keyword news_source limit',
+    'etf_ranking_lookup': 'keyword etf_sort limit',
+    'performance_forecast_lookup': 'report_period forecast_type keyword limit',
+    'market_valuation_lookup': 'index_name limit',
+    'stock_valuation_lookup': 'valuation_indicator valuation_period limit',
+    'research_report_lookup': 'limit',
+    'announcement_document_lookup': 'days keyword limit',
+    'performance_express_lookup': 'report_period keyword limit',
+    'overseas_quote_lookup': 'market code days limit',
+    'forex_rate_lookup': 'keyword limit',
+    'minute_bar_lookup': 'minute_period limit',
+    'bond_yield_curve_lookup': 'days limit',
+    'ipo_detail_lookup': 'limit',
     'strategy_pool_lookup': 'strategy_id', 'strategy_attribution_lookup': 'strategy_id', 'strategy_evolution_preview': 'strategy_id',
 }
 DISCOVERY = {'security_lookup', 'fund_lookup', 'index_lookup', 'convertible_bond_lookup'}
 GLOBAL = {'macro_event_search', 'policy_search', 'official_document_search', 'regional_policy_search',
           'portfolio_lookup', 'portfolio_risk_analysis', 'watchlist_lookup', 'event_monitor_setup',
-          'strategy_pool_lookup', 'strategy_attribution_lookup', 'strategy_evolution_preview'}
+          'strategy_pool_lookup', 'strategy_attribution_lookup', 'strategy_evolution_preview',
+          'sector_ranking_lookup', 'sector_fund_flow_lookup', 'market_overview_lookup',
+          'hot_stock_rank_lookup', 'limit_pool_lookup', 'market_news_lookup', 'etf_ranking_lookup',
+          'performance_forecast_lookup', 'market_valuation_lookup',
+          'performance_express_lookup',
+          'overseas_quote_lookup', 'forex_rate_lookup', 'bond_yield_curve_lookup'}
 
 def catalog():
     if set(PARAMS) != set(TOOL_REGISTRY):

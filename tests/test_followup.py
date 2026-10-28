@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from huohuo.execution import Repository, Conflict
 from huohuo.mandates import Mandates
 from huohuo.research_entities.bounded import collect
@@ -14,18 +15,21 @@ from huohuo.research_partner.models import EventEnvelope
 
 SCOPE={'entity_id':'SEC:CN:A:600519','exchange':'SSE','operation':'financial_summary','period':'20260630','metric':'营业总收入','basis':'source_abstract'}
 QUOTE_SCOPE={'entity_id':'SEC:CN:A:600519','exchange':'SSE','operation':'quote_snapshot'}
+PROFILE_SCOPE={'entity_id':'SEC:CN:A:600519','exchange':'SSE','operation':'company_profile'}
 class FollowupTests(unittest.TestCase):
     def setUp(self):
         self.scope=SCOPE
         self.tmp=tempfile.TemporaryDirectory();self.repo=Repository(Path(self.tmp.name)/'business.sqlite');self.core=Mandates(self.repo,'test')
         self.core.entities.directory=lambda:{'status':'ok','rows':[{'code':'600519','name':'贵州茅台'}],'source':{'provider':'fixture'}}
     def tearDown(self):self.core.store.close();self.tmp.cleanup()
-    def create(self,principal='alice',key='create-first'):
+    def create(self,principal='alice',key='create-first',**extra):
         r=self.core.entities.resolve(principal,'test','600519');c=self.core.entities.confirm(principal,'test',r['snapshot_id'],r['version'],{r['mentions'][0]['mention_id']:SCOPE['entity_id']},'fixture')
-        return self.core.create(principal,{'session_id':'test','confirmation_id':c['confirmations'][0]['confirmation_id'],'request_key':key,'goal':'合成验收：跟进已确认范围变化','scope':self.scope,'contact_note':'仅应用内'})
+        return self.core.create(principal,{'session_id':'test','confirmation_id':c['confirmations'][0]['confirmation_id'],'request_key':key,'goal':'合成验收：跟进已确认范围变化','scope':self.scope,'contact_note':'仅应用内',**extra})
     def document(self,value=100):
         if self.scope['operation']=='quote_snapshot':
-            return snapshot(self.scope,lambda _: ({'data':{'diff':[{'f12':'600519','f2':value,'f18':99,'f124':1792713600}]}},'https://example.invalid/quote'))
+            return snapshot(self.scope,lambda _: ({'data':{'diff':[{'f12':'600519','f2':value,'f18':99,'f124':int(self.repo.clock())}]}},'https://example.invalid/quote'))
+        if self.scope['operation']=='company_profile':
+            return collect(PROFILE_SCOPE,lambda _: {'code':'600519','records':[{'公司名称':'贵州茅台','主营业务':'白酒'}]})
         return collect(SCOPE,lambda _: {'code':'600519','records':[{'指标':'营业总收入','20260630':value}]})
     def result(self,verdict=None,fail=False):
         job=self.repo.claim('test-worker');self.assertIsNotNone(job)
@@ -37,6 +41,23 @@ class FollowupTests(unittest.TestCase):
         self.core.tick()
     def enable(self):return self.core.notifications.save('alice',{'expected_revision':0,'enabled':True,'channels':['app'],'timezone':'Asia/Shanghai','quiet_hours':None})
     def jobs(self):return self.core.store._connect().execute('SELECT * FROM research_jobs').fetchall()
+    def test_failed_baseline_blocks_reviews_until_explicit_retry(self):
+        self.core.sources.accept('alice',self.document(101));m=self.create();self.core.tick()
+        self.result(fail=True)
+        reviews=[r for r in self.jobs() if r['action']=='event_review']
+        self.assertTrue(reviews and all(r['status']=='pending' for r in reviews))
+        # 失败后没有派发任何执行：事件复核必须等基准成功。
+        self.assertIsNone(self.repo.claim('probe'))
+        current=self.core.get('alice',m['mandate']['mandate_id'])
+        self.core.command('alice',m['mandate']['mandate_id'],'retry_baseline',{'request_key':'confirmed-retry','expected_revision':current['mandate']['current_revision'],'expected_generation':current['generation']})
+        self.core.tick()
+        retry=self.repo.claim('probe');self.assertIsNotNone(retry);self.assertIn('baseline_review',retry['question'])
+        self.assertIsNone(self.repo.claim('probe-2'))
+        ev=self.repo.save_evidence(retry['attempt_id'],retry['lease_token'],self.document())
+        self.repo.finish(retry['attempt_id'],retry['lease_token'],{'status':'succeeded','execution_id':retry['execution_id'],'scope':self.scope,'summary':'基准重试成功','evidence_ids':[ev['evidence_id']]})
+        self.core.tick()
+        self.assertEqual(self.core.get('alice',m['mandate']['mandate_id'])['baseline']['summary'],'基准重试成功')
+
     def test_source_duplicate_correction_and_principal_isolation(self):
         self.create();self.create('bob');self.core.tick()
         first=self.core.sources.accept('alice',self.document());self.assertEqual(first,self.core.sources.accept('alice',self.document()))
@@ -129,6 +150,58 @@ class FollowupTests(unittest.TestCase):
         reminders=[r for r in self.jobs() if r['action']=='due_reminder'];self.assertEqual(len(reminders),1);self.assertEqual(reminders[0]['status'],'completed')
         self.assertTrue(any(d['reason_code']=='due_reminder' for d in view['decisions']))
         self.assertTrue(any(r['structured_result'].get('kind')=='explicit_due_reminder' for r in view['results']))
+    def test_company_profile_discovery_emits_versioned_event(self):
+        self.scope=PROFILE_SCOPE
+        view=self.create();mid=view['mandate']['mandate_id']
+        self.assertTrue(self.core.get('alice',mid)['monitoring']['enabled'])
+        document=collect(PROFILE_SCOPE,lambda _: {'code':'600519','records':[{'公司名称':'贵州茅台','主营业务':'白酒'}]})
+        result=self.core.sources.discover(lambda _: document)
+        self.assertEqual(result['status'],'ok')
+        db=self.core.store._connect()
+        self.assertEqual(db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0],1)
+        self.assertEqual(db.execute('SELECT hook_type FROM domain_events').fetchone()[0],'company.profile_changed')
+        self.core.tick();self.result()
+        changed=collect(PROFILE_SCOPE,lambda _: {'code':'600519','records':[{'公司名称':'贵州茅台','主营业务':'白酒、金融'}]})
+        with self.core.store.transaction():self.core.store._connect().execute('UPDATE source_checks SET checked_at=checked_at-21700')
+        self.assertEqual(self.core.sources.discover(lambda _: changed)['status'],'ok')
+        self.core.tick()
+        self.assertTrue(any(r['action']=='event_review' for r in self.jobs()))
+    def test_quote_discovery_emits_versioned_event_only_when_price_changes(self):
+        self.scope=QUOTE_SCOPE
+        self.core.repo.clock=lambda: datetime(2026,10,26,10,0,tzinfo=ZoneInfo('Asia/Shanghai')).timestamp()
+        from types import SimpleNamespace
+        self.core.service.calendar=SimpleNamespace(is_trading_day=lambda day:True)
+        view=self.create(key='quote-discovery')
+        self.assertTrue(view['monitoring']['enabled'])
+        self.assertEqual(self.core.sources.discover(lambda _: self.document(100))['status'],'ok')
+        db=self.core.store._connect()
+        self.assertEqual(db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0],1)
+        self.assertEqual(db.execute('SELECT hook_type FROM domain_events').fetchone()[0],'quote.snapshot_changed')
+        with self.core.store.transaction():db.execute('UPDATE source_checks SET checked_at=checked_at-901')
+        self.assertEqual(self.core.sources.discover(lambda _: self.document(100))['status'],'ok')
+        self.assertEqual(db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0],1)
+        with self.core.store.transaction():db.execute('UPDATE source_checks SET checked_at=checked_at-901')
+        self.assertEqual(self.core.sources.discover(lambda _: self.document(97))['status'],'ok')
+        self.assertEqual(db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0],2)
+    def test_quote_discovery_skips_outside_trading_session(self):
+        self.scope=QUOTE_SCOPE
+        self.core.repo.clock=lambda: datetime(2026,10,26,12,0,tzinfo=ZoneInfo('Asia/Shanghai')).timestamp()
+        self.create(key='quote-lunch')
+        self.assertFalse(self.core.sources.discover(lambda _: self.document(100)).get('checked'))
+        self.assertEqual(self.core.store._connect().execute('SELECT COUNT(*) FROM source_versions').fetchone()[0],0)
+    def test_numeric_quote_condition_uses_program_metrics(self):
+        self.scope=QUOTE_SCOPE
+        view=self.create(key='quote-numeric',contact_condition={'type':'numeric','metric':'price','operator':'<=','threshold':98})
+        mid=view['mandate']['mandate_id']
+        self.core.tick();self.result()
+        self.core.sources.accept('alice',self.document(95));self.core.tick();self.core.tick()
+        job=self.repo.claim('test-worker');self.assertIsNotNone(job)
+        ev=self.repo.save_evidence(job['attempt_id'],job['lease_token'],self.document(95))
+        # 模型结果不含任何数字；判定只使用程序从来源快照读到的价格。
+        self.repo.finish(job['attempt_id'],job['lease_token'],{'status':'succeeded','execution_id':job['execution_id'],'scope':self.scope,'summary':'报价复核','evidence_ids':[ev['evidence_id']]})
+        self.core.tick()
+        decisions=self.core.get('alice',mid)['decisions']
+        self.assertTrue(any(d['condition_result']=='met' for d in decisions))
     def test_failed_source_no_success_event(self):
         self.create();self.core.sources.discover(lambda _: {'status':'unavailable','reason':'period_not_covered','scope':SCOPE})
         self.assertEqual(self.core.store._connect().execute('SELECT count(*) FROM source_versions').fetchone()[0],0)
