@@ -20,6 +20,10 @@ from .mandates import Mandates
 from .investment.service import Investment
 from .investment.collections import CollectionProvider
 from .research_entities.tool_bridge import ResearchToolBridge
+from .strategies.service import Strategies
+from .strategies.http import handle as strategy_http
+from .runtime_services import install as install_runtime, handle as runtime_http
+from .research_partner.market_sources import collect_market, MARKET_OPERATIONS
 from pydantic import ValidationError
 from .research_partner.errors import Conflict as CoreConflict, InvalidRequest, NotFound, Unauthorized
 
@@ -37,12 +41,24 @@ class Service(ThreadingHTTPServer):
         if config.get("host") != "127.0.0.1":
             raise Invalid("only loopback instances are supported")
         self.config = config
-        self.repo = Repository(Path(config["database"]))
-        self.mandates = Mandates(self.repo, config.get("instance_id", config["principal"]))
-        self.investment = Investment(self.mandates.store)
-        self.research_tools = ResearchToolBridge(self.repo, self.mandates.entities)
-        self.researcher = researcher
+        # 先取得本实例端口；重复启动不得迁移数据库或中断现有任务。
         super().__init__((config["host"], config["port"]), Handler)
+        try:
+            self.repo = Repository(Path(config["database"]))
+            self.mandates = Mandates(self.repo, config.get("instance_id", config["principal"]))
+            self.repo.recover(abandoned=True)
+            self.investment = Investment(self.mandates.store)
+            self.strategies = Strategies(self.mandates.store)
+            self.research_tools = ResearchToolBridge(self.repo, self.mandates.entities, strategies=self.strategies)
+            self.researcher = researcher
+            self.strategies.recovery()
+            install_runtime(self)
+        except BaseException:
+            self.server_close()
+            if getattr(self, "mandates", None) is not None:
+                self.mandates.store.close()
+            raise
+
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -55,6 +71,13 @@ class Handler(BaseHTTPRequestHandler):
     def setup(self):
         super().setup()
         self.connection.settimeout(15)
+
+    def finish(self):
+        try:
+            super().finish()
+        finally:
+            # ThreadingHTTPServer 的请求线程结束后不会复用；不能一直保留其 SQLite 连接。
+            self.server.mandates.store.close_current_connection()
 
     def do_GET(self):
         self.handle_request()
@@ -83,14 +106,14 @@ class Handler(BaseHTTPRequestHandler):
         if not secrets.compare_digest(self.headers.get("Authorization", ""), expected):
             raise PermissionError("invalid credentials")
 
-    def body(self):
+    def body(self, max_size=100_000):
         if self.headers.get("Transfer-Encoding"):
             raise Invalid("transfer encoding not supported")
         try:
             size = int(self.headers.get("Content-Length", "0"))
         except ValueError:
             raise Invalid("invalid content length") from None
-        if size < 2 or size > 100_000:
+        if size < 2 or size > max_size:
             raise Invalid("body size outside bounds")
         if self.headers.get_content_type() != "application/json":
             raise Invalid("expected application/json")
@@ -109,10 +132,15 @@ class Handler(BaseHTTPRequestHandler):
                 raise Invalid("invalid request path")
             parts = parsed.path.strip("/").split("/")
             config, repo = self.server.config, self.server.repo
-            if parts[0] == "investment":
+            if runtime_http(self, parts): return
+            if parts[0] == "strategies":
+                self.authorized("user")
+                return strategy_http(self, parts)
+            elif parts[0] == "investment":
                 self.authorized("user")
                 inv, principal = self.server.investment, config["principal"]
                 if self.command == "GET" and parts == ["investment"]: return self.reply(200, inv.read(principal))
+                if self.command == "GET" and len(parts)==3 and parts[1]=="previews": return self.reply(200,inv.inspect_preview(principal,parts[2]))
                 if self.command == "POST":
                     body=self.body()
                     if parts == ["investment","bind-collection"]: return self.reply(200,self.server.mandates.investment_binding.bind(principal,body))
@@ -191,9 +219,18 @@ class Handler(BaseHTTPRequestHandler):
                     body = self.body()
                     if parts == ["worker", "discover"]:
                         fields(body, ())
-                        return self.reply(200,self.server.mandates.sources.discover())
+                        try:
+                            self.server.calendar.refresh()
+                            calendar_state = 'available'
+                        except Exception:
+                            calendar_state = 'unavailable'
+                        return self.reply(200,dict(self.server.mandates.sources.discover(), calendar=calendar_state))
                     if parts == ["worker", "claim"]:
-                        fields(body, ("worker_id",))
+                        fields(body, ("worker_id","lane") if 'lane' in body else ("worker_id",))
+                        lane=body.get('lane','research')
+                        if lane == 'strategy':
+                            return self.reply(200,self.server.strategies.tasks.claim(config['principal'],body['worker_id']))
+                        if lane != 'research': raise Invalid('未知执行资源类型')
                         self.server.mandates.tick()
                         job=repo.claim(body["worker_id"])
                         if job:
@@ -205,8 +242,23 @@ class Handler(BaseHTTPRequestHandler):
                         return self.reply(200, {"interrupted": repo.recover()})
                     if len(parts) == 4 and parts[1] == "attempts":
                         attempt, token = parts[2], self.headers.get("X-Attempt-Token", "")
+                        if parts[3] in ('strategy-run','strategy-result'):
+                            with repo.connection() as db:
+                                _,stored=repo._attempt(db,attempt,token)
+                                if stored['principal']!=config['principal']: raise PermissionError('wrong owner')
+                                row=repo._view(stored)
+                            if row['scope'].get('kind')!='strategy': raise Invalid('不是策略执行')
+                            jid=row['scope']['job_id']; strategies=self.server.strategies
+                            if parts[3]=='strategy-run':
+                                fields(body,())
+                                from .strategies.background import run
+                                return self.reply(200,run(strategies,config['principal'],jid,token))
+                            return self.reply(200,strategies.planner_finish(config['principal'],jid,token,body))
                         if parts[3] == "heartbeat":
                             fields(body, ())
+                            row=repo.active(attempt,token)
+                            if row['scope'].get('kind')=='strategy':
+                                return self.reply(200,self.server.strategies.tasks.heartbeat(config['principal'],row['scope']['job_id'],token))
                             return self.reply(200, repo.heartbeat(attempt, token))
                         if parts[3] == "runtime":
                             return self.reply(200, repo.runtime_receipt(attempt, token, body))
@@ -219,7 +271,9 @@ class Handler(BaseHTTPRequestHandler):
                 job = repo.active(parts[1], token)
                 fields(self.body(), ())
                 document = self.server.mandates.bound_source(job["execution_id"])
-                if document is None: document = self.server.researcher(job["scope"]) if job["scope"]["operation"] == "quote_snapshot" else collect(job["scope"])
+                if document is None:
+                    scope = job["scope"]
+                    document = collect_market(scope, self.server.market, self.server.calendar) if scope["operation"] in MARKET_OPERATIONS else self.server.researcher(scope) if scope["operation"] == "quote_snapshot" else collect(scope)
                 # 采集在事务外执行；取消或租约过期后再次检查，禁止迟到写入。
                 result = repo.save_evidence(parts[1], token, document)
                 return self.reply(200, {"execution_id": job["execution_id"], **result})

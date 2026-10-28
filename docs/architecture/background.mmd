@@ -7,11 +7,16 @@ flowchart TB
   kind -->|"初次研究 / 后续复核 / 成果交付"| ready{"后续复核且初次研究<br/>仍在排队或运行？"}
   ready -->|"是：等待进行中的初次研究"| wait
   ready -->|"否：当前门禁允许继续"| exec["job → execution / attempt / lease"]
-  exec --> dsh["DSH 调用有界能力<br/>返回结果与证据引用"]
+  kind -->|"策略验证 / 来源采集 / 候选"| exec
+  exec --> adapter{"执行适配器"}
+  adapter -->|"证券研究"| dsh["DSH 调用有界能力<br/>返回结果与证据引用"]
+  adapter -->|"策略计算或受限 DSH 候选"| strategy["规则计算 / 结构化候选<br/>不拥有独立任务状态"]
+  strategy --> admit
   dsh --> admit{"主体、范围、版本、attempt、证据有效？"}
   admit -->|"否"| invalid["失败 / 失效 / 缺口<br/>不冒充成功结果"]
   admit -->|"是"| result["保存基准或复核结果<br/>按任务类型处理"]
-  result --> decide["委托核心<br/>核验约定、结果与四值条件，保存联系决定"]
+  result -->|"策略"| strategySaved["同事务保存策略记录与核心回执<br/>采纳 / 应用仍需用户确认"]
+  result -->|"证券研究"| decide["委托核心<br/>核验约定、结果与四值条件，保存联系决定"]
   reminder --> decide
   decide -->|"不联系 / 条件未知 / 等待"| wait
   decide -->|"可联系或静默延期"| queue["通知：渠道、静默、队列、去重"]

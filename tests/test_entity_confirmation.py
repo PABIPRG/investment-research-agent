@@ -69,7 +69,7 @@ class EntityConfirmationTests(unittest.TestCase):
  def test_company_identity_has_explicit_bounded_mapping(self):
   r=self.resolve('茅台公司');m=r['mentions'][0]
   c=self.entities.confirm('alice','chat-a',r['snapshot_id'],r['version'],{m['mention_id']:'CO:CN:A:600519'},'native-company')['confirmations'][0]
-  self.assertEqual(c['operations'],['company_profile','financial_summary'])
+  self.assertEqual(c['operations'],['company_profile','financial_summary','news'])
   self.entities.validate('alice','chat-a',c['confirmation_id'],'SEC:CN:A:600519','company_profile')
   with self.assertRaises(Invalid):self.entities.validate('alice','chat-a',c['confirmation_id'],'SEC:CN:A:600519','quote_snapshot')
  def test_expired_snapshot_and_wrong_version_rejected(self):

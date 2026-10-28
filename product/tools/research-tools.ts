@@ -1,11 +1,14 @@
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { researchToolCatalog } from './research-tools.generated.js'
-export const researchToolNames = researchToolCatalog.map(t => t.name)
+// 私有台账统一经投资事实工具读取，撤下无法完成授权的旧入口。
+export const retiredResearchToolNames = ['portfolio_lookup', 'portfolio_risk_analysis', 'watchlist_lookup', 'event_monitor_setup']
+export const activeResearchTools = researchToolCatalog.filter(t => !retiredResearchToolNames.includes(t.name))
+export const researchToolNames = activeResearchTools.map(t => t.name)
 export function createResearchTools(address: string, token: string): ToolDefinition[] {
   const base = new URL(address)
   if (base.protocol !== 'http:' || base.hostname !== '127.0.0.1' || !base.port || base.pathname !== '/'
       || base.username || base.password || base.search || base.hash || !token) throw new Error('研究工具 API 配置无效')
-  return researchToolCatalog.map(spec => ({
+  return activeResearchTools.map(spec => ({
     name: spec.name, description: spec.description, parameters: spec.parameters,
     timeoutMs: 120_000,
     output: { schema: { type: 'object', additionalProperties: true }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },

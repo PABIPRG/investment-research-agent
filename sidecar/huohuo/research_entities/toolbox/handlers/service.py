@@ -86,7 +86,7 @@ def _resolve_code_by_name(
 
 
 def industry_chain_lookup(call: ToolCall):
-    entity = first_entity(call, "ENTITY_03_03", "ENTITY_03_02", "ENTITY_02_01", "ENTITY_02_02")
+    entity = first_entity(call, "ENTITY_03_03", "ENTITY_03_02", "ENTITY_02_01", "ENTITY_02_02", "ENTITY_01_01")
     code = entity_code(entity) or param_code(call)
     name = entity_name(entity) or param_name(call)
     local = _local_chain_records(call, entity)

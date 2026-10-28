@@ -1,0 +1,54 @@
+@property --hh-iris-radius {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+.iris {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  background: var(--hh-surface);
+  mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent var(--hh-iris-radius),
+    black var(--hh-iris-radius)
+  );
+  animation: iris-open 800ms 1500ms linear both;
+}
+.message {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  pointer-events: none;
+  color: var(--hh-ink);
+  font-size: clamp(21px, 2.6vw, 30px);
+  font-weight: 600;
+  animation: message-out 1720ms both;
+}
+@keyframes message-out {
+  0%,
+  87.2% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@keyframes iris-open {
+  from {
+    --hh-iris-radius: 0%;
+  }
+  to {
+    --hh-iris-radius: 160%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iris,
+  .message {
+    display: none;
+  }
+}

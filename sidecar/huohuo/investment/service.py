@@ -11,6 +11,9 @@ from .document import Document
 from .manual_trades import ManualTradeRequest, apply_trade
 from .trade_revisions import TradeRevisionRequest, apply_revision
 from .portfolio_performance import _snapshot
+from .instruments import instrument, identity, annotate
+from .analysis import cost_analysis
+from .names import recorded_names, trade_metadata, restore_names, display_rows
 
 EMPTY = {'default': [], 'watchlist': [], 'manual_trades': [], 'snapshots': [], 'trade_revisions': [], 'corrections': [], 'holdings_recorded': False, 'watchlist_recorded': False}
 
@@ -18,7 +21,7 @@ def now(): return datetime.now(timezone.utc).isoformat()
 def exact(body, keys):
     if not isinstance(body,dict) or set(body)!=set(keys): raise Invalid('请求包含未允许字段或缺少字段')
 def ticker(value):
-    if not isinstance(value,str) or not re.fullmatch(r'(600|601|603|605|688|689|000|001|002|003|300|301)\d{3}',value): raise Invalid('请输入六位沪深 A 股代码')
+    instrument(value)
     return value
 
 def number(value, label, nullable=False):
@@ -32,10 +35,13 @@ class Investment:
         row=self.store._connect().execute('SELECT * FROM investment_facts WHERE principal=?',(principal,)).fetchone()
         return (row['version'],json.loads(row['document']),row['updated_at']) if row else (0,copy.deepcopy(EMPTY),None)
     def _view(self,version,document,updated):
+        names=recorded_names(document)
+        holdings=display_rows(document['default'],names)
         return {'version':version,'status':'recorded' if version else 'not_recorded','updated_at':updated,
                 'holdings_status':'recorded' if document.get('holdings_recorded') else 'not_recorded','watchlist_status':'recorded' if document.get('watchlist_recorded') else 'not_recorded',
-                'holdings':document['default'],'watchlist':document['watchlist'],'trades':document['manual_trades'],
-                'revisions':document['trade_revisions'],'corrections':document['corrections']}
+                'holdings':holdings,'watchlist':display_rows(document['watchlist'],names),'trades':display_rows(document['manual_trades'],names),
+                'revisions':document['trade_revisions'],'corrections':document['corrections'],
+                'cost_analysis':cost_analysis([{**x,'name':x['display_name']} for x in holdings],document.get('holdings_recorded',False))}
     def read(self,principal):return self._view(*self._load(principal))
     def snapshot(self,principal,version):
         if type(version) is not int or version<0:raise Invalid('事实版本无效')
@@ -53,6 +59,7 @@ class Investment:
                     original=next((x for x in document['manual_trades'] if x['request_id']==payload.get('trade_request_id')),None)
                     if original:code=original['ticker']
                 if code:ticker(code)
+                if payload.get('ticker'):ticker(payload['ticker'])
                 if payload.get('affects_holdings',True) and any(x['ticker']==code and x['cost_price'] is None for x in document['default']):raise Invalid('当前成本未知，请先校正成本，或选择只补记录')
                 # 旧纯算法以数值规范化持仓；未知成本仅在不参与计算时临时投影，随后恢复。
                 unknown={x['ticker'] for x in doc.value['default'] if x['cost_price'] is None}
@@ -61,14 +68,19 @@ class Investment:
                 import hashlib
                 version=hashlib.sha256(json.dumps(doc.value,sort_keys=True,default=str).encode()).hexdigest()
                 model=ManualTradeRequest if command=='trade' else TradeRevisionRequest
-                request=model(**payload,action='commit',version=version)
+                request_payload,name=trade_metadata(document,command,payload)
+                request=model(**request_payload,action='commit',version=version)
                 result=(apply_trade(doc,request) if command=='trade' else apply_revision(doc,request))
                 for x in doc.value['default']:
                     if x['ticker'] in unknown:x['cost_price']=None
-                names={x['ticker']:x.get('name') for x in document['default']+document['watchlist']}
-                for x in doc.value['default']:
-                    if names.get(x['ticker']):x['name']=names[x['ticker']]
+                restore_names(doc.value,document,command,payload,name,result)
                 doc.value.pop('investment_outbox',None) # 正式 outbox 由外层同事务规范化，禁止双发。
+                if command=='revision' and not payload.get('affects_holdings',True) and code in unknown:
+                    # 只修订记录没有成本计算；预览和审计都不能把未知成本显示成零。
+                    impact=result['impact']
+                    impact['current']['cost_price']=None
+                    impact['projected']['cost_price']=None
+                    impact['delta_cost_price']=None
                 result['holdings']=doc.value['default']
             elif command=='holding':
                 exact(payload,('ticker','name','quantity','cost_price','effective_at','reason'))
@@ -105,6 +117,18 @@ class Investment:
             pid=str(uuid.uuid4())
             self.store._connect().execute('INSERT INTO investment_previews VALUES(?,?,?,?,?,?)',(principal,pid,version,body['command'],canonical(body['payload']),canonical(result)))
             return {'preview_id':pid,'fact_version':version,'before':self._view(version,document,None),'after':self._view(version,after,None),'impact':result,'notice':'仅预览；确认后更新投资事实，不创建或终止委托。'}
+    def inspect_preview(self,principal,pid):
+        text(pid,'预览编号',100)
+        with self.store.transaction():
+            db=self.store._connect()
+            p=db.execute('SELECT * FROM investment_previews WHERE principal=? AND preview_id=?',(principal,pid)).fetchone()
+            if not p:raise Missing('预览不存在或不属于当前用户')
+            receipt=db.execute('SELECT receipt FROM investment_receipts WHERE principal=? AND request_key=?',(principal,pid)).fetchone()
+            if receipt:return {'preview_id':pid,'receipt':json.loads(receipt['receipt'])}
+            version,document,_=self._load(principal)
+            if version!=p['version']:raise Conflict('事实版本已变化，请重新预览')
+            payload=json.loads(p['payload']);after,result=self._apply(document,p['command'],payload)
+            return {'preview_id':pid,'fact_version':version,'command':p['command'],'payload':payload,'before':self._view(version,document,None),'after':self._view(version,after,None),'impact':result}
     def commit(self,principal,body):
         exact(body,('preview_id','request_key'));key=text(body['request_key'],'请求标识',200)
         with self.store.transaction():
@@ -118,7 +142,10 @@ class Investment:
             version,document,_=self._load(principal)
             if version!=p['version']:raise Conflict('事实版本已变化，请刷新并重新预览；原输入已保留。')
             payload=json.loads(p['payload']);after,result=self._apply(document,p['command'],payload)
-            if after==document:return {'saved':True,'facts':self.read(principal),'duplicate':True}
+            if after==document:
+                receipt={'saved':True,'facts':self.read(principal),'duplicate':True}
+                db.execute('INSERT INTO investment_receipts VALUES(?,?,?,?)',(principal,key,fingerprint,canonical(receipt)))
+                return receipt
             version+=1;at=now();encoded=canonical(after)
             db.execute('INSERT INTO investment_facts VALUES(?,?,?,?) ON CONFLICT(principal) DO UPDATE SET version=excluded.version,document=excluded.document,updated_at=excluded.updated_at',(principal,version,encoded,at))
             db.execute('INSERT INTO investment_versions VALUES(?,?,?,?)',(principal,version,encoded,at))
@@ -126,7 +153,7 @@ class Investment:
             codes=sorted({x['ticker'] for x in after['default']+document['default']+after['watchlist']+document['watchlist']})
             code=payload.get('ticker') or result.get('entry',{}).get('ticker')
             event_id='investment:'+digest([principal,version])
-            event={'event_id':event_id,'hook_type':'investment.facts_revised','schema_version':'1','producer':'huohuo-investment','occurred_at':at,'observed_at':at,'subject_ids':['SEC:CN:A:'+x for x in ([code] if code else codes)],'source_version':str(version),'content_hash':digest(after),'payload':{'principal_id':principal,'fact_version':version,'previous_version':version-1,'change_type':p['command'],'feature_key':'watchlist' if p['command']=='watchlist' else 'holding:'+str(code),'ticker':code,'changed_fields':list(payload)}}
+            event={'event_id':event_id,'hook_type':'investment.facts_revised','schema_version':'1','producer':'huohuo-investment','occurred_at':at,'observed_at':at,'subject_ids':[identity(x) for x in ([code] if code else codes)],'source_version':str(version),'content_hash':digest(after),'payload':{'principal_id':principal,'fact_version':version,'previous_version':version-1,'change_type':p['command'],'feature_key':'watchlist' if p['command']=='watchlist' else 'holding:'+str(code),'ticker':code,'changed_fields':list(payload)}}
             db.execute('INSERT INTO investment_outbox VALUES(?,?,?,?,0)',(event_id,principal,version,canonical(event)))
             receipt={'saved':True,'facts':self._view(version,after,at),'event_id':event_id,'impact':result}
             db.execute('INSERT INTO investment_receipts VALUES(?,?,?,?)',(principal,key,fingerprint,canonical(receipt)))

@@ -25,7 +25,6 @@ from ..mappings import (
     UNSUPPORTED_REASONS,
     index_def_for,
     normalize_ths_name,
-    security_symbol,
     style_def_for,
 )
 
@@ -84,8 +83,8 @@ def fund_lookup(call: ToolCall):
     found = frame
     if code and "基金代码" in frame.columns:
         found = frame[frame["基金代码"].astype(str).str.zfill(6) == code]
-    if not len(found) and name and "基金简称" in frame.columns:
-        found = frame[frame["基金简称"].astype(str).str.contains(name, na=False)]
+    if name and (not code or not len(found)) and "基金简称" in frame.columns:
+        found = frame[frame["基金简称"].astype(str).str.contains(name, na=False, regex=False)]
     if not len(found):
         return empty(
             call, reason=f"基金名录中没有匹配项：{code or name}", source="akshare.fund_name_em"
@@ -133,8 +132,13 @@ def fund_performance_lookup(call: ToolCall):
     warnings: list[str] = []
     source = "akshare.fund_open_fund_info_em"
     records: list[dict[str, Any]] = []
-    symbol = security_symbol(code)
-    is_etf = code.startswith(("15", "51", "56", "58")) and symbol is not None
+    entity = first_entity(call, "ENTITY_01_02")
+    market = entity.identifiers.get('exchange') if entity is not None else None
+    # 市场来自已确认的基金资料，不能用股票前缀解析器推断基金交易所。
+    symbol = {'SSE': 'sh', 'SZSE': 'sz'}.get(market, '') + code if market in ('SSE', 'SZSE') else None
+    is_etf = entity is not None and entity.entity_type_code == 'ENTITY_01_02' and 'ETF' in entity.canonical_name.upper() and symbol is not None
+    if entity is not None and 'ETF' in entity.canonical_name.upper() and symbol is None:
+        warnings.append('基金资料没有已核实的交易所字段；本次读取单位净值，不代表场内成交行情。')
     if is_etf:
         source = "akshare.fund_etf_hist_sina"
         try:
@@ -202,7 +206,7 @@ def index_lookup(call: ToolCall):
         if code and "代码" in frame.columns:
             found = frame[frame["代码"].astype(str).str.contains(code, na=False)]
         if not len(found) and name and "名称" in frame.columns:
-            found = frame[frame["名称"].astype(str).str.contains(name, na=False)]
+            found = frame[frame["名称"].astype(str).str.contains(name, na=False, regex=False)]
     if found is None or not len(found):
         if entity is None:
             return empty(

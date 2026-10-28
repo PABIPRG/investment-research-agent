@@ -5,59 +5,71 @@ from ..contracts import canonical, Invalid
 from ..execution import digest, Conflict
 from ..research_entities.bounded import collect, validate_financial_document
 from ..contracts import scope as validate_scope
+from ..market.source_transitions import record_source_transition
 from .models import EventEnvelope
 from .router import EventRouter
+from .market_sources import MARKET_OPERATIONS, HOOKS, collect_market, content_version, validate_market_document
 
 HOOK = 'financial.summary_changed'
 
-def trigger(scope):
-    return [{'hook_type':HOOK,'scope_key':digest(scope)}] if scope['operation']=='financial_summary' else []
+def trigger(scope, policy=None):
+    if policy and policy.get('mode', 'condition') != 'condition': return []
+    hook=HOOK if scope['operation']=='financial_summary' else HOOKS.get(scope['operation'])
+    return [{'hook_type':hook,'scope_key':digest(scope)}] if hook else []
 
 class Sources:
     def __init__(self, core): self.core=core; self.store=core.store
 
     def accept(self, principal, document):
         sc=document.get('scope',{})
-        if sc.get('operation')!='financial_summary' or document.get('status')!='ok':
-            raise Invalid('仅接受成功的财务摘要来源文档')
-        validate_financial_document(document, validate_scope(sc))
+        operation=sc.get('operation')
+        if operation not in {'financial_summary'} | MARKET_OPERATIONS or document.get('status')!='ok':
+            raise Invalid('仅接受已验证且成功的来源文档')
+        sc=validate_scope(sc)
+        if operation in MARKET_OPERATIONS:validate_market_document(document,sc)
+        else:validate_financial_document(document,sc)
         raw=document.get('raw')
-        if not isinstance(raw,dict) or raw.get('code')!=sc['entity_id'].split(':')[-1]: raise Invalid('来源主体不匹配')
-        version=digest(raw)
-        if document.get('source_hash')!=version: raise Invalid('来源内容指纹不匹配')
-        key=digest(sc); eid='SRC_'+digest([principal,key,document['source'],version])
+        if operation=='financial_summary' and (not isinstance(raw,dict) or raw.get('code')!=sc['entity_id'].split(':')[-1]): raise Invalid('来源主体不匹配')
+        if document.get('source_hash')!=digest(raw): raise Invalid('来源内容指纹不匹配')
+        version=content_version(document) if operation in MARKET_OPERATIONS else digest(raw)
+        key=digest(sc)
         now=datetime.now(timezone.utc)
         with self.store.transaction():
             db=self.store._connect()
-            db.execute('INSERT OR IGNORE INTO source_versions VALUES(?,?,?,?,?,?,?,?)',(eid,principal,sc['entity_id'],key,document['source'],version,canonical(document),now.isoformat()))
-            self.store.record_event(EventEnvelope(event_id=eid,hook_type=HOOK,producer='financial-source',occurred_at=now,observed_at=now,source_version=version,content_hash=version,subject_ids=[sc['entity_id']],payload={'principal':principal,'scope_key':key,'version_kind':'content_hash','source_version':version}))
+            eid,changed=record_source_transition(db,principal=principal,scope_key=key,entity_id=sc['entity_id'],source=document['source'],version=version,document=document,observed_at=now.isoformat())
+            if changed:self.store.record_event(EventEnvelope(event_id=eid,hook_type=HOOKS.get(operation,HOOK),producer='market-source' if operation in MARKET_OPERATIONS else 'financial-source',occurred_at=now,observed_at=now,source_version=version,content_hash=version,subject_ids=[sc['entity_id']],payload={'principal':principal,'scope_key':key,'version_kind':'content_hash','source_version':version}))
         return eid
 
     def catch_up(self, principal, mid):
         # 与创建/恢复的事务共享写锁，消除新订阅和来源入库之间的竞态。
         mandate=self.store.get_mandate_internal(mid)
         revision=self.store.get_revision(mid,mandate.current_revision)
-        for row in self.store._connect().execute('SELECT event_id FROM source_versions WHERE principal=? AND scope_key=?',(principal,digest(revision.scope))):
-            EventRouter(self.store)._route_one(row[0])
+        db=self.store._connect()
+        # 恢复时比较最新可用版本，不把暂停期间的每个快照变成积压研究。
+        for row in db.execute('SELECT event_id FROM source_heads WHERE principal=? AND scope_key=?',(principal,digest(revision.scope))):
+            completed=db.execute("SELECT 1 FROM research_jobs WHERE mandate_id=? AND mandate_revision=? AND trigger_event_id=? AND status='completed'",(mid,mandate.current_revision,row[0])).fetchone()
+            if not completed:self.core.event_router()._route_one(row[0])
 
-    def discover(self, loader=collect):
+    def discover(self, loader=None):
         # 仅一个到期来源；先持久占据时间槽，网络调用不占事务。异常可见且有退避。
         now=self.core.repo.clock()
         with self.store.transaction():
             db=self.store._connect()
-            candidates=db.execute("SELECT DISTINCT m.principal_id,r.scope_json FROM mandates m JOIN mandate_revisions r ON r.mandate_id=m.mandate_id AND r.revision=m.current_revision WHERE m.status='tracking'").fetchall()
+            candidates=db.execute("SELECT DISTINCT m.principal_id,r.scope_json,r.contact_policy_json FROM mandates m JOIN mandate_revisions r ON r.mandate_id=m.mandate_id AND r.revision=m.current_revision WHERE m.status='tracking'").fetchall()
             selected=None
             for row in candidates:
+                if json.loads(row['contact_policy_json']).get('mode', 'condition') != 'condition': continue
                 sc=json.loads(row['scope_json'])
-                if sc.get('operation')!='financial_summary':continue
+                if sc.get('operation') not in {'financial_summary'} | MARKET_OPERATIONS:continue
                 key=digest(sc);old=db.execute('SELECT checked_at FROM source_checks WHERE principal=? AND scope_key=?',(row['principal_id'],key)).fetchone()
-                if old and now-old[0]<1800:continue
+                interval=60 if sc['operation']=='market_quote' else 300 if sc['operation'] in MARKET_OPERATIONS else 1800
+                if old and now-old[0]<interval:continue
                 selected=(row['principal_id'],sc,key)
                 db.execute("INSERT INTO source_checks VALUES(?,?,?,'collecting','正在读取来源') ON CONFLICT(principal,scope_key) DO UPDATE SET checked_at=excluded.checked_at,status=excluded.status,detail=excluded.detail",(row['principal_id'],key,now));break
         if selected is None:return {'checked':False}
         principal,sc,key=selected
         try:
-            doc=loader(sc)
+            doc=loader(sc) if loader else collect_market(sc,self.core.market,self.core.service.calendar) if sc['operation'] in MARKET_OPERATIONS else collect(sc)
             if doc.get('scope') != sc:
                 raise Invalid('来源没有返回本次请求的研究范围')
             if doc.get('status')=='ok':self.accept(principal,doc)

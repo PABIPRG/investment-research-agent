@@ -5,6 +5,8 @@ import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { type Instance, InstanceApiError, profileName, request } from './instance.js'
 import { activityObservation, type RuntimeObserver } from './observation.js'
+import { strategyLoop } from './strategy-worker.js'
+import { boundedManifest } from '../product/tools/bounded-operations.js'
 
 export function runtimeEnvironment(config: Instance): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {}
@@ -108,7 +110,7 @@ export async function runAttempt(config: Instance, job: any, signal: AbortSignal
     const initialized = await client.initialize({ cwd: config.workspace, provider: config.provider, model: config.model })
     const ack = JSON.parse(await readFile(ackPath, 'utf8'))
     if (ack.execution_id !== job.execution_id || ack.version !== '1.0.0' || ack.policy !== 'bounded-research-v1'
-        || JSON.stringify(ack.capability_manifest) !== JSON.stringify({ version: 1, operations: ['quote_snapshot', 'company_profile', 'financial_summary'] })
+        || JSON.stringify(ack.capability_manifest) !== JSON.stringify(boundedManifest)
         || JSON.stringify(ack.tools) !== '["read_security_snapshot"]' || !ack.skill_sha256
         || ack.runtime?.profile?.name !== profileName) throw new Error('required bundle not loaded')
     emit('runtime.initialized', { runtime: ack.runtime, server: initialized.serverInfo, tools: ack.tools, skill_sha256: ack.skill_sha256 })
@@ -163,12 +165,21 @@ export async function runAttempt(config: Instance, job: any, signal: AbortSignal
 }
 
 export async function workerLoop(config: Instance, signal: AbortSignal, observer?: RuntimeObserver): Promise<void> {
-  const workerId = randomUUID()
-  while (!signal.aborted) {
-    await request(config, '/worker/recover', {}, 'worker')
-    await request(config, '/worker/discover', {}, 'worker')
-    const job = await request(config, '/worker/claim', { worker_id: workerId }, 'worker')
-    if (job) await runAttempt(config, job, signal, observer)
-    else await delay(500, undefined, { signal }).catch(() => {})
+  const workerId = randomUUID(), stop = new AbortController()
+  const stopping = () => stop.abort()
+  signal.addEventListener('abort', stopping, { once: true })
+  if (signal.aborted) stop.abort()
+  const strategies = strategyLoop(config, workerId + ':strategies', stop.signal)
+  try {
+    while (!stop.signal.aborted) {
+      await request(config, '/worker/recover', {}, 'worker', undefined, stop.signal)
+      try { await request(config, '/worker/discover', {}, 'worker', undefined, stop.signal) }
+      catch { if (stop.signal.aborted) break /* 来源失败不会阻塞已有研究领取。 */ }
+      const job = await request(config, '/worker/claim', { worker_id: workerId }, 'worker', undefined, stop.signal)
+      if (job) await runAttempt(config, job, stop.signal, observer)
+      else await delay(500, undefined, { signal: stop.signal }).catch(() => {})
+    }
+  } finally {
+    stop.abort(); signal.removeEventListener('abort', stopping); await strategies
   }
 }

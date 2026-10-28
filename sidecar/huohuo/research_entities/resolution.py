@@ -35,7 +35,7 @@ def directory(query='', mention_texts=None):
 
 
 class DirectoryRepository:
-    def __init__(self, rows):
+    def __init__(self, rows, discovered=()):
         self.entities = {}
         for row in rows:
             code = row['code']; name = row.get('name') or row.get('canonical_name')
@@ -44,7 +44,9 @@ class DirectoryRepository:
                 self.entities[eid] = EntityInstance(entity_id=eid,entity_type_code=kind,canonical_name=name,
                     aliases=row.get('aliases',[]),identifiers={'security_code':code,'company_code':code},source='证券目录关联上市公司')
         for entry in Gazetteer().entities:
-            self.entities[entry.entity_id] = EntityInstance(entity_id=entry.entity_id,entity_type_code=entry.entity_type_code,canonical_name=entry.canonical_name,aliases=list(entry.aliases),source='内置实体词典')
+            self.entities[entry.entity_id] = EntityInstance(entity_id=entry.entity_id,entity_type_code=entry.entity_type_code,canonical_name=entry.canonical_name,aliases=list(entry.aliases),identifiers=dict(entry.identifiers),attributes=dict(entry.attributes),source='内置实体词典')
+        for entity in discovered:
+            self.entities[entity.entity_id] = entity
     def get(self, eid): return self.entities.get(eid)
     def find_by_identifier(self,key,value): return [e for e in self.entities.values() if e.identifiers.get(key)==value]
     def find_by_name(self,name,*,type_codes=None,limit=30):
@@ -55,7 +57,7 @@ class DirectoryRepository:
 
 def resolve(query, catalog=None, prior=(), mention_texts=None):
     query=normalize_text(text(query,'query',2000)); catalog=catalog if catalog is not None else directory(query,mention_texts)
-    repo=DirectoryRepository(catalog['rows']);extractor=MentionExtractor()
+    repo=DirectoryRepository(catalog['rows'],catalog.get('discovered_entities',()));extractor=MentionExtractor()
     mentions=extractor.extract(query,extractor.build_trie(repo.terms()))
     if mention_texts is not None:
         if not isinstance(mention_texts,list) or len(mention_texts)>12:raise Invalid('提及列表无效')
@@ -83,6 +85,13 @@ def resolve(query, catalog=None, prior=(), mention_texts=None):
     result=ScopeBuilder().build(request_id=str(uuid.uuid4()),raw_query=query,intents=intents,mentions=mentions,collections=[],tools=[],tool_warnings=[]).model_dump(mode='json')
     result.update(mentions=[m.model_dump(mode='json') for m in mentions],provider_status=catalog['status'],source=catalog['source'],source_expires_at=catalog.get('expires_at'),requires_confirmation=True)
     result['candidates']=[c.model_dump(mode='json') for m in mentions for c in m.candidates]
+    details={}
+    for candidate in result['candidates']:
+        eid=candidate['entity_id'];entity=repo.get(eid);previous=unique.get(eid,{})
+        details[eid]={'identifiers':dict(entity.identifiers if entity else previous.get('identifiers',{})),
+            'attributes':dict(entity.attributes if entity else previous.get('attributes',{})),
+            'source_evidence':catalog.get('discovered_evidence',{}).get(eid) or previous.get('source_evidence')}
+    result['entity_details']=details
     if not mentions:result['clarification_questions'].append('请补充完整名称或代码；当前未识别出可确认对象。')
     if catalog['status']!='ok':result['clarification_questions'].append('实体目录暂不可用，不能把数据源失败当作对象不存在；请重试。')
     return result

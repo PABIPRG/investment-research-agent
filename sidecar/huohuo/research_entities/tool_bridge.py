@@ -21,7 +21,11 @@ class IsolatedToolContext(ToolContext):
         super().__init__(repository, industry_chain_url='http://127.0.0.1:1',
                          market_watch_url='http://127.0.0.1:1', evolution_url='http://127.0.0.1:1')
     def http_get(self, url, params=None):
-        if urlsplit(url).hostname in ('127.0.0.1','localhost','::1'):
+        parsed = urlsplit(url)
+        local = getattr(self, 'industry_chain_query', None)
+        if local and parsed.scheme == 'http' and parsed.netloc == '127.0.0.1:1' and not parsed.query and not parsed.fragment and (parsed.path in ('/data/status', '/stats', '/companies', '/graph/network') or parsed.path.startswith(('/companies/', '/graph/entity/', '/graph/single/', '/graph/chain/'))):
+            return local(parsed.path, params)
+        if parsed.hostname in ('127.0.0.1','localhost','::1'):
             raise ToolUnavailable('独立实例尚未配置此服务依赖；未探测其他本地服务')
         return super().http_get(url,params)
     def http_post(self, url, payload):
@@ -29,8 +33,10 @@ class IsolatedToolContext(ToolContext):
 
 
 class ResearchToolBridge:
-    def __init__(self, repo, confirmations, context_factory=IsolatedToolContext):
+    def __init__(self, repo, confirmations, context_factory=IsolatedToolContext, strategies=None):
         self.repo,self.confirmations,self.context_factory=repo,confirmations,context_factory
+        self.strategies = strategies
+        self.industry_chain = None
 
     def run(self, principal, session, call_id, tool_id, arguments):
         text(session,'session',200);text(call_id,'call_id',200)
@@ -55,11 +61,11 @@ class ResearchToolBridge:
                 raise Invalid('工具不支持已确认的实体类型')
             entity=repository.get(current['entity_id'])
             if entity is None:
-                identifiers={}
+                identifiers=dict(current.get('identifiers',{}))
                 if current['entity_id'].startswith(('SEC:CN:A:','CO:CN:A:')):
                     identifiers={'security_code':current['entity_id'].rsplit(':',1)[-1],'company_code':current['entity_id'].rsplit(':',1)[-1]}
                 entity=EntityInstance(entity_id=current['entity_id'],entity_type_code=current['entity_type_code'],
-                                      canonical_name=current['label'],identifiers=identifiers,source='本会话用户确认的目录候选')
+                                      canonical_name=current['label'],identifiers=identifiers,attributes=current.get('attributes',{}),source='本会话用户确认的目录候选')
                 repository.upsert_entities([entity], source_version="confirmed")
             entities=[entity.entity_id]
         with self.repo.connection(True) as db:
@@ -86,7 +92,18 @@ class ResearchToolBridge:
         elif definition.requires_authorization or tool_id=='event_monitor_setup':
             result={'tool_id':tool_id,'status':'needs_authorization','data':{},'error':'此能力尚未接通独立实例的授权流程，未执行操作'}
         else:
-            executor=ToolExecutor(self.context_factory(repository),audit=False,persist_evidence=False,cache=TTLCache())
+            context=self.context_factory(repository)
+            if self.strategies is not None:
+                def query_strategy(path,params):
+                    from ..execution import Missing
+                    try:
+                        view=self.strategies.read(principal,params.get("strategy_id"))
+                        return view[{"/evolution/status":"pool","/evolution/attribution":"attribution","/evolution/preview":"preview"}[path]]
+                    except (Missing,Invalid) as exc:raise ToolUnavailable(str(exc)) from exc
+                context.evolution_query=query_strategy
+            if self.industry_chain is not None:
+                context.industry_chain_query = lambda path, params=None: self.industry_chain.query(principal, path, params)
+            executor=ToolExecutor(context,audit=False,persist_evidence=False,cache=TTLCache())
             result=executor.execute(ToolRequest(tool_id=tool_id,entity_ids=entities,params=args,request_id=key,authorized=False)).model_dump(mode='json')
         result.update(evidence_id=key,request_id=key)
         encoded=canonical(result)

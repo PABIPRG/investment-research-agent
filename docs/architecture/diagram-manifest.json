@@ -12,16 +12,16 @@
       "svg_sha256": "03091a2c1b27793f9e765cbde1eede85207308b44d7ded84c56452668f5a3dd8"
     },
     "ownership": {
-      "source_sha256": "6eec230ffc15220a35195879b9761d471edea317b3a364333c3a5044a154e679",
-      "svg_sha256": "ae7322b1dfa246130308c1c3271deecdf08c34260e6ea36df7db7ccf58c049da"
+      "source_sha256": "26281e44d15b830766d1c4a3f7c4564a28d1a16f4180414808fa842475203228",
+      "svg_sha256": "04d33e5bcd8684396d916dc10bc3391602f16554e670c88aea3c35a51381c84b"
     },
     "skills": {
-      "source_sha256": "32527b89bdb48e767a6f6ba5d3cde77ab8bab946fa581fd1bf23517a6d420772",
-      "svg_sha256": "6fc8f262f3af2eca541a6a68608006ac2a0860070c287404fa5e9abe3351a8f9"
+      "source_sha256": "24834e967d354a586abe455a4fa48386ed97474100df5c6b7868f522bae77d2e",
+      "svg_sha256": "bdc41a941bc5a2a0260307f3e64f8edc13e26c9cdf7500cba64cf679d41fff52"
     },
     "background": {
-      "source_sha256": "54e83ff03049a6bee8597634d94e68b73dfc8537cce08bd24e95925095f895f3",
-      "svg_sha256": "dfe31f4e22a25a07e4a808b0b3cb7f32dbbf2dbc47c5e97b66d6227932eb39f5"
+      "source_sha256": "ce3a8f25b15ac69de5c87996f8c65fed447f2856afc7633c0425fa9ac32e9d6c",
+      "svg_sha256": "db38a76e4b9b9d65cc077991281af37aa2e1fbdea22fb8ee5394e1fcb1925b33"
     }
   }
 }

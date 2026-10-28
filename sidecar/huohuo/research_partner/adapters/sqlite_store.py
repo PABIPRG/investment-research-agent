@@ -172,6 +172,20 @@ class SqliteBusinessStore:
             self._connections.append(connection)
         return connection
 
+    def close_current_connection(self) -> None:
+        """请求结束后只释放当前线程；其他请求和后台线程仍拥有自己的连接。"""
+        connection = getattr(self._local, "connection", None)
+        if connection is None:
+            return
+        if self._tx_depth:
+            raise StorageUnavailable("不能在事务结束前释放业务库连接")
+        try:
+            connection.close()
+        finally:
+            self._local.connection = None
+            with self._connections_lock:
+                self._connections = [item for item in self._connections if item is not connection]
+
     def close(self) -> None:
         """关闭本进程内所有线程的连接；用于服务停机与测试清理。"""
         with self._connections_lock:
@@ -209,7 +223,7 @@ class SqliteBusinessStore:
                 raise StorageUnavailable("数据库包含当前版本不认识的迁移，禁止降级打开")
             if applied and available - applied:
                 pending = available-applied
-                suffix = '.before-notification-channels' if '009_notification_channels' in pending and not {'008_followup_notifications','008_investment'} & pending else '.before-v14-integration' if {'008_followup_notifications','008_investment'} <= pending else '.before-followup' if '008_followup_notifications' in pending else '.before-investment' if '008_investment' in pending else '.before-research-tools' if '007_research_tool_calls' in pending else '.before-entity-confirmation' if '006_entity_confirmation' in pending else '.before-v14'
+                suffix = '.before-unified-strategy' if '017_unified_strategy_work' in pending else '.before-legacy-transfer' if '016_legacy_transfer' in pending else '.before-source-heads' if '015_source_heads' in pending else '.before-strategy-subjects' if '011_strategy_run_subjects' in pending and '010_strategies' not in pending else '.before-strategies' if '010_strategies' in pending else '.before-notification-channels' if '009_notification_channels' in pending and not {'008_followup_notifications','008_investment'} & pending else '.before-v14-integration' if {'008_followup_notifications','008_investment'} <= pending else '.before-followup' if '008_followup_notifications' in pending else '.before-investment' if '008_investment' in pending else '.before-research-tools' if '007_research_tool_calls' in pending else '.before-entity-confirmation' if '006_entity_confirmation' in pending else '.before-v14'
                 backup = self.path.with_suffix(self.path.suffix + suffix)
                 if not backup.exists():
                     with sqlite3.connect(backup) as target:

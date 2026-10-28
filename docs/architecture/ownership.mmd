@@ -1,13 +1,20 @@
 flowchart TB
   life["distribution<br/>安装、实例、产品进程生命周期"]
   chat["huohuo-chat Profile<br/>交互式 DSH Agent"]
-  worker["后台 worker<br/>领取、续租、结果回写"]
+  worker["一个后台 worker 进程<br/>研究与策略资源消费者"]
   sdk["huohuo-worker Profile<br/>一次 DSH 研究"]
-  ui["product/ui<br/>委托、投资事实、消推页面"]
+  planner["huohuo-strategy-worker Profile<br/>DSH 生成策略候选 · 无工具权限"]
+  ui["product/ui<br/>委托、持仓、策略、资料与导入"]
   tools["product/chat<br/>工具桥与聊天 guard"]
   bounded["product/tools<br/>read_security_snapshot"]
   api["sidecar API<br/>身份、权限与业务接口"]
-  domains["sidecar 各领域<br/>研究 / 委托核心 / 投资事实 / 通知"]
+  subgraph side["同一个侧车进程：程序拥有正式业务状态"]
+    core["委托核心 + 执行子域<br/>证券 / 策略类型化委托<br/>research_jobs → executions → attempts"]
+    research["研究能力<br/>行情、新闻、财务、技术、产业链"]
+    facts["投资事实 / 旧数据导入<br/>版本、预览、确认与事务"]
+    notice["通知<br/>联系资格复核、投递与回执"]
+    strategy["策略研究能力<br/>规则、回测、影子验证、归因<br/>候选与待确认预案"]
+  end
   db[("实例 SQLite<br/>各领域正式状态")]
   sessions[("DSH 会话与模型配置<br/>与业务库分别持久化")]
   life -.->|"管理进程"| chat
@@ -18,8 +25,18 @@ flowchart TB
   ui <-->|"受控 Host 接口"| api
   tools <-->|"业务命令与查询"| api
   worker -->|"启动一次执行"| sdk
+  worker -->|"启动一次候选生成"| planner
   sdk <-->|"本次 Scope"| bounded
   bounded <-->|"有界研究"| api
   worker <-->|"发现、领取、续租、回写"| api
-  api <--> domains
-  domains <--> db
+  api <--> core
+  api <--> research
+  api <--> facts
+  api <--> strategy
+  core <-->|"派发策略任务 / 原子接收结果"| strategy
+  core -->|"批准的联系决定"| notice
+  core <--> db
+  research <--> db
+  facts <--> db
+  notice <--> db
+  strategy <--> db

@@ -1,0 +1,12 @@
+{
+  "designVersion": "1.4",
+  "revision": "r1",
+  "approvedAt": "2026-10-26",
+  "productVersion": "1.0.0",
+  "kind": "approved-interactive-prototype",
+  "backend": "demonstration-only",
+  "sha256": {
+    "index.html": "e0f309c6b37431ad5e48b8561a358c23182f19499fbd5e77597369ef501b313c",
+    "fragment.html": "d39f8202c4c596af2a053f2bcd62cf0dd19dfd69e86147f1fa9240fdd510bd3c"
+  }
+}

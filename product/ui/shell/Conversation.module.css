@@ -1,0 +1,256 @@
+.conversation {
+  --hh-arrival-height: 320px;
+  max-width: none;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.conversation,
+.conversation * {
+  box-sizing: border-box;
+}
+.conversation button {
+  border-radius: 999px;
+  corner-shape: round;
+  cursor: pointer;
+  font: inherit;
+}
+.conversation button:focus-visible {
+  outline: 2px solid var(--hh-accent);
+  outline-offset: 3px;
+}
+.conversation button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.chatHead {
+  --hh-heading-margin: 0;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--hh-line);
+  flex-shrink: 0;
+}
+.heading {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.chatHead h1 {
+  white-space: nowrap;
+}
+.chatActions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+.chatHead button,
+.viewTabs button {
+  background: var(--hh-surface);
+  color: var(--hh-ink);
+  border: 1px solid var(--hh-line);
+  padding: var(--hh-control-padding-y) var(--hh-control-padding-x);
+  min-height: var(--hh-control-height);
+}
+.muted {
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+}
+.viewTabs {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  padding: 0;
+  flex-shrink: 0;
+}
+.viewTabs button {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  border: 0;
+  padding: 7px 14px;
+}
+.viewTabs button[aria-pressed='true'] {
+  color: var(--hh-accent);
+}
+.chatBody {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.historyLoading {
+  position: absolute;
+  top: calc(50% + 150px);
+  left: 0;
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  color: var(--hh-muted);
+  pointer-events: none;
+}
+.conversation[data-history-loading='true'] .native :global(.EvIC1a_hint) {
+  visibility: hidden;
+}
+.conversation[data-arrival='true'] .chatBody {
+  overflow-y: auto;
+}
+.native {
+  --hh-chat-gutter: 0px;
+  --hh-chat-width: 920px;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+.conversation[data-question='true']:not([data-quiet='true']) .native :global([data-question-key]) {
+  padding-top: var(--hh-question-space);
+}
+.conversation[data-arrival='true'] .native {
+  flex: none;
+  width: min(calc(100% - 64px), 1040px);
+  align-self: center;
+  position: relative;
+}
+/* The arrival page owns scrolling; nested DSH hero scrollers clip composer menus. */
+.conversation[data-arrival='true'] .native :global([data-content-phase='hero']),
+.conversation[data-arrival='true']
+  .native
+  :global([data-content-phase='hero'] > .wSkVaW_scrollBody) {
+  overflow: visible;
+}
+.conversation:not([data-quiet='true']) .native {
+  --hh-chat-gutter: 108px;
+}
+.native :global(.EvIC1a_column[data-chat-flow]) {
+  width: min(calc(100% - 32px), calc(var(--hh-chat-width) + var(--hh-chat-gutter)));
+  max-width: none;
+  padding-left: var(--hh-chat-gutter);
+}
+.native :global([data-content-phase='active'] .EvIC1a_scroll),
+.native :global([data-content-phase='active'] .uV2eYG_root) {
+  padding-left: 0;
+  padding-right: 0;
+}
+.native :global([data-conversation-content]) {
+  height: 100%;
+}
+.native :global(.uV2eYG_card) {
+  max-width: min(calc(100% - 32px), 952px);
+  box-shadow: none;
+  background: var(--hh-surface);
+  border: 1px solid var(--hh-line);
+}
+.native :global([data-content-phase='active'] [data-composer-seat]) {
+  background: var(--hh-surface);
+  width: min(calc(100% - 32px), calc(var(--hh-chat-width) + var(--hh-chat-gutter)));
+  margin-inline: auto;
+  padding-left: var(--hh-chat-gutter);
+}
+.native :global([data-content-phase='active'] [data-composer-card]) {
+  width: 100%;
+  max-width: none;
+}
+.native :global([data-composer-seat]) {
+  padding-bottom: 12px;
+}
+.conversation[data-arrival='true'] .native:has(:global([data-trigger-menu])),
+.native :global([data-composer-seat]:has([data-trigger-menu])) {
+  z-index: 41;
+}
+.native :global([data-question-key]) {
+  border-radius: 0 !important;
+}
+.native :global([data-question-key] h2) {
+  white-space: pre-line;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 24px;
+}
+.native :global([data-question-key] button[role='radio']),
+.native :global([data-question-key] button[role='checkbox']) {
+  color: var(--hh-ink);
+  opacity: 1;
+}
+.native :global([data-question-key] .Mbwy4a_description) {
+  color: var(--hh-muted);
+}
+.native :global([data-question-key] > div) {
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--hh-surface);
+  border: 1px solid var(--hh-line);
+}
+.native :global([data-content-phase='hero']) {
+  min-height: 140px;
+  justify-content: flex-start;
+  padding: 8px 0 0;
+}
+.conversation[data-arrival='true'] .native :global([data-composer-seat]) {
+  padding: 0;
+}
+.conversation[data-view='trajectory'] .native :global([data-composer-seat]) {
+  display: none;
+}
+.conversation[data-arrival='true'] .native :global(.uV2eYG_card) {
+  max-width: 100%;
+}
+@media (min-width: 601px) and (max-width: 900px) {
+  .conversation {
+    --hh-arrival-height: 280px;
+  }
+}
+@media (max-width: 600px) {
+  .conversation {
+    --hh-arrival-height: 190px;
+  }
+  .chatHead {
+    padding: 8px 12px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .heading {
+    gap: 8px;
+  }
+  .chatHead .muted {
+    display: none;
+  }
+  .chatHead button {
+    padding: 5px 9px;
+  }
+  .viewTabs {
+    padding: 0;
+  }
+  .conversation[data-arrival='true'] .native {
+    width: calc(100% - 24px);
+  }
+  .chatHead .viewTabs {
+    margin-right: auto;
+  }
+  .chatActions {
+    margin-left: auto;
+    gap: 4px;
+  }
+  .conversation:not([data-quiet='true']) .native {
+    --hh-chat-gutter: 76px;
+  }
+  .native :global([data-question-key]) {
+    padding: 6px 8px 10px;
+  }
+  /* Integer-height card keeps the nested option scroller on the pixel grid. */
+  .native :global(.Mbwy4a_card) {
+    max-height: min(calc(100dvh - 240px), 520px);
+  }
+  .conversation[data-question='true']
+    .native
+    :global([data-content-phase='active'] [data-composer-seat]) {
+    padding-left: 0;
+  }
+  .native :global(.Mbwy4a_footer) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .native :global(.Mbwy4a_footerActions) {
+    margin-left: auto;
+  }
+}

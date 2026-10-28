@@ -1,0 +1,72 @@
+.history {
+  color: var(--hh-ink);
+  background: var(--hh-surface);
+  border: 1px solid var(--hh-line);
+  width: min(540px, calc(100vw - 32px));
+  max-height: 65dvh;
+  padding: 0;
+  box-shadow: 0 16px 64px #16234830;
+}
+.history,
+.history * {
+  box-sizing: border-box;
+}
+.history::backdrop {
+  background: #1b274844;
+}
+.history > div {
+  padding: 20px;
+}
+.history header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.history h2 {
+  font-size: 1.2857rem;
+  margin: 0;
+}
+.history ul {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+.history li + li {
+  border-top: 1px solid var(--hh-line);
+}
+.history button {
+  border-radius: 999px;
+  corner-shape: round;
+  background: transparent;
+  color: var(--hh-ink);
+  border: 1px solid var(--hh-line);
+  padding: 6px 13px;
+  font: inherit;
+  cursor: pointer;
+}
+.history li button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  width: 100%;
+  padding: 12px 10px;
+}
+.history li button[aria-current='page'] {
+  background: var(--hh-soft);
+}
+.history small {
+  font-size: 0.8571rem;
+  color: var(--hh-muted);
+}
+.history strong {
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.history button:focus-visible {
+  outline: 2px solid var(--hh-accent);
+  outline-offset: 3px;
+}

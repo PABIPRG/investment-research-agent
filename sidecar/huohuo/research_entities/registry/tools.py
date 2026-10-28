@@ -97,18 +97,18 @@ _TOOLS: list[ToolDefinition] = [
     ),
     # ── 策略自进化（只读；写动作必须走预案确认）────────────────────
     _tool(
-        "strategy_pool_lookup", "策略池状态查询", "策略", "external_service",
-        "toolbox.handlers.evolution.strategy_pool_lookup → trading-core /evolution/status",
-        "策略池阶段、影子数据天数与每策略判定；服务未启动时返回 unavailable。",
+        "strategy_pool_lookup", "策略池状态查询", "策略", "configured",
+        "toolbox.handlers.evolution.strategy_pool_lookup → 侧车策略领域 /evolution/status",
+        "策略池阶段、影子数据天数与每策略判定；无记录时显示空态，不伪造策略。",
     ),
     _tool(
-        "strategy_attribution_lookup", "策略影子归因", "策略", "external_service",
-        "toolbox.handlers.evolution.strategy_attribution_lookup → trading-core /evolution/attribution",
+        "strategy_attribution_lookup", "策略影子归因", "策略", "configured",
+        "toolbox.handlers.evolution.strategy_attribution_lookup → 侧车策略领域 /evolution/attribution",
         "影子组合整体收益/回撤与每策略贡献；数据不足时显式说明，不做外推。",
     ),
     _tool(
-        "strategy_evolution_preview", "策略进化预案查询", "策略", "external_service",
-        "toolbox.handlers.evolution.strategy_evolution_preview → trading-core /evolution/preview",
+        "strategy_evolution_preview", "策略进化预案查询", "策略", "configured",
+        "toolbox.handlers.evolution.strategy_evolution_preview → 侧车策略领域 /evolution/preview",
         "只读当前待确认的升级/降级/淘汰/变异预案；应用预案必须由用户确认。",
     ),
     # ── 行情 / 财务 / 公司 / 事件 ───────────────────────────────────
@@ -138,7 +138,7 @@ _TOOLS: list[ToolDefinition] = [
     ),
     _tool(
         "company_relationship_lookup", "公司关系查询", "公司", "configured",
-        "toolbox.handlers.equity.company_relationship_lookup + industry-chain :8200",
+        "toolbox.handlers.equity.company_relationship_lookup + instance industry_chain",
         "本地实体关系为基础，产业链服务在线时补充上下游与关联关系。",
         supported_entity_types=["ENTITY_02_01", "ENTITY_02_02", "ENTITY_02_03", "ENTITY_03_03"],
     ),
@@ -174,9 +174,9 @@ _TOOLS: list[ToolDefinition] = [
     ),
     _tool(
         "industry_chain_lookup", "产业链查询", "产业", "configured",
-        "toolbox.handlers.service.industry_chain_lookup + industry-chain :8200",
-        "产业链多层链路；服务不可用时回退实体库直接关系并明确告警。",
-        supported_entity_types=["ENTITY_03_02", "ENTITY_03_03", "ENTITY_02_01", "ENTITY_02_02"],
+        "toolbox.handlers.service.industry_chain_lookup + instance industry_chain",
+        "查询已确认证券对应公司或行业主题的产业链；资料未准备时明确说明，不探测旧服务。",
+        supported_entity_types=["ENTITY_01_01", "ENTITY_03_02", "ENTITY_03_03", "ENTITY_02_01", "ENTITY_02_02"],
     ),
     _tool(
         "event_timeline_lookup", "事件时间线", "事件", "configured",

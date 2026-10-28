@@ -18,3 +18,15 @@ description: 当用户明确交代持续研究，或查询、修改、暂停、�
 
 
 联系条件、渠道、期限以用户明确约定及程序回执为准；资料发现与通知是否可用，以实际实例状态和记录为准。配置或工具存在不代表已经监控、已经发送。unknown/error 不变成 false，不把应用内 delivered 说成外部送达或已读。
+
+## 页面操作与聊天等价
+
+manage_mandate 的 definition 现在支持 reminder_time（北京时间每日 HH:MM，null 关闭，省略保留）和 contact_channels（app/wecom/serverchan/email）。先读取当前委托及通知配置，不猜版本。修改这些字段时工具会等待真实原生确认；选择外部渠道须先完成安全配置。普通 contact_note 仍只是备注，不代表任意自然语言规则已编译。投资集合关联先读 read_investment_collection，再调用 bind_mandate_investment_collection；固定与动态含义须明确，不扩大单证券执行范围。需要页面复核用 open_product_view，返回链接由用户点击。
+
+## 可执行资料发现与联系规则
+
+财务摘要、market_quote 行情、market_technical 日线技术、news 新闻与 market_brief（pre 盘前、post 盘后）可持续发现来源版本。先确认实体，再明确范围、时间、条件与模型调用；create_mandate 的原生确认后才持久启用。备注不会执行任意监控。
+
+contact_rule 支持条件联系、每日定时交付、定时条件检查、到时直接提醒。数值指标须来自对应行情/技术范围，阈值和 AND/OR 关系向用户解释并确认；未知不当作不满足或已命中。日历未知时等候，不以工作日猜测交易日。条件重试预算默认为零。规则保存产生版本、撤销旧执行资格；不会自行订阅持仓之外的新证券或发送未启用的外部渠道。
+
+首次研究失败或中断时，没有成功基准就不开始后续复核。用户明确要求后用 manage_mandate 的 retry_baseline 重建基准；不自动重复费用。暂停、恢复、修改、结束仍以真实版本和代次为准。

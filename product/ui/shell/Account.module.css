@@ -1,0 +1,95 @@
+.account {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  z-index: 2;
+  width: 360px;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px 16px;
+  background: var(--hh-paper);
+  border: 1px solid var(--hh-line);
+  color: var(--hh-ink);
+  font-variant-numeric: tabular-nums;
+}
+.account.account button {
+  border: 0;
+  background: none;
+  color: var(--hh-accent);
+  white-space: nowrap;
+  padding: 0;
+}
+.accountTitle {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.accountTitle button {
+  margin-left: auto;
+  font-size: 0.7857rem;
+  line-height: 1.5;
+}
+.accountTitle small:empty {
+  display: none;
+}
+.account small {
+  display: block;
+  color: var(--hh-muted);
+  font-size: 0.7857rem;
+  line-height: 1.5;
+}
+.accountTitle small {
+  font-size: 0.7857rem;
+  margin-left: auto;
+}
+.accountTitle small:not(:empty) + button {
+  margin-left: 0;
+}
+.accountMetric {
+  min-width: 0;
+}
+.accountMetric b {
+  display: block;
+  font-size: 1.2857rem;
+  line-height: 1.5;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.note {
+  grid-column: 1 / -1;
+  align-self: center;
+}
+.accountLink {
+  grid-column: 1 / -1;
+  margin-top: -2px;
+  text-align: right;
+  align-self: center;
+  font-size: 0.7857rem;
+  line-height: 1.5;
+}
+@media (max-width: 1024px) {
+  .account {
+    width: 340px;
+    right: 14px;
+    gap: 6px 10px;
+  }
+}
+@media (max-width: 600px) {
+  .account {
+    position: relative;
+    top: auto;
+    right: auto;
+    width: calc(100% - 24px);
+    margin: 12px 12px 0;
+    flex-shrink: 0;
+    padding: 10px 12px;
+  }
+  .accountTitle button {
+    min-height: 26px;
+  }
+  .accountMetric b {
+    font-size: 1.1429rem;
+  }
+}

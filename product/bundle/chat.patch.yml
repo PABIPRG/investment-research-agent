@@ -97,11 +97,11 @@
 - id: ui-permission
   disabled: true
 - id: ui-model-selection
-  disabled: true
+  disabled: false
 - id: ui-deepseek-model-label-1017
   disabled: true
 - id: ui-commands
-  disabled: true
+  disabled: false
 - id: ui-message-feedback
   disabled: true
 - id: session-log-download
@@ -114,11 +114,21 @@
   disabled: true
 - id: ui-settings-models
   config:
-    credentialOnboarding: false
+    credentialOnboarding: true
 - insert:
     - id: huohuo-chat-ui
       name: '@huohuo/chat-ui'
 
 # 产品 preset 内仅装载自带 chat skills；关闭默认 cwd/home 扫描。
 - id: skill-filesystem
+  disabled: true
+
+# 本产品使用用户配置的 API 凭据，不装配平台账号登录/充值。
+- id: ui-settings-account
+  disabled: true
+- id: account-controller
+  disabled: true
+- id: llm-deepseek-account
+  disabled: true
+- id: deepseek-account
   disabled: true

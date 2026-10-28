@@ -113,6 +113,16 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(409, self.call("/attempts/" + attempt["attempt_id"] + "/research", {}, attempt["lease_token"])[0])
         self.assertEqual([], self.service.repo.evidence("owner", job["execution_id"]))
 
+    def test_investment_preview_read_is_user_scoped_and_reconciles(self):
+        status,p=self.call('/investment/preview',{'command':'holding','payload':{'ticker':'513130','name':'合成ETF','quantity':1000,'cost_price':None,'effective_at':'2026-01-01T00:00:00+08:00','reason':'期初快照'}})
+        self.assertEqual(status,200)
+        path='/investment/previews/'+p['preview_id']
+        self.assertEqual(self.call(path,token='worker-secret')[0],403)
+        self.assertEqual(self.call(path,token='bad')[0],403)
+        self.assertEqual(self.call(path)[1]['after']['holdings'][0]['quantity_unit'],'份')
+        saved=self.call('/investment/commit',{'preview_id':p['preview_id'],'request_key':p['preview_id']})[1]
+        self.assertEqual(self.call(path)[1]['receipt'],saved)
+
 
 if __name__ == "__main__":
     unittest.main()

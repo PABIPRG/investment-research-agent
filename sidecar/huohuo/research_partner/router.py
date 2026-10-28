@@ -28,9 +28,12 @@ _ACTION_BY_MODE = {
 
 class EventRouter:
     def __init__(
-        self, store: BusinessStore, *, now: Callable[[], datetime] | None = None, baseline_key=None
+        self, store: BusinessStore, *, now: Callable[[], datetime] | None = None, baseline_key=None, event_key=None, source_current=None, typed_route=None
     ) -> None:
+        self.typed_route = typed_route
         self.baseline_key = baseline_key
+        self.event_key = event_key
+        self.source_current = source_current
         self.store = store
         self._now = now or (lambda: datetime.now(timezone.utc))
 
@@ -50,6 +53,11 @@ class EventRouter:
         envelope = self.store.get_event(event_id)
         if envelope is None:
             raise ValueError(f"事件 {event_id} 不在事件表中")
+        if self.source_current and not self.source_current(event_id):
+            return 0
+        if self.typed_route:
+            routed = self.typed_route(envelope)
+            if routed is not None: return routed
         now = self._now()
         created = 0
 
@@ -106,7 +114,7 @@ class EventRouter:
                 revision=dependency.revision,
                 event_id=envelope.event_id,
                 action=action,
-                dedupe_key=f"job:{envelope.event_id}:{dependency.mandate_id}:{dependency.revision}",
+                dedupe_key=self.event_key(envelope, owner) if self.event_key else f"job:{envelope.event_id}:{dependency.mandate_id}:{dependency.revision}",
                 now=now,
             )
         return created

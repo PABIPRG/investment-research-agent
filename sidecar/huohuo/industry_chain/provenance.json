@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/PABIPRG/pa-investment-research",
+  "commit": "9c23b1fdb249d8192748196cb183709e8e2030f4",
+  "files": {
+    "backend/industry-chain/industry_chain/graph.py": {
+      "sha256": "8a43ab8c01f82b34190fc4b1f024b9984f35f6cf1a7873d09b060bd80367ab89"
+    },
+    "backend/industry-chain/industry_chain/seed_data.py": {
+      "sha256": "dcd3885f4bcb1696b4f92b1185a573bdc18b7d8c7bc417fb390ec0fa55c47197"
+    },
+    "backend/industry-chain/industry_chain/universe.py": {
+      "sha256": "b270eb617e8d34666bc7a1cc8b32b0eccb62c86b16b6494004dfc8a4877a4d5c"
+    },
+    "backend/industry-chain/industry_chain/merge.py": {
+      "sha256": "afd8c36cb275310cc297a5b0e44f9d88effe4dbf0d12de09421f9777dcce9a84"
+    }
+  },
+  "adaptation": [
+    "Instance-scoped graph caches and data roots",
+    "Confirmed bounded seed lifecycle with immutable generations",
+    "Existing SQLite authority and principal/session previews",
+    "DSH structured overlay candidates; no legacy model runner",
+    "Fixed market-cap unit and missing-coordinate fallbacks",
+    "Deep-copy overlays to prevent base mutation"
+  ]
+}

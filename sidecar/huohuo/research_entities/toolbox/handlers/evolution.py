@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """策略自进化工具：策略池状态、影子归因与待确认预案（只读）。
 
-能力由 trading-core 的 ``/evolution/*`` 提供；服务未启动时返回 unavailable，
+独立产品由显式注入的侧车策略服务提供；未装配时返回 unavailable，
 绝不伪造策略结论。应用预案属于写动作，工具层不提供——升级/降级/淘汰/变异
 必须由用户确认，或由已授权的闭环调度执行。
 """
@@ -14,7 +14,7 @@ from ..context import ToolUnavailable
 from ..contracts import ToolCall
 from ..helpers import ok, unavailable
 
-SOURCE = "trading-core:/evolution"
+SOURCE = "huohuo-sidecar:strategy"
 
 
 def _strategy_id(call: ToolCall) -> str | None:
@@ -31,6 +31,9 @@ def _strategy_id(call: ToolCall) -> str | None:
 
 
 def _get(call: ToolCall, path: str, params: dict[str, Any]) -> dict[str, Any]:
+    local = getattr(call.ctx, "evolution_query", None)
+    if local is not None:
+        return local(path, params)
     try:
         payload = call.ctx.http_get(f"{call.ctx.evolution_url}{path}", params)
     except ToolUnavailable as exc:

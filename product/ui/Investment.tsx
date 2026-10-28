@@ -1,52 +1,130 @@
-import { useEffect, useRef, useState } from 'react'
+import page from './shared/Page.module.css'
+import { useEffect, useState } from 'react'
+import business from './Business.module.css'
 import css from './Investment.module.css'
-
-type Position = {ticker:string;name?:string;quantity:number;cost_price:number|null;position_time?:string}
-type Trade = {request_id:string;ticker:string;side:string;quantity:number;price:number;fees:number;traded_at:string;recorded_at:string;affects_holdings:boolean;voided?:boolean;revision_no?:number}
-type Facts = {version:number;status:string;holdings_status:string;watchlist_status:string;updated_at:string|null;holdings:Position[];watchlist:{ticker:string;name:string;reason:string;added_at:string}[];trades:Trade[];revisions:any[];corrections:any[]}
-type Preview = {preview_id:string;fact_version:number;before:Facts;after:Facts;impact:any}
-const fmt=(value:number|null|undefined)=>value==null?'—':value.toLocaleString('zh-CN',{maximumFractionDigits:6})
-const date=(value:string|null|undefined)=>value?new Date(value).toLocaleString('zh-CN'):'—'
-const localNow=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}
-async function api(body?:unknown){const r=await fetch(body?'api/huohuo/investment-command':'api/huohuo/investment',{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store'});const data=await r.json();if(!r.ok)throw Object.assign(new Error(r.status===403?'无权读取投资事实，请重新连接。':data.detail||'事实读取失败，请重试。'),{status:r.status});return data}
-
-export function InvestmentPage(){
- const [facts,setFacts]=useState<Facts>(),[tab,setTab]=useState('holdings'),[query,setQuery]=useState(''),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
- const [mode,setMode]=useState(''),[target,setTarget]=useState<Trade>(),[preview,setPreview]=useState<Preview>(),[revisionOp,setRevisionOp]=useState('amend')
- const [code,setCode]=useState(''),[name,setName]=useState(''),[qty,setQty]=useState(''),[price,setPrice]=useState(''),[fees,setFees]=useState('0'),[side,setSide]=useState('buy'),[at,setAt]=useState(localNow()),[reason,setReason]=useState(''),[affects,setAffects]=useState(true)
- const request=useRef(crypto.randomUUID()),formHeading=useRef<HTMLHeadingElement>(null)
- const refresh=async()=>{setLoading(true);setError('');try{setFacts(await api())}catch(e){setError((e as Error).message);if((e as any).status===403)setFacts(undefined)}finally{setLoading(false)}}
- useEffect(()=>{void refresh()},[])
- const invalidate=()=>{setPreview(undefined);setNotice('')}
- const begin=(kind:string,p?:Position,t?:Trade)=>{setMode(kind);setTarget(t);setPreview(undefined);setNotice('');setCode(t?.ticker||p?.ticker||'');setName(p?.name||'');setQty(String(t?.quantity??p?.quantity??''));setPrice(String(t?.price??p?.cost_price??''));setFees(String(t?.fees??0));setSide(t?.side||'buy');setAt(t?new Date(new Date(t.traded_at).getTime()-new Date(t.traded_at).getTimezoneOffset()*60000).toISOString().slice(0,16):localNow());setReason('');setAffects(t?.affects_holdings??true);setRevisionOp('amend');request.current=crypto.randomUUID();setTimeout(()=>formHeading.current?.focus(),0)}
- const performPreview=async(command:string,payload:unknown)=>{setBusy(true);setError('');setPreview(undefined);try{setPreview(await api({action:'preview',command,payload}))}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
- const submit=()=>{
-  const traded_at=new Date(at).toISOString()
-  if(mode==='holding')return performPreview(mode,{ticker:code,name:name||code,quantity:Number(qty),cost_price:price===''?null:Number(price),effective_at:traded_at,reason})
-  if(mode==='watchlist')return performPreview(mode,{ticker:code,name:name||code,reason,remove:false})
-  if(mode==='trade')return performPreview(mode,{request_id:request.current,ticker:code,side,quantity:Number(qty),price:Number(price),fees:Number(fees),traded_at,affects_holdings:affects})
-  return performPreview('revision',{revision_id:request.current,trade_request_id:target!.request_id,operation:revisionOp,...(revisionOp==='amend'?{side,quantity:Number(qty),price:Number(price),fees:Number(fees),traded_at}:{}),affects_holdings:affects,reason})
- }
- const commit=async()=>{if(!preview)return;setBusy(true);setError('');try{const saved=await api({action:'commit',preview_id:preview.preview_id,request_key:preview.preview_id});setFacts(saved.facts);setPreview(undefined);setMode('');setNotice(`已保存为事实版本 ${saved.facts.version}，可在操作记录回查。`)}catch(e){setError((e as Error).message);if((e as any).status===409)setPreview(undefined)}finally{setBusy(false)}}
- const search=(x:{ticker:string;name?:string})=>`${x.ticker} ${x.name||''}`.includes(query.trim())
- const holdings=facts?.holdings.filter(search)||[],watchlist=facts?.watchlist.filter(search)||[],trades=facts?.trades.filter(search)||[]
- return <main className={css.page}>
-  <header className={css.header}><div><p className={css.note}>火火 · 投研伙伴</p><h1>持仓与自选</h1><p>记录真实投资事实，让每次研究有据可查。</p><p className={css.note}>{facts?`事实版本 ${facts.version} · 最近保存 ${date(facts.updated_at)}`:'正在连接投资记录'}</p></div><button disabled={busy||loading} onClick={()=>void refresh()}>{loading?'读取中…':'刷新事实'}</button></header>
-  {loading&&<p role="status">{facts?'正在刷新，暂时保留上次事实…':'正在读取持仓、自选与操作记录…'}</p>}
-  {error&&<p role="alert" className={css.error}>{error} {facts?'当前显示内容可能过期。':''}<button disabled={busy||loading} onClick={()=>void refresh()}>重新读取</button></p>}
-  {notice&&<p role="status" className={css.success}>{notice}</p>}
-  <div className={css.tabs} aria-label="投资记录分类">{Object.entries({holdings:'持仓',watchlist:'自选',trades:'操作记录'}).map(([k,v])=><button key={k} aria-pressed={tab===k} onClick={()=>{setTab(k);setQuery('')}}>{v}</button>)}</div>
-  <div className={css.toolbar}><label>搜索证券<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="证券名称或代码"/></label>{query&&<button onClick={()=>setQuery('')}>清除搜索</button>}<button disabled={!facts||busy||loading} onClick={()=>begin(tab==='watchlist'?'watchlist':tab==='holdings'?'holding':'trade')}>{tab==='watchlist'?'添加自选':tab==='holdings'?'录入 / 校正持仓':'录入实际成交'}</button></div>
-  {!loading&&!error&&facts?.status==='not_recorded'&&<p className={css.empty}>尚未录入投资事实。可以录入期初持仓或自选；不会因此创建持续委托。</p>}
-  {facts&&tab==='holdings'&&<section aria-label="持仓明细">{!holdings.length&&facts.status!=='not_recorded'&&<p className={css.empty}>{query?'没有匹配的持仓，可清除搜索。':facts.holdings_status==='not_recorded'?'持仓尚未确认，不能据此判断空仓。':'已记录的持仓为空。清仓不代表结束委托。'}</p>}<div className={css.tableWrap}><table><thead><tr><th>证券</th><th>数量（股）</th><th>成本（元/股）</th><th>最近确认</th><th>操作</th></tr></thead><tbody>{holdings.map(p=><tr key={p.ticker}><td><strong>{p.name||p.ticker}</strong><small>{p.ticker}</small></td><td>{fmt(p.quantity)}</td><td>{fmt(p.cost_price)}</td><td>{date(p.position_time)}</td><td><button disabled={busy} onClick={()=>begin('holding',p)}>校正</button><button disabled={busy} onClick={()=>begin('trade',p)}>录入成交</button></td></tr>)}</tbody></table></div><p className={css.note}>成本未知显示“—”。校正是资料调整，不是买卖成交；数量设为 0 可清仓校正。</p></section>}
-  {facts&&tab==='watchlist'&&<section aria-label="自选明细">{!watchlist.length&&<p className={css.empty}>{query?'没有匹配的自选，可清除搜索。':'暂无自选。添加自选仅记录关注事实，不订阅提醒。'}</p>}{watchlist.map(p=><article className={css.watch} key={p.ticker}><div><strong>{p.name} <small>{p.ticker}</small></strong><p>{p.reason||'未填写关注原因'}</p><small>加入于 {date(p.added_at)}</small></div><button disabled={busy} onClick={()=>{setMode('remove');void performPreview('watchlist',{ticker:p.ticker,name:p.name,reason:p.reason,remove:true})}}>移除自选</button></article>)}</section>}
-  {facts&&tab==='trades'&&<section aria-label="操作记录"><p className={css.note}>这里只记录已发生的成交和资料校正，不向券商下单。</p>{!trades.length&&<p className={css.empty}>{query?'没有匹配的成交记录。':'尚无成交记录；持仓校正会单独保留。'}</p>}{[...trades].reverse().map(t=><article className={css.watch} key={t.request_id}><div><strong>{t.ticker} · {t.voided?'已撤销':t.side==='buy'?'买入':'卖出'} {fmt(t.quantity)} 股</strong><p>价格 {fmt(t.price)} 元 · 费用 {fmt(t.fees)} 元 · {t.affects_holdings?'计入持仓':'只补记录，不计余额'}</p><p>发生于 {date(t.traded_at)} · 记录于 {date(t.recorded_at)}</p><small>修订 {t.revision_no||0} 次</small></div><button disabled={busy||t.voided} onClick={()=>begin('revision',undefined,t)}>更正 / 撤销</button></article>)}<details><summary>持仓校正与修订历史</summary>{facts.corrections.map((x,i)=><p key={'c'+i}>{x.name} · 校正于 {date(x.recorded_at)}：{fmt(x.before?.quantity)} → {fmt(x.after?.quantity??0)} 股；{x.reason}</p>)}{facts.revisions.map((x,i)=><p key={'r'+i}>修订 {x.revision_no} · {date(x.revised_at)} · {x.reason||'未填写原因'}<br/>原记录：{JSON.stringify(x.previous)}<br/>修订后：{JSON.stringify(x.amended)}</p>)}</details></section>}
-  {mode&&mode!=='remove'&&<section className={css.editor}><h2 ref={formHeading} tabIndex={-1}>{({holding:'录入 / 校正持仓',watchlist:'添加自选',trade:'录入实际成交',revision:'更正 / 撤销成交'} as Record<string,string>)[mode]}</h2><form onSubmit={e=>{e.preventDefault();void submit()}} onChange={invalidate}>
-   <div className={css.fields}><label>证券代码<input required pattern="[0-9]{6}" maxLength={6} value={code} disabled={mode==='revision'} onChange={e=>setCode(e.target.value)} placeholder="例如 600519"/></label>{['holding','watchlist'].includes(mode)&&<label>证券名称<input maxLength={100} value={name} onChange={e=>setName(e.target.value)} placeholder="未填写时显示代码"/></label>}
-   {mode==='revision'&&<fieldset><legend>修订方式</legend><label><input type="radio" checked={revisionOp==='amend'} onChange={()=>setRevisionOp('amend')}/>更正记录</label><label><input type="radio" checked={revisionOp==='void'} onChange={()=>setRevisionOp('void')}/>撤销记录</label></fieldset>}
-   {mode!=='watchlist'&&revisionOp!=='void'&&<><label>数量（股）<input type="number" required min={mode==='holding'?0:0.000001} max="1000000000000" step="any" value={qty} onChange={e=>setQty(e.target.value)}/></label><label>{mode==='holding'?'成本（元/股，可留空）':'成交价格（元/股）'}<input type="number" required={mode!=='holding'} min="0" max="1000000000000" step="any" value={price} onChange={e=>setPrice(e.target.value)}/></label><label>{mode==='holding'?'持仓确认时间':'实际成交时间'}<input type="datetime-local" required value={at} onChange={e=>setAt(e.target.value)}/></label></>}
-   {['trade','revision'].includes(mode)&&<><fieldset><legend>成交方向</legend><label><input type="radio" checked={side==='buy'} onChange={()=>setSide('buy')}/>买入</label><label><input type="radio" checked={side==='sell'} onChange={()=>setSide('sell')}/>卖出</label></fieldset><label>费用（元）<input type="number" min="0" step="any" value={fees} onChange={e=>setFees(e.target.value)}/></label><fieldset><legend>余额处理</legend><label><input type="radio" checked={affects} onChange={()=>setAffects(true)}/>更新持仓</label><label><input type="radio" checked={!affects} onChange={()=>setAffects(false)}/>只补记录</label></fieldset></>}
-   {mode!=='trade'&&<label> {mode==='watchlist'?'关注原因':'修改原因'}<textarea required={mode==='holding'} maxLength={500} value={reason} onChange={e=>setReason(e.target.value)}/></label>}</div><p className={css.note}>{mode==='watchlist'?'加入自选不会创建持续委托或订阅提醒。':'时间按本机时区保存。请填实际发生时间；建议或计划不能记作成交。'}</p><div className={css.actions}><button disabled={busy||loading}>{busy?'处理中…':'预览影响'}</button><button type="button" disabled={busy} onClick={()=>{setMode('');setPreview(undefined)}}>取消编辑</button></div></form></section>}
-  {preview&&<section className={css.preview} aria-label="保存前预览"><h2>保存前核对</h2><p>基于事实版本 {preview.fact_version}。确认保存后生效，委托状态保持原样。</p><div className={css.tableWrap}><table><thead><tr><th>证券</th><th>数量：之前 → 之后</th><th>成本：之前 → 之后</th></tr></thead><tbody>{[...new Set([...preview.before.holdings,...preview.after.holdings].map(x=>x.ticker))].map(code=>{const a=preview.before.holdings.find(x=>x.ticker===code),b=preview.after.holdings.find(x=>x.ticker===code);return <tr key={code}><td>{code}</td><td>{fmt(a?.quantity??0)} → {fmt(b?.quantity??0)} 股</td><td>{fmt(a?.cost_price)} → {fmt(b?.cost_price)} 元</td></tr>})}</tbody></table></div>{['watchlist','remove'].includes(mode)&&<p>自选数量：{preview.before.watchlist.length} → {preview.after.watchlist.length}</p>}{preview.impact.gaps?.map((g:any,i:number)=><p className={css.error} key={i}>{g.detail}</p>)}<div className={css.actions}><button disabled={busy||loading} onClick={()=>void commit()}>{busy?'保存中…':'确认保存'}</button><button disabled={busy} onClick={()=>{setPreview(undefined);if(mode==='remove')setMode('')}}>取消预览</button></div></section>}
- </main>
+import { HoldingsTable } from './investment/HoldingsTable.js'
+import { InvestmentEditor } from './investment/InvestmentEditor.js'
+import { RevisionHistory } from './investment/RevisionHistory.js'
+import { TradesTable } from './investment/TradesTable.js'
+import { date, type EditTarget } from './investment/types.js'
+import { useInvestment } from './investment/useInvestment.js'
+import { WatchlistTable } from './investment/WatchlistTable.js'
+import type { MandateView } from './mandates/model.js'
+import { request } from './shared/api.js'
+const tabs = { holdings: '持仓', watchlist: '自选', trades: '操作记录', history: '修订历史' }
+export function InvestmentPage({ visit }: { visit?: (mandate: string) => void }) {
+  const { facts, loading, error, refresh } = useInvestment()
+  const [tab, setTab] = useState<keyof typeof tabs>('holdings'),
+    [query, setQuery] = useState(''),
+    [edit, setEdit] = useState<EditTarget>(),
+    [notice, setNotice] = useState('')
+  const [mandates, setMandates] = useState<MandateView[]>([]),
+    [relationError, setRelationError] = useState(false),
+    [relationRefresh, setRelationRefresh] = useState(0)
+  useEffect(() => {
+    const abort = new AbortController()
+    void request<{ items: MandateView[] }>('mandates', undefined, abort.signal)
+      .then((data) => {
+        if (!abort.signal.aborted) {
+          setMandates(data.items)
+          setRelationError(false)
+        }
+      })
+      .catch(() => {
+        if (!abort.signal.aborted) setRelationError(true)
+      })
+    return () => abort.abort()
+  }, [relationRefresh])
+  const reload = () => {
+    refresh()
+    setRelationRefresh((n) => n + 1)
+  }
+  const common = facts ? { facts, query, edit: setEdit } : undefined
+  const open = () => {
+    setNotice('')
+    setEdit({ kind: tab === 'watchlist' ? 'watchlist' : tab === 'trades' ? 'trade' : 'holding' })
+  }
+  return (
+    <main className={`${page.surface} ${business.page} ${css.page}`}>
+      <header className={`${page.header} ${business.header}`}>
+        <div>
+          <h1>持仓与自选</h1>
+          <p className={business.note}>
+            {facts ? `${date(facts.updated_at)} 更新 · 记录 v${facts.version}` : '正在读取投资记录'}{' '}
+            · 金额单位：元
+          </p>
+        </div>
+        <div className={business.tools}>
+          <button disabled={loading} onClick={reload}>
+            刷新
+          </button>
+          {tab !== 'history' && (
+            <button data-variant="primary" disabled={!facts || loading} onClick={open}>
+              {tab === 'watchlist' ? '添加自选' : tab === 'trades' ? '记录成交' : '添加持仓'}
+            </button>
+          )}
+        </div>
+      </header>
+      {loading && <p role="status">{facts ? '正在刷新，保留上次记录…' : '正在读取…'}</p>}
+      {error && (
+        <p role="alert">
+          {error} {facts ? '当前内容可能过期。' : ''}
+          <button onClick={reload}>重试</button>
+        </p>
+      )}
+      {notice && (
+        <p role="status" className={css.success}>
+          {notice}
+        </p>
+      )}
+      <div className={business.tabs} aria-label="投资记录分类">
+        {Object.entries(tabs).map(([key, label]) => (
+          <button
+            key={key}
+            aria-pressed={key === tab}
+            onClick={() => {
+              setTab(key as keyof typeof tabs)
+              setQuery('')
+            }}
+          >
+            {label}
+            {facts && (key === 'holdings' || key === 'watchlist') ? ` ${facts[key].length}` : ''}
+          </button>
+        ))}
+        {tab !== 'history' && (
+          <label className={css.search}>
+            搜索证券
+            <input
+              aria-label="搜索证券"
+              value={query}
+              placeholder="名称或代码"
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && <button onClick={() => setQuery('')}>清除</button>}
+          </label>
+        )}
+      </div>
+      {common && tab === 'holdings' && (
+        <HoldingsTable
+          {...common}
+          mandates={mandates}
+          relationError={relationError}
+          visit={visit}
+        />
+      )}{' '}
+      {common && tab === 'watchlist' && <WatchlistTable {...common} />}{' '}
+      {common && tab === 'trades' && <TradesTable {...common} />}{' '}
+      {common && tab === 'history' && <RevisionHistory {...common} />}
+      {edit && (
+        <InvestmentEditor
+          target={edit}
+          close={() => setEdit(undefined)}
+          saved={(version) => {
+            setEdit(undefined)
+            setNotice(`已保存为记录 v${version}，可在修订历史回查。`)
+          }}
+        />
+      )}
+    </main>
+  )
 }

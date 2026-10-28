@@ -1,0 +1,88 @@
+.context * {
+  box-sizing: border-box;
+}
+.context p {
+  overflow-wrap: anywhere;
+}
+.context h2 {
+  font-size: 1.1429rem;
+  line-height: 1.5;
+}
+.note,
+.context small {
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+  line-height: 1.5;
+}
+.context button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--hh-line);
+  border-radius: 999px;
+  corner-shape: round;
+  background: var(--hh-surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.context button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.context button:focus-visible,
+.context input:focus-visible {
+  outline: 2px solid var(--hh-accent);
+  outline-offset: 2px;
+}
+.context label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9286rem;
+  line-height: 1.5;
+}
+.context input {
+  min-height: 36px;
+  max-width: 100%;
+  padding: 8px;
+  border: 1px solid var(--hh-line);
+  border-radius: 0;
+  background: var(--hh-surface);
+  color: inherit;
+  font: inherit;
+}
+.context fieldset {
+  border: 1px solid var(--hh-line);
+  border-radius: 0;
+  min-width: 0;
+}
+.context fieldset label {
+  flex-direction: row;
+  align-items: center;
+}
+.context input[type='radio'] {
+  min-height: 20px;
+}
+.editor {
+  padding: 0;
+  border: 0;
+  background: var(--hh-surface);
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 1024px) {
+  .fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .fields {
+    grid-template-columns: 1fr;
+  }
+  .context button {
+    min-height: 44px;
+  }
+}

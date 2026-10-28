@@ -1,0 +1,81 @@
+.arrival {
+  position: relative;
+  width: min(calc(100% - 64px), 1040px);
+  min-height: 248px;
+  margin: var(--hh-arrival-offset, 148px) auto 0;
+  padding: 24px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--hh-arrival-width) minmax(0, 1fr);
+  align-items: center;
+  flex-shrink: 0;
+}
+.arrival h2 {
+  font-size: 2rem;
+  line-height: 1.35;
+  margin: 10px 0 12px;
+  max-width: 600px;
+  overflow-wrap: anywhere;
+}
+.arrival small {
+  color: var(--hh-muted);
+}
+.arrival p {
+  margin: 0 0 18px;
+  max-width: 560px;
+}
+.arrival button[data-variant='primary'] {
+  background: var(--hh-accent);
+  border-color: var(--hh-accent);
+  color: var(--hh-on-accent);
+}
+.goal {
+  display: block;
+  margin-top: 12px;
+}
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.task {
+  min-width: 0;
+}
+.arrival button {
+  background: var(--hh-surface);
+  color: var(--hh-ink);
+  border: 1px solid var(--hh-line);
+  padding: var(--hh-control-padding-y) var(--hh-control-padding-x);
+  min-height: var(--hh-control-height);
+}
+:global([data-huohuo-conversation][data-quiet='true']) .arrival {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 220px;
+}
+@media (max-width: 1024px) {
+  .arrival h2 {
+    font-size: 1.7143rem;
+  }
+}
+@media (max-width: 600px) {
+  .arrival {
+    width: calc(100% - 32px);
+    margin-top: 12px;
+    padding: 24px 0 24px 148px;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 210px;
+  }
+  .arrival h2 {
+    font-size: 1.5714rem;
+  }
+  .arrival p {
+    font-size: 0.9286rem;
+  }
+  :global([data-huohuo-conversation][data-quiet='true']) .arrival {
+    padding: 24px 0;
+    min-height: 180px;
+  }
+  .quick button {
+    font-size: 0.8571rem;
+    padding: 5px 8px;
+  }
+}

@@ -337,7 +337,7 @@ def _amended_values(
         "side": entry.get("side"),
         "quantity": float(entry.get("quantity") or 0),
         "price": float(entry.get("price") or 0),
-        "fees": float(entry.get("fees") or 0),
+        "fees": None if entry.get("source") == "legacy_import" and entry.get("fees") is None else float(entry.get("fees") or 0),
         "traded_at": entry.get("traded_at"),
     }
     for field in _TRADE_TIME_FIELDS:
@@ -387,6 +387,8 @@ def apply_revision(
         )
         if entry is None:
             raise ValueError("找不到要修订的成交记录。")
+        if entry.get("source") == "legacy_import" and req.affects_holdings:
+            raise ValueError("旧系统导入成交仅供核对和修订记录；请选择不影响持仓，不能重复计入当前持仓。")
         original_ticker = str(entry.get("ticker") or "")
         if not original_ticker:
             raise ValueError("成交记录缺少股票代码，无法重算。")
@@ -422,6 +424,8 @@ def apply_revision(
             if not _changes(original, amended):
                 raise ValueError("修订没有改变任何字段；如需撤销请选择撤销。")
             entry.update(amended)
+            if entry.get("source") == "legacy_import":
+                entry["fees_known"] = amended["fees"] is not None
             entry["occurred_at"] = amended["traded_at"]
             entry["recorded_at"] = entry.get("recorded_at") or original["traded_at"]
         else:
@@ -435,8 +439,11 @@ def apply_revision(
             entry.setdefault("accounting_values", {**original, "voided": False})
         elif req.affects_holdings:
             entry.pop("accounting_values", None)
-        projection = _project(document, original_ticker)
         current = _current_position(document.get("default", []), original_ticker)
+        projection = _project(document, original_ticker) if req.affects_holdings else {
+            "projected": dict(current), "gaps": [], "opening_snapshot_id": None,
+            "replayed_trades": 0, "reliable": True,
+        }
         projected = projection["projected"]
         gaps = projection["gaps"]
         impact = {

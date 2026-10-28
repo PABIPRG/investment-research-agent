@@ -1,0 +1,119 @@
+/* Product-owned V1.4 cloud theme; DSH still owns theme preference and native state. */
+:global(html[data-huohuo-ui]) {
+  --hh-canvas: light-dark(#eef2f8, #171c29);
+  --hh-paper: light-dark(#f6f9ff, #20283b);
+  --hh-surface: light-dark(#fff, #293249);
+  --hh-ink: light-dark(#263457, #edf2ff);
+  --hh-muted: light-dark(#58698e, #b6c5e3);
+  --hh-line: light-dark(#d2ddf2, #44516e);
+  --hh-on-accent: light-dark(#fff, #20283b);
+  --hh-danger: light-dark(#ad3b44, #ffb4ab);
+  --hh-accent: light-dark(#4054ca, #afbcff);
+  --hh-soft: light-dark(#e1ecfc, #303f60);
+  --dsw-alias-bg-base: var(--hh-surface);
+  --dsw-alias-bg-layer-1: var(--hh-paper);
+  --dsw-alias-label-primary: var(--hh-ink);
+  --dsw-alias-label-secondary: var(--hh-muted);
+  --dsw-alias-border-l1: var(--hh-line);
+  --dsw-alias-border-l2: var(--hh-line);
+  --dsw-alias-state-business-primary: var(--hh-accent);
+  --dsw-alias-interactive-bg-hover: var(--hh-soft);
+  --dsw-alias-radius-control: 999px;
+  --dsw-alias-radius-compact: 0px;
+  font:
+    14px/1.6 system-ui,
+    sans-serif;
+  color: var(--hh-ink);
+}
+:global(html[data-huohuo-ui] .pI_x6G_frame) {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  background: var(--hh-canvas);
+}
+:global(html[data-huohuo-ui] .pI_x6G_sidebarCol) {
+  grid-column: 1;
+  grid-row: 1;
+  border: 0;
+  overflow: visible;
+}
+:global(html[data-huohuo-ui] .pI_x6G_centerCol) {
+  grid-column: 1;
+  grid-row: 2;
+  padding: 8px;
+  min-height: 0;
+}
+:global(html[data-huohuo-ui] .pI_x6G_centerCol > main) {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+:global(html[data-huohuo-ui] .pI_x6G_rightbarCol),
+:global(html[data-huohuo-ui] .pI_x6G_handle),
+:global(html[data-huohuo-ui] .pI_x6G_leadingSeat) {
+  display: none;
+}
+:global(html[data-huohuo-ui] .pI_x6G_frame) {
+  --dsw-alias-bg-base: var(--hh-surface);
+  --dsw-alias-bg-layer-1: var(--hh-paper);
+  --dsw-alias-label-primary: var(--hh-ink);
+  --dsw-alias-label-secondary: var(--hh-muted);
+  --dsw-alias-border-l1: var(--hh-line);
+  --dsw-alias-border-l2: var(--hh-line);
+  --dsw-alias-state-business-primary: var(--hh-accent);
+  --dsw-alias-interactive-bg-hover: var(--hh-soft);
+  --dsw-alias-radius-control: 999px;
+  --dsw-alias-radius-compact: 0px;
+}
+
+@media (max-width: 600px) {
+  :global(html[data-huohuo-ui] .pI_x6G_centerCol) {
+    padding: 8px;
+  }
+}
+
+/* rc2 Settings shell: retain its navigation/close owner, reflow on phones. */
+@media (max-width: 600px) {
+  :global(html[data-huohuo-ui] .VOzbGW_panel) {
+    flex-direction: column;
+    position: relative;
+  }
+  :global(html[data-huohuo-ui] .VOzbGW_nav) {
+    width: 100%;
+    flex: none;
+    padding: 16px 12px 8px;
+  }
+  :global(html[data-huohuo-ui] .VOzbGW_navTitle) {
+    padding: 0 0 12px;
+  }
+  :global(html[data-huohuo-ui] .VOzbGW_navList) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+    gap: 4px;
+  }
+  :global(html[data-huohuo-ui] .VOzbGW_navList button) {
+    flex-shrink: 0;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  :global(html[data-huohuo-ui] .VOzbGW_content) {
+    width: 100%;
+    min-height: 0;
+    position: static;
+  }
+  :global(html[data-huohuo-ui] .VOzbGW_header) {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    height: auto;
+    padding: 0;
+  }
+  :global(html[data-huohuo-ui] .VOzbGW_options) {
+    padding: 12px 16px 16px;
+  }
+}
+
+:global(html[data-huohuo-ui] .VOzbGW_panel) {
+  background: var(--hh-surface);
+  color: var(--hh-ink);
+}
