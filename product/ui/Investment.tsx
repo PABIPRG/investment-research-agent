@@ -12,12 +12,16 @@ import { WatchlistTable } from './investment/WatchlistTable.js'
 import type { MandateView } from './mandates/model.js'
 import { request } from './shared/api.js'
 import { RiskPreference } from './investment/RiskPreference.js'
+import { PersonalizationPage } from './personalization/PersonalizationPage.js'
+import { PositionRiskPlans } from './investment/PositionRiskPlans.js'
 const tabs = {
   holdings: '持仓',
   watchlist: '自选',
   trades: '操作记录',
   history: '修订历史',
   risk: '风险偏好',
+  personal: '为我关注',
+  protection: '持仓风险',
 }
 export function InvestmentPage({ visit }: { visit?: (mandate: string) => void }) {
   const { facts, loading, error, refresh } = useInvestment()
@@ -26,22 +30,28 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
     [edit, setEdit] = useState<EditTarget>(),
     [notice, setNotice] = useState('')
   const [mandates, setMandates] = useState<MandateView[]>([]),
+    [relationLoading, setRelationLoading] = useState(false),
     [relationError, setRelationError] = useState(false),
     [relationRefresh, setRelationRefresh] = useState(0)
   useEffect(() => {
     const abort = new AbortController()
+    setRelationLoading(true)
     void request<{ items: MandateView[] }>('mandates', undefined, abort.signal)
       .then((data) => {
         if (!abort.signal.aborted) {
           setMandates(data.items)
           setRelationError(false)
+          setRelationLoading(false)
         }
       })
       .catch(() => {
-        if (!abort.signal.aborted) setRelationError(true)
+        if (!abort.signal.aborted) {
+          setRelationError(true)
+          setRelationLoading(false)
+        }
       })
     return () => abort.abort()
-  }, [relationRefresh])
+  }, [relationRefresh, facts?.version])
   const reload = () => {
     refresh()
     setRelationRefresh((n) => n + 1)
@@ -65,7 +75,7 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
           <button disabled={loading} onClick={reload}>
             刷新
           </button>
-          {tab !== 'history' && tab !== 'risk' && (
+          {!['history', 'risk', 'personal', 'protection'].includes(tab) && (
             <button data-variant="primary" disabled={!facts || loading} onClick={open}>
               {tab === 'watchlist' ? '添加自选' : tab === 'trades' ? '记录成交' : '添加持仓'}
             </button>
@@ -98,7 +108,7 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
             {facts && (key === 'holdings' || key === 'watchlist') ? ` ${facts[key].length}` : ''}
           </button>
         ))}
-        {tab !== 'history' && tab !== 'risk' && (
+        {!['history', 'risk', 'personal', 'protection'].includes(tab) && (
           <label className={css.search}>
             搜索证券
             <input
@@ -116,6 +126,7 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
           {...common}
           mandates={mandates}
           relationError={relationError}
+          relationLoading={relationLoading}
           visit={visit}
         />
       )}{' '}
@@ -123,6 +134,8 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
       {common && tab === 'trades' && <TradesTable {...common} />}{' '}
       {common && tab === 'history' && <RevisionHistory {...common} />}
       {facts && tab === 'risk' && <RiskPreference facts={facts} />}
+      {tab === 'personal' && <PersonalizationPage />}
+      {facts && tab === 'protection' && <PositionRiskPlans facts={facts} visit={visit} />}
       {edit && (
         <InvestmentEditor
           target={edit}

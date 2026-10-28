@@ -17,6 +17,7 @@ export function HoldingsTable({
   edit,
   mandates = [],
   relationError = false,
+  relationLoading = false,
   visit,
 }: {
   facts: Facts
@@ -24,6 +25,7 @@ export function HoldingsTable({
   edit: (target: EditTarget) => void
   mandates?: MandateView[]
   relationError?: boolean
+  relationLoading?: boolean
   visit?: (mandate: string) => void
 }) {
   const search = (x: { ticker: string; name?: string; display_name?: string | null }) =>
@@ -45,9 +47,11 @@ export function HoldingsTable({
         <span>
           已关联委托{' '}
           <b>
-            {relationError
-              ? '—'
-              : `${holdings.filter((p) => mandates.some((m) => m.revision.scope.entity_id.endsWith(':' + p.ticker))).length} / ${holdings.length}`}
+            {relationLoading
+              ? '更新中'
+              : relationError
+                ? '—'
+                : `${holdings.filter((p) => mandates.some((m) => m.revision.scope.entity_id.endsWith(':' + p.ticker))).length} / ${holdings.length}`}
           </b>
         </span>
         <small>不含现金 · 行情与收益数据尚未接入</small>
@@ -115,22 +119,24 @@ export function HoldingsTable({
                   用户记录<small>{date(p.position_time)}</small>
                 </td>
                 <td>
-                  {relationError
-                    ? '关联暂未读取'
-                    : mandates.filter((m) => m.revision.scope.entity_id.endsWith(':' + p.ticker))
-                          .length
-                      ? mandates
-                          .filter((m) => m.revision.scope.entity_id.endsWith(':' + p.ticker))
-                          .map((m, i) => (
-                            <button
-                              title={m.revision.goal}
-                              key={m.mandate.mandate_id}
-                              onClick={() => visit?.(m.mandate.mandate_id)}
-                            >
-                              查看委托{i ? ` ${i + 1}` : ''}
-                            </button>
-                          ))
-                      : '未设委托'}
+                  {relationLoading
+                    ? '正在更新关联…'
+                    : relationError
+                      ? '关联暂未读取'
+                      : mandates.filter((m) => m.revision.scope.entity_id.endsWith(':' + p.ticker))
+                            .length
+                        ? mandates
+                            .filter((m) => m.revision.scope.entity_id.endsWith(':' + p.ticker))
+                            .map((m, i) => (
+                              <button
+                                title={m.revision.goal}
+                                key={m.mandate.mandate_id}
+                                onClick={() => visit?.(m.mandate.mandate_id)}
+                              >
+                                查看委托{i ? ` ${i + 1}` : ''}
+                              </button>
+                            ))
+                        : '未设委托'}
                 </td>
                 <td>
                   <button disabled={false} onClick={() => begin('holding', p)}>

@@ -1,0 +1,114 @@
+.questions :global([data-question-key] > section) {
+  background: var(--hh-surface);
+  color: var(--hh-ink);
+  border: 1px solid var(--hh-line);
+  border-radius: 16px;
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--hh-ink) 8%, transparent);
+}
+.questions :global([data-question-key] h2) {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 24px;
+}
+.questions :global([data-question-key] .Mbwy4a_header) {
+  padding: 18px 16px 6px 20px;
+}
+.questions :global([data-question-key] .Mbwy4a_eyebrow),
+.questions :global([data-question-key] .Mbwy4a_progress) {
+  color: var(--hh-muted);
+}
+.questions :global([data-question-key] .Mbwy4a_options) {
+  gap: 6px;
+  padding: 4px 12px;
+}
+.questions :global([data-question-key] button[role='radio']),
+.questions :global([data-question-key] button[role='checkbox']),
+.questions :global([data-question-key] .Mbwy4a_customRow) {
+  border-radius: 10px;
+  padding: 10px 12px;
+  gap: 10px;
+  color: var(--hh-ink);
+  opacity: 1;
+}
+.questions :global([data-question-key] button[aria-checked='false']:hover:not(:disabled)) {
+  background: color-mix(in srgb, var(--hh-soft) 45%, var(--hh-surface));
+  border-color: var(--hh-line);
+}
+.questions :global([data-question-key] button[aria-checked='true']) {
+  background: var(--hh-soft);
+  border-color: var(--hh-accent);
+}
+.questions :global([data-question-key] .Mbwy4a_optionLine) {
+  gap: 4px 8px;
+}
+.questions :global([data-question-key] .Mbwy4a_optionLabel) {
+  overflow-wrap: anywhere;
+}
+.questions :global([data-question-key] .Mbwy4a_description) {
+  flex-basis: 100%;
+  display: block;
+  color: var(--hh-muted);
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 22px;
+}
+.questions :global([data-question-key] .Mbwy4a_number) {
+  background: var(--hh-paper);
+  color: var(--hh-muted);
+}
+.questions :global([data-question-key] button[aria-checked='true'] .Mbwy4a_number),
+.questions :global([data-question-key] .Mbwy4a_badge) {
+  background: var(--hh-accent);
+  color: var(--hh-on-accent);
+}
+.questions :global([data-question-key] .Mbwy4a_checkboxChecked) {
+  color: var(--hh-on-accent);
+}
+.questions :global([data-question-key] .Mbwy4a_checkboxChecked::before) {
+  background: var(--hh-accent);
+  border-color: var(--hh-accent);
+}
+.questions :global([data-question-key] .Mbwy4a_customRow:hover) {
+  background: color-mix(in srgb, var(--hh-soft) 45%, var(--hh-surface));
+}
+.questions :global([data-question-key] .Mbwy4a_customRowActive),
+.questions
+  :global([data-question-key] .Mbwy4a_customRow:focus-within:not(.Mbwy4a_customRowYielded)) {
+  background: var(--hh-soft);
+  border-color: var(--hh-accent);
+}
+.questions :global([data-question-key] .Mbwy4a_fieldInput) {
+  color: var(--hh-ink);
+}
+.questions :global([data-question-key] .Mbwy4a_fieldInput::placeholder) {
+  color: var(--hh-muted);
+}
+.questions :global([data-question-key] .Mbwy4a_footer) {
+  border-top: 1px solid var(--hh-line);
+  margin: 8px 16px 0;
+  padding: 12px 4px 2px;
+}
+@media (max-width: 600px) {
+  .questions :global([data-question-key]) {
+    padding: 6px 8px 10px;
+  }
+  .questions :global([data-question-key] > section) {
+    max-height: min(calc(100dvh - 240px), 520px);
+  }
+  .questions :global([data-question-key] .Mbwy4a_header) {
+    padding: 14px 12px 4px;
+  }
+  .questions :global([data-question-key] .Mbwy4a_options) {
+    padding-inline: 8px;
+  }
+  .questions :global([data-question-key] .Mbwy4a_footer) {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-inline: 12px;
+  }
+  .questions :global([data-question-key] .Mbwy4a_footerActions) {
+    margin-left: auto;
+  }
+}

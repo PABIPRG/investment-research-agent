@@ -1,0 +1,4754 @@
+{
+  "source_revision": "9c23b1fdb249d8192748196cb183709e8e2030f4",
+  "source_files": [
+    {
+      "path": "backend/dsh-trading-core/adapter/app.py",
+      "sha256": "0ab8cdc4cf00a35cccfbb5165ca610f38215e05e6eec95e1d3d6da09437b17ba"
+    },
+    {
+      "path": "backend/dsh-trading-core/adapter/data_transfer.py",
+      "sha256": "7bf0749484702147b7aebcdddab4a486b8ba9867136ef78f9264113f04f54d76"
+    },
+    {
+      "path": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "sha256": "0ff00e79cc09b8de2703b98dc9eb065e510d1c0f5880ca4c5f58ba28b524a7b0"
+    },
+    {
+      "path": "backend/dsh-trading-core/adapter/product_package.py",
+      "sha256": "ff600fe34a326c66dc78ba0fe9196d02ee6a0e004d1f9f5aff7d5172036a22a6"
+    },
+    {
+      "path": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "sha256": "a97df9f523222720967310c63b3db6d2cfd584fcea98db6f0a92a5ed374436d6"
+    },
+    {
+      "path": "backend/dsh-trading-core/research_entities/api.py",
+      "sha256": "06db1aacbab50a6ee17be0fe5067704973bba9aeed9aa8187d236ec00fadffde"
+    },
+    {
+      "path": "backend/dsh-trading-core/research_partner/api.py",
+      "sha256": "a1482708ea068061fdc3fc919cf7acb07f0d9c7ace13e85d040c5d9b92ef1eee"
+    },
+    {
+      "path": "backend/industry-chain/industry_chain/app.py",
+      "sha256": "6ece9e32af6f11dc822c1b0f53f305f2fff193b7d670497d6985bee9c9cc3052"
+    },
+    {
+      "path": "backend/market-watch/market_watch/app.py",
+      "sha256": "93433410a56d96e41be975288ab874a0d975b6b18269fdb4f4e9186e8be0dc1e"
+    },
+    {
+      "path": "backend/market-watch/market_watch/data_transfer.py",
+      "sha256": "9ffbfdbef22a3c03d9dc7f0f0ae449428b9b852cff945537ab6c2c459afc09a4"
+    }
+  ],
+  "entry_count": 209,
+  "scope": "旧三个侧车生产模块中的静态HTTP路由；不扫描测试路由，不读取旧用户实例。旧装饰器协议不要求原样复制，功能须在新版有明确归属与证据。",
+  "limitations": [
+    "静态装饰器枚举不覆盖动态add_route/include_router前缀及前端纯交互，因此须与能力总表和旧UI/算法核查合并使用。",
+    "本账本记录映射与缺口；所有acceptance=open，不能把自动分组或mapped行当作等价验收通过。",
+    "implemented_slice仅指本批已验证的具体子行为，未宣称该旧入口每种输入/副作用已完整通过。"
+  ],
+  "status": "Inconclusive",
+  "entries": [
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 457,
+      "method": "GET",
+      "path": "/health",
+      "handler": "health",
+      "capability": "运行健康与生命周期",
+      "current_owner": "distribution / instance API",
+      "implementation_status": "protocol_replaced",
+      "acceptance": "open",
+      "note": "保留业务运行能力，不恢复三侧车常驻HTTP端口；独立产物验证另列",
+      "integration_forms": [
+        "内部生命周期实现"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "属于distribution和实例状态，不为每个旧health/scheduler端点新增模型Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 469,
+      "method": "GET",
+      "path": "/reports",
+      "handler": "reports_list",
+      "capability": "结构化报告生成/报告库/回查",
+      "current_owner": "DSH 会话 + 研究证据台账",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：会话文字和review记录不是旧报告库完整等价替代；模板、历史检索和出口需核对",
+      "integration_forms": [
+        "Skill",
+        "候选Tool"
+      ],
+      "existing_tools": [
+        "read_research_reviews"
+      ],
+      "adaptation_note": "模板与报告组织为Skill；正式保存/检索/导出是候选Tool；会话文字不当作旧报告库完整替代"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 486,
+      "method": "GET",
+      "path": "/reports/{report_id}",
+      "handler": "report_detail",
+      "capability": "结构化报告生成/报告库/回查",
+      "current_owner": "DSH 会话 + 研究证据台账",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：会话文字和review记录不是旧报告库完整等价替代；模板、历史检索和出口需核对",
+      "integration_forms": [
+        "Skill",
+        "候选Tool"
+      ],
+      "existing_tools": [
+        "read_research_reviews"
+      ],
+      "adaptation_note": "模板与报告组织为Skill；正式保存/检索/导出是候选Tool；会话文字不当作旧报告库完整替代"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 503,
+      "method": "POST",
+      "path": "/analyze",
+      "handler": "analyze",
+      "capability": "完整研究/持仓批量分析",
+      "current_owner": "DSH 研究Skill + 研究执行领域",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "九视角方法及结构化校准已接；持仓批量结果汇总、历史报告与真实分析质量未全部关闭",
+      "integration_forms": [
+        "Skill",
+        "Tool"
+      ],
+      "existing_tools": [
+        "review_research_decision",
+        "read_research_reviews"
+      ],
+      "adaptation_note": "四类分析、多空及三类风险审查作为DSH方法；旧TradingAgentsGraph整体运行时不恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 511,
+      "method": "POST",
+      "path": "/holdings/analyze",
+      "handler": "holdings_analyze",
+      "capability": "完整研究/持仓批量分析",
+      "current_owner": "DSH 研究Skill + 研究执行领域",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "九视角方法及结构化校准已接；持仓批量结果汇总、历史报告与真实分析质量未全部关闭",
+      "integration_forms": [
+        "Skill",
+        "Tool"
+      ],
+      "existing_tools": [
+        "review_research_decision",
+        "read_research_reviews"
+      ],
+      "adaptation_note": "四类分析、多空及三类风险审查作为DSH方法；旧TradingAgentsGraph整体运行时不恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 517,
+      "method": "GET",
+      "path": "/holdings/trades",
+      "handler": "holdings_trades",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 521,
+      "method": "POST",
+      "path": "/holdings/trades",
+      "handler": "holdings_trade",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 535,
+      "method": "GET",
+      "path": "/holdings/trades/revisions",
+      "handler": "holdings_trade_revisions",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 539,
+      "method": "POST",
+      "path": "/holdings/trades/revisions",
+      "handler": "holdings_trade_revision",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 554,
+      "method": "POST",
+      "path": "/holdings/facts/publish",
+      "handler": "holdings_facts_publish",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 559,
+      "method": "POST",
+      "path": "/holdings/save",
+      "handler": "holdings_save",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 580,
+      "method": "GET",
+      "path": "/holdings",
+      "handler": "holdings_get",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 595,
+      "method": "GET",
+      "path": "/holdings/source",
+      "handler": "holdings_source_get",
+      "capability": "券商客户端与同步",
+      "current_owner": "Investment 本机提供方适配",
+      "implementation_status": "deferred_by_user",
+      "acceptance": "open",
+      "note": "用户最新回复“这个先不用”；本轮不扫描客户端、不申请权限",
+      "integration_forms": [
+        "候选Tool",
+        "原生权限适配"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "按用户最新决定暂缓；若恢复，通过有界读取Tool，权限由程序与客户端处理"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 604,
+      "method": "POST",
+      "path": "/holdings/source/detect",
+      "handler": "holdings_source_detect",
+      "capability": "券商客户端与同步",
+      "current_owner": "Investment 本机提供方适配",
+      "implementation_status": "deferred_by_user",
+      "acceptance": "open",
+      "note": "用户最新回复“这个先不用”；本轮不扫描客户端、不申请权限",
+      "integration_forms": [
+        "候选Tool",
+        "原生权限适配"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "按用户最新决定暂缓；若恢复，通过有界读取Tool，权限由程序与客户端处理"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 624,
+      "method": "POST",
+      "path": "/holdings/sync",
+      "handler": "holdings_sync_post",
+      "capability": "券商客户端与同步",
+      "current_owner": "Investment 本机提供方适配",
+      "implementation_status": "deferred_by_user",
+      "acceptance": "open",
+      "note": "用户最新回复“这个先不用”；本轮不扫描客户端、不申请权限",
+      "integration_forms": [
+        "候选Tool",
+        "原生权限适配"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "按用户最新决定暂缓；若恢复，通过有界读取Tool，权限由程序与客户端处理"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 648,
+      "method": "GET",
+      "path": "/position-risk/config/global",
+      "handler": "position_risk_global_get",
+      "capability": "持仓止盈止损",
+      "current_owner": "Investment + PositionRisk + Mandates + executions/attempts",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "配置、覆盖、冻结、重新布防和一次触发已回归/合成UAT；内部旧推规则/回调由统一执行取代，真实市场长期验收未关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "preview_position_risk_change",
+        "commit_investment_change",
+        "read_investment_risk"
+      ],
+      "adaptation_note": "配置/布防通过Tool；选择与澄清在投资Skill；旧规则推送和价格回调改用统一执行链"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 658,
+      "method": "PUT",
+      "path": "/position-risk/config/global",
+      "handler": "position_risk_global_put",
+      "capability": "持仓止盈止损",
+      "current_owner": "Investment + PositionRisk + Mandates + executions/attempts",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "配置、覆盖、冻结、重新布防和一次触发已回归/合成UAT；内部旧推规则/回调由统一执行取代，真实市场长期验收未关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "preview_position_risk_change",
+        "commit_investment_change",
+        "read_investment_risk"
+      ],
+      "adaptation_note": "配置/布防通过Tool；选择与澄清在投资Skill；旧规则推送和价格回调改用统一执行链"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 673,
+      "method": "GET",
+      "path": "/position-risk/effective",
+      "handler": "position_risk_effective_get",
+      "capability": "持仓止盈止损",
+      "current_owner": "Investment + PositionRisk + Mandates + executions/attempts",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "配置、覆盖、冻结、重新布防和一次触发已回归/合成UAT；内部旧推规则/回调由统一执行取代，真实市场长期验收未关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "preview_position_risk_change",
+        "commit_investment_change",
+        "read_investment_risk"
+      ],
+      "adaptation_note": "配置/布防通过Tool；选择与澄清在投资Skill；旧规则推送和价格回调改用统一执行链"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 693,
+      "method": "PUT",
+      "path": "/position-risk/overrides/{ticker}",
+      "handler": "position_risk_override_put",
+      "capability": "持仓止盈止损",
+      "current_owner": "Investment + PositionRisk + Mandates + executions/attempts",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "配置、覆盖、冻结、重新布防和一次触发已回归/合成UAT；内部旧推规则/回调由统一执行取代，真实市场长期验收未关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "preview_position_risk_change",
+        "commit_investment_change",
+        "read_investment_risk"
+      ],
+      "adaptation_note": "配置/布防通过Tool；选择与澄清在投资Skill；旧规则推送和价格回调改用统一执行链"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 709,
+      "method": "DELETE",
+      "path": "/position-risk/overrides/{ticker}",
+      "handler": "position_risk_override_delete",
+      "capability": "持仓止盈止损",
+      "current_owner": "Investment + PositionRisk + Mandates + executions/attempts",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "配置、覆盖、冻结、重新布防和一次触发已回归/合成UAT；内部旧推规则/回调由统一执行取代，真实市场长期验收未关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "preview_position_risk_change",
+        "commit_investment_change",
+        "read_investment_risk"
+      ],
+      "adaptation_note": "配置/布防通过Tool；选择与澄清在投资Skill；旧规则推送和价格回调改用统一执行链"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 717,
+      "method": "POST",
+      "path": "/position-risk/activations/{ticker}/{kind}/rearm",
+      "handler": "position_risk_rearm",
+      "capability": "持仓止盈止损",
+      "current_owner": "Investment + PositionRisk + Mandates + executions/attempts",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "配置、覆盖、冻结、重新布防和一次触发已回归/合成UAT；内部旧推规则/回调由统一执行取代，真实市场长期验收未关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "preview_position_risk_change",
+        "commit_investment_change",
+        "read_investment_risk"
+      ],
+      "adaptation_note": "配置/布防通过Tool；选择与澄清在投资Skill；旧规则推送和价格回调改用统一执行链"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 729,
+      "method": "POST",
+      "path": "/internal/position-risk/price-hits",
+      "handler": "position_risk_price_hit",
+      "capability": "持仓止盈止损",
+      "current_owner": "Investment + PositionRisk + Mandates + executions/attempts",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "配置、覆盖、冻结、重新布防和一次触发已回归/合成UAT；内部旧推规则/回调由统一执行取代，真实市场长期验收未关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "preview_position_risk_change",
+        "commit_investment_change",
+        "read_investment_risk"
+      ],
+      "adaptation_note": "配置/布防通过Tool；选择与澄清在投资Skill；旧规则推送和价格回调改用统一执行链"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 742,
+      "method": "POST",
+      "path": "/holdings/native",
+      "handler": "holdings_native_post",
+      "capability": "券商客户端与同步",
+      "current_owner": "Investment 本机提供方适配",
+      "implementation_status": "deferred_by_user",
+      "acceptance": "open",
+      "note": "用户最新回复“这个先不用”；本轮不扫描客户端、不申请权限",
+      "integration_forms": [
+        "候选Tool",
+        "原生权限适配"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "按用户最新决定暂缓；若恢复，通过有界读取Tool，权限由程序与客户端处理"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 778,
+      "method": "POST",
+      "path": "/trades/sync",
+      "handler": "trades_sync_post",
+      "capability": "券商客户端与同步",
+      "current_owner": "Investment 本机提供方适配",
+      "implementation_status": "deferred_by_user",
+      "acceptance": "open",
+      "note": "用户最新回复“这个先不用”；本轮不扫描客户端、不申请权限",
+      "integration_forms": [
+        "候选Tool",
+        "原生权限适配"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "按用户最新决定暂缓；若恢复，通过有界读取Tool，权限由程序与客户端处理"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 792,
+      "method": "POST",
+      "path": "/trades/clear",
+      "handler": "trades_clear_post",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 806,
+      "method": "GET",
+      "path": "/trades",
+      "handler": "trades_get",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 821,
+      "method": "GET",
+      "path": "/holdings/user-config",
+      "handler": "holdings_user_config_get",
+      "capability": "券商客户端与同步",
+      "current_owner": "Investment 本机提供方适配",
+      "implementation_status": "deferred_by_user",
+      "acceptance": "open",
+      "note": "用户最新回复“这个先不用”；本轮不扫描客户端、不申请权限",
+      "integration_forms": [
+        "候选Tool",
+        "原生权限适配"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "按用户最新决定暂缓；若恢复，通过有界读取Tool，权限由程序与客户端处理"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 849,
+      "method": "PUT",
+      "path": "/holdings/user-config",
+      "handler": "holdings_user_config_put",
+      "capability": "券商客户端与同步",
+      "current_owner": "Investment 本机提供方适配",
+      "implementation_status": "deferred_by_user",
+      "acceptance": "open",
+      "note": "用户最新回复“这个先不用”；本轮不扫描客户端、不申请权限",
+      "integration_forms": [
+        "候选Tool",
+        "原生权限适配"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "按用户最新决定暂缓；若恢复，通过有界读取Tool，权限由程序与客户端处理"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 888,
+      "method": "GET",
+      "path": "/portfolio/performance",
+      "handler": "portfolio_performance_get",
+      "capability": "账户估值/历史表现/历史起点",
+      "current_owner": "Investment",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "旧portfolio_performance只有规范化/快照部分在新版，完整估值与收益历史仍待接",
+      "integration_forms": [
+        "候选Tool",
+        "内部快照实现"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "从当前投资事实和受限资料计算，先保留unknown；不是独立账户功能应用"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 920,
+      "method": "POST",
+      "path": "/portfolio/history-start",
+      "handler": "portfolio_history_start",
+      "capability": "账户估值/历史表现/历史起点",
+      "current_owner": "Investment",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "旧portfolio_performance只有规范化/快照部分在新版，完整估值与收益历史仍待接",
+      "integration_forms": [
+        "候选Tool",
+        "内部快照实现"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "从当前投资事实和受限资料计算，先保留unknown；不是独立账户功能应用"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 940,
+      "method": "GET",
+      "path": "/watchlist",
+      "handler": "watchlist_get",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 946,
+      "method": "POST",
+      "path": "/watchlist",
+      "handler": "watchlist_set",
+      "capability": "投资事实/成交/修订/来源配置",
+      "current_owner": "Investment",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "同库事实与版本已接；成交清除/原用户配置和整套快照来源语义另核对，不以手工输入替代券商读取",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部事实实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts",
+        "preview_investment_change",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "复用同一投资事实Tool；旧原始存储/自动同步机制须适配，不平移为第二套账户模块"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 953,
+      "method": "GET",
+      "path": "/risk_profile",
+      "handler": "risk_profile_get",
+      "capability": "KYC与有效风险画像",
+      "current_owner": "Investment",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "三题/八题/文本候选/滑块/预算及版本；实际页面与DSH受控路径已分项验证，语义提取真实质量待验",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "assess_risk_preference",
+        "parse_risk_preferences",
+        "preview_risk_adjustment",
+        "read_investment_facts",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "题库、评分和预算是Tool背后的程序能力；题意澄清在Skill，不单独迁入旧KYC应用"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 961,
+      "method": "POST",
+      "path": "/risk_profile",
+      "handler": "risk_profile_set",
+      "capability": "KYC与有效风险画像",
+      "current_owner": "Investment",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "三题/八题/文本候选/滑块/预算及版本；实际页面与DSH受控路径已分项验证，语义提取真实质量待验",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "assess_risk_preference",
+        "parse_risk_preferences",
+        "preview_risk_adjustment",
+        "read_investment_facts",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "题库、评分和预算是Tool背后的程序能力；题意澄清在Skill，不单独迁入旧KYC应用"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 973,
+      "method": "GET",
+      "path": "/kyc/profile",
+      "handler": "kyc_profile_get",
+      "capability": "KYC与有效风险画像",
+      "current_owner": "Investment",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "三题/八题/文本候选/滑块/预算及版本；实际页面与DSH受控路径已分项验证，语义提取真实质量待验",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "assess_risk_preference",
+        "parse_risk_preferences",
+        "preview_risk_adjustment",
+        "read_investment_facts",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "题库、评分和预算是Tool背后的程序能力；题意澄清在Skill，不单独迁入旧KYC应用"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 978,
+      "method": "POST",
+      "path": "/kyc/questionnaire",
+      "handler": "kyc_questionnaire",
+      "capability": "KYC与有效风险画像",
+      "current_owner": "Investment",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "三题/八题/文本候选/滑块/预算及版本；实际页面与DSH受控路径已分项验证，语义提取真实质量待验",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "assess_risk_preference",
+        "parse_risk_preferences",
+        "preview_risk_adjustment",
+        "read_investment_facts",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "题库、评分和预算是Tool背后的程序能力；题意澄清在Skill，不单独迁入旧KYC应用"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1014,
+      "method": "POST",
+      "path": "/kyc/adjust",
+      "handler": "kyc_adjust",
+      "capability": "KYC与有效风险画像",
+      "current_owner": "Investment",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "三题/八题/文本候选/滑块/预算及版本；实际页面与DSH受控路径已分项验证，语义提取真实质量待验",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "assess_risk_preference",
+        "parse_risk_preferences",
+        "preview_risk_adjustment",
+        "read_investment_facts",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "题库、评分和预算是Tool背后的程序能力；题意澄清在Skill，不单独迁入旧KYC应用"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1045,
+      "method": "POST",
+      "path": "/kyc/parse",
+      "handler": "kyc_parse",
+      "capability": "KYC与有效风险画像",
+      "current_owner": "Investment",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "三题/八题/文本候选/滑块/预算及版本；实际页面与DSH受控路径已分项验证，语义提取真实质量待验",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "assess_risk_preference",
+        "parse_risk_preferences",
+        "preview_risk_adjustment",
+        "read_investment_facts",
+        "commit_investment_change"
+      ],
+      "adaptation_note": "题库、评分和预算是Tool背后的程序能力；题意澄清在Skill，不单独迁入旧KYC应用"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1053,
+      "method": "POST",
+      "path": "/brief",
+      "handler": "brief",
+      "capability": "模型简报/历史简报/推送回执",
+      "current_owner": "DSH + MarketData + 研究/通知领域",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "MarketData资料包不等于旧模型解读简报、历史latest与推送去重回执全部等价",
+      "integration_forms": [
+        "Skill",
+        "Tool",
+        "内部回执实现"
+      ],
+      "existing_tools": [
+        "query_market"
+      ],
+      "adaptation_note": "资料、摘要组织、保存和联系分解到Tool/Skill/正式回执；旧直推回调不原样恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1059,
+      "method": "GET",
+      "path": "/brief/latest",
+      "handler": "brief_latest",
+      "capability": "模型简报/历史简报/推送回执",
+      "current_owner": "DSH + MarketData + 研究/通知领域",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "MarketData资料包不等于旧模型解读简报、历史latest与推送去重回执全部等价",
+      "integration_forms": [
+        "Skill",
+        "Tool",
+        "内部回执实现"
+      ],
+      "existing_tools": [
+        "query_market"
+      ],
+      "adaptation_note": "资料、摘要组织、保存和联系分解到Tool/Skill/正式回执；旧直推回调不原样恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1081,
+      "method": "POST",
+      "path": "/brief/{brief_id}/dsh-pushed",
+      "handler": "brief_dsh_pushed",
+      "capability": "模型简报/历史简报/推送回执",
+      "current_owner": "DSH + MarketData + 研究/通知领域",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "MarketData资料包不等于旧模型解读简报、历史latest与推送去重回执全部等价",
+      "integration_forms": [
+        "Skill",
+        "Tool",
+        "内部回执实现"
+      ],
+      "existing_tools": [
+        "query_market"
+      ],
+      "adaptation_note": "资料、摘要组织、保存和联系分解到Tool/Skill/正式回执；旧直推回调不原样恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1096,
+      "method": "POST",
+      "path": "/backtest/run",
+      "handler": "backtest_run",
+      "capability": "历史分析决策评价",
+      "current_owner": "研究领域",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "旧BacktestRunner的分析决策前瞻评价，不得用Strategies的规则回测当作已替代",
+      "integration_forms": [
+        "候选Tool",
+        "Skill"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "纯评价算法作为有界Tool；分析方法在Skill，旧TaskManager和Python Agent不恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1102,
+      "method": "GET",
+      "path": "/backtest/results",
+      "handler": "backtest_results",
+      "capability": "历史分析决策评价",
+      "current_owner": "研究领域",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "旧BacktestRunner的分析决策前瞻评价，不得用Strategies的规则回测当作已替代",
+      "integration_forms": [
+        "候选Tool",
+        "Skill"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "纯评价算法作为有界Tool；分析方法在Skill，旧TaskManager和Python Agent不恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1112,
+      "method": "GET",
+      "path": "/backtest/performance",
+      "handler": "backtest_performance",
+      "capability": "历史分析决策评价",
+      "current_owner": "研究领域",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "旧BacktestRunner的分析决策前瞻评价，不得用Strategies的规则回测当作已替代",
+      "integration_forms": [
+        "候选Tool",
+        "Skill"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "纯评价算法作为有界Tool；分析方法在Skill，旧TaskManager和Python Agent不恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1117,
+      "method": "GET",
+      "path": "/backtest/performance/{code}",
+      "handler": "backtest_performance_code",
+      "capability": "历史分析决策评价",
+      "current_owner": "研究领域",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "旧BacktestRunner的分析决策前瞻评价，不得用Strategies的规则回测当作已替代",
+      "integration_forms": [
+        "候选Tool",
+        "Skill"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "纯评价算法作为有界Tool；分析方法在Skill，旧TaskManager和Python Agent不恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1124,
+      "method": "POST",
+      "path": "/strategies/hypothesize",
+      "handler": "strategies_hypothesize",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1149,
+      "method": "POST",
+      "path": "/strategies/run",
+      "handler": "strategies_run",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1158,
+      "method": "GET",
+      "path": "/strategies",
+      "handler": "strategies_list",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1213,
+      "method": "GET",
+      "path": "/research-chat/contexts/{session_id}",
+      "handler": "research_chat_context_get",
+      "capability": "会话研究上下文",
+      "current_owner": "DSH 会话 + 只读事实快照",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "不恢复旧Session/Agent；上下文生命周期、对象切换与恢复须逐项核对",
+      "integration_forms": [
+        "DSH原生会话",
+        "内部上下文实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts"
+      ],
+      "adaptation_note": "DSH持有会话，Tool按需提供事实；不复刻旧Session或记忆引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1225,
+      "method": "POST",
+      "path": "/research-chat/contexts/{session_id}",
+      "handler": "research_chat_context_save",
+      "capability": "会话研究上下文",
+      "current_owner": "DSH 会话 + 只读事实快照",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "不恢复旧Session/Agent；上下文生命周期、对象切换与恢复须逐项核对",
+      "integration_forms": [
+        "DSH原生会话",
+        "内部上下文实现"
+      ],
+      "existing_tools": [
+        "read_investment_facts"
+      ],
+      "adaptation_note": "DSH持有会话，Tool按需提供事实；不复刻旧Session或记忆引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1248,
+      "method": "GET",
+      "path": "/strategies/{sid}",
+      "handler": "strategies_get",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1264,
+      "method": "GET",
+      "path": "/strategies/{sid}/backtests",
+      "handler": "strategy_backtests",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1275,
+      "method": "GET",
+      "path": "/strategies/{sid}/backtests/{task_id}",
+      "handler": "strategy_backtest_detail",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1285,
+      "method": "POST",
+      "path": "/strategies/{sid}/backtests/{task_id}/cancel",
+      "handler": "strategy_backtest_cancel",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1300,
+      "method": "POST",
+      "path": "/strategies/{sid}/backtests/{task_id}/retry",
+      "handler": "strategy_backtest_retry",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1321,
+      "method": "POST",
+      "path": "/strategies/{sid}/{action}",
+      "handler": "strategies_transition",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1339,
+      "method": "POST",
+      "path": "/shadow/run",
+      "handler": "shadow_run",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1347,
+      "method": "GET",
+      "path": "/shadow/status",
+      "handler": "shadow_status",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1360,
+      "method": "GET",
+      "path": "/shadow/positions",
+      "handler": "shadow_positions",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1374,
+      "method": "GET",
+      "path": "/shadow/equity",
+      "handler": "shadow_equity",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1394,
+      "method": "GET",
+      "path": "/shadow/history",
+      "handler": "shadow_history",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1439,
+      "method": "GET",
+      "path": "/shadow/tasks/{task_id}",
+      "handler": "shadow_task_detail",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1449,
+      "method": "POST",
+      "path": "/shadow/tasks/{task_id}/cancel",
+      "handler": "shadow_task_cancel",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1465,
+      "method": "GET",
+      "path": "/personalized/matches",
+      "handler": "personalized_matches",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1472,
+      "method": "GET",
+      "path": "/personalized/cards",
+      "handler": "personalized_cards",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1498,
+      "method": "POST",
+      "path": "/personalized/interactions",
+      "handler": "personalized_interactions_post",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1507,
+      "method": "POST",
+      "path": "/personalized/feedback",
+      "handler": "personalized_feedback_post",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1520,
+      "method": "POST",
+      "path": "/personalized/local-learning/events",
+      "handler": "local_learning_events_post",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1529,
+      "method": "GET",
+      "path": "/personalized/local-learning/status",
+      "handler": "local_learning_status_get",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1536,
+      "method": "POST",
+      "path": "/personalized/local-learning/settings",
+      "handler": "local_learning_settings_post",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1543,
+      "method": "POST",
+      "path": "/personalized/local-learning/clear",
+      "handler": "local_learning_clear_post",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1552,
+      "method": "GET",
+      "path": "/personalized/review",
+      "handler": "personalized_review",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1561,
+      "method": "GET",
+      "path": "/personalized/profile",
+      "handler": "personalized_profile",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1568,
+      "method": "GET",
+      "path": "/personalized/impact",
+      "handler": "personalized_impact",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1616,
+      "method": "GET",
+      "path": "/personalized/interactions",
+      "handler": "personalized_interactions_get",
+      "capability": "个性化与本机学习",
+      "current_owner": "Personalization",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "旧卡片/匹配/反馈/学习/复盘算法已接；页面已验证阅读反馈与暂停，更多入口、真实策略样本与真实效果仍开放",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部状态实现"
+      ],
+      "existing_tools": [
+        "read_personalized_research",
+        "preview_personalization_change",
+        "commit_personalization_change",
+        "refresh_personalized_sources",
+        "record_personalized_interaction"
+      ],
+      "adaptation_note": "旧匹配与排序算法复用为有界Tool实现；学习开关/行为状态仍需同实例持久化；不恢复全局JsonStore或自动开启"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1625,
+      "method": "GET",
+      "path": "/risk/portfolio",
+      "handler": "risk_portfolio",
+      "capability": "组合风险与聚合预警",
+      "current_owner": "Personalization 风险读模型 + PositionRisk",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "等权/影子/五源预警已接，明确不是实际账户市值或收益；真实账户完整闭环未完成",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "read_investment_risk"
+      ],
+      "adaptation_note": "风险计算由程序Tool提供，Skill解释口径；旧自动跟踪授权不继承"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1632,
+      "method": "GET",
+      "path": "/risk/alerts",
+      "handler": "risk_alerts",
+      "capability": "组合风险与聚合预警",
+      "current_owner": "Personalization 风险读模型 + PositionRisk",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "等权/影子/五源预警已接，明确不是实际账户市值或收益；真实账户完整闭环未完成",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "read_investment_risk"
+      ],
+      "adaptation_note": "风险计算由程序Tool提供，Skill解释口径；旧自动跟踪授权不继承"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1641,
+      "method": "GET",
+      "path": "/evolution/history",
+      "handler": "evolution_history_get",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1651,
+      "method": "GET",
+      "path": "/evolution/status",
+      "handler": "evolution_status",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1666,
+      "method": "GET",
+      "path": "/evolution/attribution",
+      "handler": "evolution_attribution",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1680,
+      "method": "GET",
+      "path": "/evolution/preview",
+      "handler": "evolution_preview",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1694,
+      "method": "POST",
+      "path": "/evolution/run",
+      "handler": "evolution_run",
+      "capability": "策略规则/回测/影子/演进",
+      "current_owner": "Strategies + 统一委托执行链",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有实现/聚焦和受控运行证据可复用；逐条旧操作含取消/重试/归档语义及长期真实运行仍须核对",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "read_strategy_records",
+        "manage_strategy",
+        "strategy_pool_lookup",
+        "strategy_attribution_lookup",
+        "strategy_evolution_preview"
+      ],
+      "adaptation_note": "复用策略Tool与Skill；后台任务由统一委托核心持有，不平移旧独立演进引擎"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1713,
+      "method": "GET",
+      "path": "/analyze/{task_id}/stream",
+      "handler": "stream",
+      "capability": "完整研究/持仓批量分析",
+      "current_owner": "DSH 研究Skill + 研究执行领域",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "九视角方法及结构化校准已接；持仓批量结果汇总、历史报告与真实分析质量未全部关闭",
+      "integration_forms": [
+        "Skill",
+        "Tool"
+      ],
+      "existing_tools": [
+        "review_research_decision",
+        "read_research_reviews"
+      ],
+      "adaptation_note": "四类分析、多空及三类风险审查作为DSH方法；旧TradingAgentsGraph整体运行时不恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1722,
+      "method": "GET",
+      "path": "/analyze/{task_id}/result",
+      "handler": "result",
+      "capability": "完整研究/持仓批量分析",
+      "current_owner": "DSH 研究Skill + 研究执行领域",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "九视角方法及结构化校准已接；持仓批量结果汇总、历史报告与真实分析质量未全部关闭",
+      "integration_forms": [
+        "Skill",
+        "Tool"
+      ],
+      "existing_tools": [
+        "review_research_decision",
+        "read_research_reviews"
+      ],
+      "adaptation_note": "四类分析、多空及三类风险审查作为DSH方法；旧TradingAgentsGraph整体运行时不恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/app.py",
+      "source_line": 1750,
+      "method": "GET",
+      "path": "/analyze/{task_id}",
+      "handler": "status",
+      "capability": "完整研究/持仓批量分析",
+      "current_owner": "DSH 研究Skill + 研究执行领域",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "九视角方法及结构化校准已接；持仓批量结果汇总、历史报告与真实分析质量未全部关闭",
+      "integration_forms": [
+        "Skill",
+        "Tool"
+      ],
+      "existing_tools": [
+        "review_research_decision",
+        "read_research_reviews"
+      ],
+      "adaptation_note": "四类分析、多空及三类风险审查作为DSH方法；旧TradingAgentsGraph整体运行时不恢复"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/data_transfer.py",
+      "source_line": 1081,
+      "method": "GET",
+      "path": "/data-transfer/export",
+      "handler": "transfer_export",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/data_transfer.py",
+      "source_line": 1090,
+      "method": "POST",
+      "path": "/data-transfer/preview",
+      "handler": "transfer_preview",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/data_transfer.py",
+      "source_line": 1100,
+      "method": "POST",
+      "path": "/data-transfer/export-completed",
+      "handler": "transfer_export_completed",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/data_transfer.py",
+      "source_line": 1105,
+      "method": "POST",
+      "path": "/data-transfer/prepare",
+      "handler": "transfer_prepare",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/data_transfer.py",
+      "source_line": 1117,
+      "method": "POST",
+      "path": "/data-transfer/reset",
+      "handler": "transfer_reset",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/data_transfer.py",
+      "source_line": 1128,
+      "method": "POST",
+      "path": "/data-transfer/commit",
+      "handler": "transfer_commit",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/data_transfer.py",
+      "source_line": 1141,
+      "method": "POST",
+      "path": "/data-transfer/rollback",
+      "handler": "transfer_rollback",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/data_transfer.py",
+      "source_line": 1146,
+      "method": "POST",
+      "path": "/data-transfer/finalize",
+      "handler": "transfer_finalize",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 53,
+      "method": "POST",
+      "path": "/internal/notification-channels/{operation}",
+      "handler": "notification_channels",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 87,
+      "method": "POST",
+      "path": "/internal/notification-events",
+      "handler": "publish_notification_event",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 98,
+      "method": "POST",
+      "path": "/internal/notification-deliveries/claim",
+      "handler": "claim_native_notification_deliveries",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 114,
+      "method": "POST",
+      "path": "/internal/notification-deliveries/{job_id}/ack",
+      "handler": "acknowledge_native_notification_delivery",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 131,
+      "method": "POST",
+      "path": "/internal/notification-deliveries/{job_id}/nack",
+      "handler": "reject_native_notification_delivery",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 153,
+      "method": "GET",
+      "path": "/notifications",
+      "handler": "list_notifications",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 180,
+      "method": "GET",
+      "path": "/notifications/preferences",
+      "handler": "notification_preferences",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 184,
+      "method": "PUT",
+      "path": "/notifications/preferences",
+      "handler": "update_notification_preference",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 196,
+      "method": "GET",
+      "path": "/notifications/capabilities",
+      "handler": "notification_capabilities",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 203,
+      "method": "POST",
+      "path": "/notifications/read-all",
+      "handler": "mark_all_notifications_read",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 208,
+      "method": "POST",
+      "path": "/notifications/bulk-read",
+      "handler": "bulk_read_notifications",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 219,
+      "method": "GET",
+      "path": "/notifications/{notification_id}",
+      "handler": "get_notification",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 226,
+      "method": "PATCH",
+      "path": "/notifications/{notification_id}/read",
+      "handler": "set_notification_read",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 235,
+      "method": "PATCH",
+      "path": "/notifications/{notification_id}/archive",
+      "handler": "set_notification_archived",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 244,
+      "method": "POST",
+      "path": "/notifications/{notification_id}/deliveries/{channel}/retry",
+      "handler": "retry_notification_delivery",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 255,
+      "method": "POST",
+      "path": "/notifications/subscriptions",
+      "handler": "save_notification_subscription",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/notifications/api.py",
+      "source_line": 280,
+      "method": "DELETE",
+      "path": "/notifications/subscriptions/{channel}/{device_id}",
+      "handler": "deactivate_notification_subscription",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/product_package.py",
+      "source_line": 694,
+      "method": "GET",
+      "path": "/product-data/package",
+      "handler": "product_package_export",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/product_package.py",
+      "source_line": 707,
+      "method": "POST",
+      "path": "/product-data/import/preview",
+      "handler": "product_package_preview",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/product_package.py",
+      "source_line": 720,
+      "method": "POST",
+      "path": "/product-data/import",
+      "handler": "product_package_commit",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/product_package.py",
+      "source_line": 740,
+      "method": "GET",
+      "path": "/product-data/imports/{batch_id}",
+      "handler": "product_package_batch",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/product_package.py",
+      "source_line": 750,
+      "method": "GET",
+      "path": "/product-data/imports",
+      "handler": "product_package_incomplete",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "source_line": 1047,
+      "method": "GET",
+      "path": "/public/performance/v1/bundle",
+      "handler": "public_performance_bundle",
+      "capability": "账户快照与可公开表现读模型",
+      "current_owner": "Investment / 尚待接入的账户表现读模型",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：保留公开表现资产；本轮没有开放接口或发布到外部，公开配置与发布另行处理",
+      "integration_forms": [
+        "候选Tool"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "优先适配为本机私有表现查询Tool；旧默认公开HTTP输出不直接恢复，不自动发布"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "source_line": 1062,
+      "method": "GET",
+      "path": "/public/performance/v1/live",
+      "handler": "public_performance_live",
+      "capability": "账户快照与可公开表现读模型",
+      "current_owner": "Investment / 尚待接入的账户表现读模型",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：保留公开表现资产；本轮没有开放接口或发布到外部，公开配置与发布另行处理",
+      "integration_forms": [
+        "候选Tool"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "优先适配为本机私有表现查询Tool；旧默认公开HTTP输出不直接恢复，不自动发布"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "source_line": 1069,
+      "method": "GET",
+      "path": "/public/performance/v1/history",
+      "handler": "public_performance_history",
+      "capability": "账户快照与可公开表现读模型",
+      "current_owner": "Investment / 尚待接入的账户表现读模型",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：保留公开表现资产；本轮没有开放接口或发布到外部，公开配置与发布另行处理",
+      "integration_forms": [
+        "候选Tool"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "优先适配为本机私有表现查询Tool；旧默认公开HTTP输出不直接恢复，不自动发布"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "source_line": 1097,
+      "method": "POST",
+      "path": "/portfolio/account-snapshots",
+      "handler": "account_snapshot_create",
+      "capability": "账户快照与可公开表现读模型",
+      "current_owner": "Investment / 尚待接入的账户表现读模型",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：保留公开表现资产；本轮没有开放接口或发布到外部，公开配置与发布另行处理",
+      "integration_forms": [
+        "候选Tool"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "优先适配为本机私有表现查询Tool；旧默认公开HTTP输出不直接恢复，不自动发布"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "source_line": 1114,
+      "method": "GET",
+      "path": "/public/performance/v1/overview",
+      "handler": "public_performance_overview",
+      "capability": "账户快照与可公开表现读模型",
+      "current_owner": "Investment / 尚待接入的账户表现读模型",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：保留公开表现资产；本轮没有开放接口或发布到外部，公开配置与发布另行处理",
+      "integration_forms": [
+        "候选Tool"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "优先适配为本机私有表现查询Tool；旧默认公开HTTP输出不直接恢复，不自动发布"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "source_line": 1131,
+      "method": "GET",
+      "path": "/public/performance/v1/holdings",
+      "handler": "public_performance_holdings",
+      "capability": "账户快照与可公开表现读模型",
+      "current_owner": "Investment / 尚待接入的账户表现读模型",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：保留公开表现资产；本轮没有开放接口或发布到外部，公开配置与发布另行处理",
+      "integration_forms": [
+        "候选Tool"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "优先适配为本机私有表现查询Tool；旧默认公开HTTP输出不直接恢复，不自动发布"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "source_line": 1148,
+      "method": "GET",
+      "path": "/public/performance/v1/calendar",
+      "handler": "public_performance_calendar",
+      "capability": "账户快照与可公开表现读模型",
+      "current_owner": "Investment / 尚待接入的账户表现读模型",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：保留公开表现资产；本轮没有开放接口或发布到外部，公开配置与发布另行处理",
+      "integration_forms": [
+        "候选Tool"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "优先适配为本机私有表现查询Tool；旧默认公开HTTP输出不直接恢复，不自动发布"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "source_line": 1157,
+      "method": "GET",
+      "path": "/public/performance/v1/equity",
+      "handler": "public_performance_equity",
+      "capability": "账户快照与可公开表现读模型",
+      "current_owner": "Investment / 尚待接入的账户表现读模型",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：保留公开表现资产；本轮没有开放接口或发布到外部，公开配置与发布另行处理",
+      "integration_forms": [
+        "候选Tool"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "优先适配为本机私有表现查询Tool；旧默认公开HTTP输出不直接恢复，不自动发布"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "source_line": 1167,
+      "method": "GET",
+      "path": "/public/performance/v1/activities",
+      "handler": "public_performance_activities",
+      "capability": "账户快照与可公开表现读模型",
+      "current_owner": "Investment / 尚待接入的账户表现读模型",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：保留公开表现资产；本轮没有开放接口或发布到外部，公开配置与发布另行处理",
+      "integration_forms": [
+        "候选Tool"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "优先适配为本机私有表现查询Tool；旧默认公开HTTP输出不直接恢复，不自动发布"
+    },
+    {
+      "source": "backend/dsh-trading-core/adapter/public_observatory.py",
+      "source_line": 1185,
+      "method": "GET",
+      "path": "/public/performance/v1/activities/{public_id}",
+      "handler": "public_performance_activity_detail",
+      "capability": "账户快照与可公开表现读模型",
+      "current_owner": "Investment / 尚待接入的账户表现读模型",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：保留公开表现资产；本轮没有开放接口或发布到外部，公开配置与发布另行处理",
+      "integration_forms": [
+        "候选Tool"
+      ],
+      "existing_tools": [],
+      "adaptation_note": "优先适配为本机私有表现查询Tool；旧默认公开HTTP输出不直接恢复，不自动发布"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 203,
+      "method": "GET",
+      "path": "/health",
+      "handler": "health",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 213,
+      "method": "GET",
+      "path": "/research/health",
+      "handler": "research_health",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 217,
+      "method": "GET",
+      "path": "/research/sources",
+      "handler": "list_sources",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 229,
+      "method": "POST",
+      "path": "/research/sources/refresh",
+      "handler": "refresh_sources",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 233,
+      "method": "GET",
+      "path": "/research/tools",
+      "handler": "list_tools",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 250,
+      "method": "GET",
+      "path": "/research/tools/{tool_id}",
+      "handler": "get_tool",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 256,
+      "method": "GET",
+      "path": "/research/entities/types",
+      "handler": "list_entity_types",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 293,
+      "method": "GET",
+      "path": "/research/entities",
+      "handler": "list_entities",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 327,
+      "method": "GET",
+      "path": "/research/entities/search",
+      "handler": "search_entities",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 358,
+      "method": "POST",
+      "path": "/research/scope",
+      "handler": "resolve_scope",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 365,
+      "method": "POST",
+      "path": "/research/tools/run",
+      "handler": "run_tool",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 376,
+      "method": "POST",
+      "path": "/research/run",
+      "handler": "run_research",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 393,
+      "method": "GET",
+      "path": "/research/evidence/{request_id}",
+      "handler": "get_evidence",
+      "capability": "研究实体/资料/证据/报告",
+      "current_owner": "ResearchEntities + 当前资料工具",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "身份与同会话证据已接，来源健康刷新、旧研究报告模板/存储与组合run仍逐项核对",
+      "integration_forms": [
+        "Tool",
+        "Skill"
+      ],
+      "existing_tools": [
+        "resolve_research_scope",
+        "confirm_research_entities",
+        "research_evidence"
+      ],
+      "adaptation_note": "复用已注册资料Tool；来源治理与报告缺口逐项评估，不能照HTTP入口逐个造Tool"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 401,
+      "method": "POST",
+      "path": "/research/reports",
+      "handler": "build_report",
+      "capability": "结构化报告生成/报告库/回查",
+      "current_owner": "DSH 会话 + 研究证据台账",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：会话文字和review记录不是旧报告库完整等价替代；模板、历史检索和出口需核对",
+      "integration_forms": [
+        "Skill",
+        "候选Tool"
+      ],
+      "existing_tools": [
+        "read_research_reviews"
+      ],
+      "adaptation_note": "模板与报告组织为Skill；正式保存/检索/导出是候选Tool；会话文字不当作旧报告库完整替代"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 408,
+      "method": "GET",
+      "path": "/research/reports/by-id/{report_id}",
+      "handler": "get_report_by_id",
+      "capability": "结构化报告生成/报告库/回查",
+      "current_owner": "DSH 会话 + 研究证据台账",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：会话文字和review记录不是旧报告库完整等价替代；模板、历史检索和出口需核对",
+      "integration_forms": [
+        "Skill",
+        "候选Tool"
+      ],
+      "existing_tools": [
+        "read_research_reviews"
+      ],
+      "adaptation_note": "模板与报告组织为Skill；正式保存/检索/导出是候选Tool；会话文字不当作旧报告库完整替代"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 412,
+      "method": "GET",
+      "path": "/research/reports/{request_id}",
+      "handler": "list_reports",
+      "capability": "结构化报告生成/报告库/回查",
+      "current_owner": "DSH 会话 + 研究证据台账",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：会话文字和review记录不是旧报告库完整等价替代；模板、历史检索和出口需核对",
+      "integration_forms": [
+        "Skill",
+        "候选Tool"
+      ],
+      "existing_tools": [
+        "read_research_reviews"
+      ],
+      "adaptation_note": "模板与报告组织为Skill；正式保存/检索/导出是候选Tool；会话文字不当作旧报告库完整替代"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_entities/api.py",
+      "source_line": 421,
+      "method": "GET",
+      "path": "/research/reports/{request_id}/latest",
+      "handler": "latest_report",
+      "capability": "结构化报告生成/报告库/回查",
+      "current_owner": "DSH 会话 + 研究证据台账",
+      "implementation_status": "open",
+      "acceptance": "open",
+      "note": "新增细分：会话文字和review记录不是旧报告库完整等价替代；模板、历史检索和出口需核对",
+      "integration_forms": [
+        "Skill",
+        "候选Tool"
+      ],
+      "existing_tools": [
+        "read_research_reviews"
+      ],
+      "adaptation_note": "模板与报告组织为Skill；正式保存/检索/导出是候选Tool；会话文字不当作旧报告库完整替代"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 76,
+      "method": "GET",
+      "path": "/partners/health",
+      "handler": "health",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 85,
+      "method": "POST",
+      "path": "/events",
+      "handler": "ingest_event",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 91,
+      "method": "POST",
+      "path": "/partners/tick",
+      "handler": "tick",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 100,
+      "method": "POST",
+      "path": "/runtime/recovered",
+      "handler": "runtime_recovered",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 109,
+      "method": "GET",
+      "path": "/hooks",
+      "handler": "hooks",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 114,
+      "method": "GET",
+      "path": "/jobs/{job_id}",
+      "handler": "get_job",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 132,
+      "method": "POST",
+      "path": "/mandates",
+      "handler": "create_mandate",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 140,
+      "method": "GET",
+      "path": "/mandates",
+      "handler": "list_mandates",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 155,
+      "method": "GET",
+      "path": "/mandates/{mandate_id}",
+      "handler": "get_mandate",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 163,
+      "method": "POST",
+      "path": "/mandates/{mandate_id}/revisions",
+      "handler": "revise_mandate",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 172,
+      "method": "POST",
+      "path": "/mandates/{mandate_id}/pause",
+      "handler": "pause_mandate",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 181,
+      "method": "POST",
+      "path": "/mandates/{mandate_id}/resume",
+      "handler": "resume_mandate",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 190,
+      "method": "POST",
+      "path": "/mandates/{mandate_id}/end",
+      "handler": "end_mandate",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 199,
+      "method": "POST",
+      "path": "/mandates/{mandate_id}/requirements/{requirement_id}/resolve",
+      "handler": "resolve_requirement",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 216,
+      "method": "GET",
+      "path": "/mandates/{mandate_id}/decisions",
+      "handler": "list_decisions",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 233,
+      "method": "GET",
+      "path": "/mandates/{mandate_id}/schedules",
+      "handler": "list_schedules",
+      "capability": "委托/事件/核心任务",
+      "current_owner": "Mandates + research_jobs/executions/attempts",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "复用现有版本、取消、租约、证据与联系决定；旧HTTP协议不复刻，按业务等价和恢复验收",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部持久流程实现"
+      ],
+      "existing_tools": [
+        "create_mandate",
+        "list_mandates",
+        "get_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "用户操作经现有委托Tool；tick/claim/lease等是内部协议，不开放模型调用"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 249,
+      "method": "GET",
+      "path": "/data/package",
+      "handler": "export_data_package",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 263,
+      "method": "POST",
+      "path": "/data/import/preview",
+      "handler": "preview_data_import",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 277,
+      "method": "POST",
+      "path": "/data/import",
+      "handler": "import_data_package",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 295,
+      "method": "GET",
+      "path": "/notification/preferences",
+      "handler": "get_notification_preferences",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 304,
+      "method": "PUT",
+      "path": "/notification/preferences",
+      "handler": "save_notification_preferences",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 314,
+      "method": "GET",
+      "path": "/notification/snoozes",
+      "handler": "list_notification_snoozes",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/dsh-trading-core/research_partner/api.py",
+      "source_line": 324,
+      "method": "POST",
+      "path": "/notification/snoozes",
+      "handler": "create_notification_snooze",
+      "capability": "通知偏好/收件箱/临时免打扰/投递",
+      "current_owner": "Notifications + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：已读/批量/归档、原生通道订阅及回执、显式失败重试、临时免打扰须逐项核对；当前通知偏好/发送前资格不证明全部承接",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资格与投递实现"
+      ],
+      "existing_tools": [
+        "read_notification_settings",
+        "list_notification_deliveries",
+        "update_notification_preferences",
+        "clear_notification_channel"
+      ],
+      "adaptation_note": "已有Tool复用；已读/归档/免打扰等缺口先定候选Tool契约；重试资格与原生回执由程序强制"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 38,
+      "method": "GET",
+      "path": "/health",
+      "handler": "health",
+      "capability": "产业链基础资料/图谱",
+      "current_owner": "IndustryChain",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "基础档案独立门控、下载确认与增量证据已接；真实资料、完整升级及资料许可等验收未全部关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资料实现"
+      ],
+      "existing_tools": [
+        "manage_industry_chain",
+        "industry_chain_lookup",
+        "company_relationship_lookup"
+      ],
+      "adaptation_note": "复用产业链Tool与资料处理；不重启旧独立侧车"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 45,
+      "method": "GET",
+      "path": "/data/status",
+      "handler": "data_status",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 51,
+      "method": "POST",
+      "path": "/data/bootstrap",
+      "handler": "data_bootstrap",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 60,
+      "method": "POST",
+      "path": "/data/delete",
+      "handler": "data_delete",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 71,
+      "method": "GET",
+      "path": "/stats",
+      "handler": "stats",
+      "capability": "产业链基础资料/图谱",
+      "current_owner": "IndustryChain",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "基础档案独立门控、下载确认与增量证据已接；真实资料、完整升级及资料许可等验收未全部关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资料实现"
+      ],
+      "existing_tools": [
+        "manage_industry_chain",
+        "industry_chain_lookup",
+        "company_relationship_lookup"
+      ],
+      "adaptation_note": "复用产业链Tool与资料处理；不重启旧独立侧车"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 79,
+      "method": "GET",
+      "path": "/companies",
+      "handler": "companies_search",
+      "capability": "产业链基础资料/图谱",
+      "current_owner": "IndustryChain",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "基础档案独立门控、下载确认与增量证据已接；真实资料、完整升级及资料许可等验收未全部关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资料实现"
+      ],
+      "existing_tools": [
+        "manage_industry_chain",
+        "industry_chain_lookup",
+        "company_relationship_lookup"
+      ],
+      "adaptation_note": "复用产业链Tool与资料处理；不重启旧独立侧车"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 91,
+      "method": "GET",
+      "path": "/companies/{code}",
+      "handler": "company_detail",
+      "capability": "产业链基础资料/图谱",
+      "current_owner": "IndustryChain",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "基础档案独立门控、下载确认与增量证据已接；真实资料、完整升级及资料许可等验收未全部关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资料实现"
+      ],
+      "existing_tools": [
+        "manage_industry_chain",
+        "industry_chain_lookup",
+        "company_relationship_lookup"
+      ],
+      "adaptation_note": "复用产业链Tool与资料处理；不重启旧独立侧车"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 100,
+      "method": "GET",
+      "path": "/graph/entity/{key}",
+      "handler": "graph_entity",
+      "capability": "产业链基础资料/图谱",
+      "current_owner": "IndustryChain",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "基础档案独立门控、下载确认与增量证据已接；真实资料、完整升级及资料许可等验收未全部关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资料实现"
+      ],
+      "existing_tools": [
+        "manage_industry_chain",
+        "industry_chain_lookup",
+        "company_relationship_lookup"
+      ],
+      "adaptation_note": "复用产业链Tool与资料处理；不重启旧独立侧车"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 110,
+      "method": "GET",
+      "path": "/graph/single/{code}",
+      "handler": "graph_single",
+      "capability": "产业链基础资料/图谱",
+      "current_owner": "IndustryChain",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "基础档案独立门控、下载确认与增量证据已接；真实资料、完整升级及资料许可等验收未全部关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资料实现"
+      ],
+      "existing_tools": [
+        "manage_industry_chain",
+        "industry_chain_lookup",
+        "company_relationship_lookup"
+      ],
+      "adaptation_note": "复用产业链Tool与资料处理；不重启旧独立侧车"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 120,
+      "method": "GET",
+      "path": "/graph/chain/{code}",
+      "handler": "graph_chain",
+      "capability": "产业链基础资料/图谱",
+      "current_owner": "IndustryChain",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "基础档案独立门控、下载确认与增量证据已接；真实资料、完整升级及资料许可等验收未全部关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资料实现"
+      ],
+      "existing_tools": [
+        "manage_industry_chain",
+        "industry_chain_lookup",
+        "company_relationship_lookup"
+      ],
+      "adaptation_note": "复用产业链Tool与资料处理；不重启旧独立侧车"
+    },
+    {
+      "source": "backend/industry-chain/industry_chain/app.py",
+      "source_line": 136,
+      "method": "GET",
+      "path": "/graph/network",
+      "handler": "graph_network",
+      "capability": "产业链基础资料/图谱",
+      "current_owner": "IndustryChain",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "基础档案独立门控、下载确认与增量证据已接；真实资料、完整升级及资料许可等验收未全部关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部资料实现"
+      ],
+      "existing_tools": [
+        "manage_industry_chain",
+        "industry_chain_lookup",
+        "company_relationship_lookup"
+      ],
+      "adaptation_note": "复用产业链Tool与资料处理；不重启旧独立侧车"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 63,
+      "method": "GET",
+      "path": "/health",
+      "handler": "health",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 70,
+      "method": "POST",
+      "path": "/watchlist/add",
+      "handler": "watchlist_add",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 105,
+      "method": "POST",
+      "path": "/watchlist/remove",
+      "handler": "watchlist_remove",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 120,
+      "method": "GET",
+      "path": "/watchlist",
+      "handler": "watchlist_get",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 129,
+      "method": "PUT",
+      "path": "/internal/position-risk-rules/{ticker}/{kind}",
+      "handler": "position_risk_rule_upsert",
+      "capability": "持仓止盈止损",
+      "current_owner": "Investment + PositionRisk + Mandates + executions/attempts",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "配置、覆盖、冻结、重新布防和一次触发已回归/合成UAT；内部旧推规则/回调由统一执行取代，真实市场长期验收未关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "preview_position_risk_change",
+        "commit_investment_change",
+        "read_investment_risk"
+      ],
+      "adaptation_note": "配置/布防通过Tool；选择与澄清在投资Skill；旧规则推送和价格回调改用统一执行链"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 147,
+      "method": "DELETE",
+      "path": "/internal/position-risk-rules/{rule_id:path}",
+      "handler": "position_risk_rule_delete",
+      "capability": "持仓止盈止损",
+      "current_owner": "Investment + PositionRisk + Mandates + executions/attempts",
+      "implementation_status": "implemented_slice",
+      "acceptance": "open",
+      "note": "配置、覆盖、冻结、重新布防和一次触发已回归/合成UAT；内部旧推规则/回调由统一执行取代，真实市场长期验收未关闭",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部执行实现"
+      ],
+      "existing_tools": [
+        "preview_position_risk_change",
+        "commit_investment_change",
+        "read_investment_risk"
+      ],
+      "adaptation_note": "配置/布防通过Tool；选择与澄清在投资Skill；旧规则推送和价格回调改用统一执行链"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 156,
+      "method": "GET",
+      "path": "/alerts",
+      "handler": "alerts_get",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 162,
+      "method": "POST",
+      "path": "/alerts",
+      "handler": "alerts_add",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 190,
+      "method": "DELETE",
+      "path": "/alerts/{rule_id}",
+      "handler": "alerts_remove",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 208,
+      "method": "GET",
+      "path": "/securities/search",
+      "handler": "securities_search",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 261,
+      "method": "POST",
+      "path": "/securities/detail",
+      "handler": "security_detail",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 295,
+      "method": "GET",
+      "path": "/overview",
+      "handler": "overview",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 325,
+      "method": "POST",
+      "path": "/quotes/batch",
+      "handler": "quotes_batch",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 354,
+      "method": "GET",
+      "path": "/indices",
+      "handler": "indices",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 359,
+      "method": "POST",
+      "path": "/scan",
+      "handler": "scan",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 369,
+      "method": "POST",
+      "path": "/tech-signal",
+      "handler": "tech_signal",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 390,
+      "method": "POST",
+      "path": "/news/express",
+      "handler": "news_express",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 395,
+      "method": "GET",
+      "path": "/news/latest",
+      "handler": "news_latest",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 403,
+      "method": "GET",
+      "path": "/news/stock",
+      "handler": "news_stock",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 412,
+      "method": "GET",
+      "path": "/news/flash",
+      "handler": "news_flash",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 424,
+      "method": "GET",
+      "path": "/news/events",
+      "handler": "news_events",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 432,
+      "method": "GET",
+      "path": "/news/event-alerts",
+      "handler": "news_event_alerts",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 438,
+      "method": "POST",
+      "path": "/brief/generate",
+      "handler": "brief_generate",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 448,
+      "method": "GET",
+      "path": "/brief/latest",
+      "handler": "brief_latest",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 459,
+      "method": "GET",
+      "path": "/scheduler/status",
+      "handler": "scheduler_status",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/app.py",
+      "source_line": 464,
+      "method": "POST",
+      "path": "/scheduler/tick",
+      "handler": "scheduler_tick",
+      "capability": "看盘/行情/新闻/告警/简报",
+      "current_owner": "MarketData + Investment + Mandates",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "新增细分：overview、指数、新闻事件/事件预警、all/any、一次/连续、去重取消、latest简报及定时语义；不恢复独立调度器",
+      "integration_forms": [
+        "Tool",
+        "Skill",
+        "内部来源实现"
+      ],
+      "existing_tools": [
+        "query_market",
+        "read_investment_facts",
+        "create_mandate",
+        "manage_mandate"
+      ],
+      "adaptation_note": "资料查询与解释通过Tool/Skill；overview只组合读模型；告警联系归现有委托，不恢复独立调度器"
+    },
+    {
+      "source": "backend/market-watch/market_watch/data_transfer.py",
+      "source_line": 425,
+      "method": "GET",
+      "path": "/data-transfer/export",
+      "handler": "transfer_export",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/market-watch/market_watch/data_transfer.py",
+      "source_line": 434,
+      "method": "POST",
+      "path": "/data-transfer/preview",
+      "handler": "transfer_preview",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/market-watch/market_watch/data_transfer.py",
+      "source_line": 439,
+      "method": "POST",
+      "path": "/data-transfer/prepare",
+      "handler": "transfer_prepare",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/market-watch/market_watch/data_transfer.py",
+      "source_line": 450,
+      "method": "POST",
+      "path": "/data-transfer/reset",
+      "handler": "transfer_reset",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/market-watch/market_watch/data_transfer.py",
+      "source_line": 460,
+      "method": "POST",
+      "path": "/data-transfer/commit",
+      "handler": "transfer_commit",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/market-watch/market_watch/data_transfer.py",
+      "source_line": 465,
+      "method": "POST",
+      "path": "/data-transfer/rollback",
+      "handler": "transfer_rollback",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    },
+    {
+      "source": "backend/market-watch/market_watch/data_transfer.py",
+      "source_line": 470,
+      "method": "POST",
+      "path": "/data-transfer/finalize",
+      "handler": "transfer_finalize",
+      "capability": "完整导入/导出/备份/恢复",
+      "current_owner": "TransferService",
+      "implementation_status": "partial",
+      "acceptance": "open",
+      "note": "现有分类导入不证明完整数据包往返、附件、重置或失败回滚等价",
+      "integration_forms": [
+        "Tool",
+        "内部事务实现"
+      ],
+      "existing_tools": [
+        "read_legacy_imports",
+        "import_legacy_data"
+      ],
+      "adaptation_note": "完整导出/恢复为候选Tool；保留原子状态和回执，不把任意路径/任意文件开放给模型"
+    }
+  ],
+  "integration_policy": "按用户2026-10-28最新要求，以可复用Tool/Skill承接；页面仅为共用状态的视图。209条旧HTTP入口不是209个Tool，内部协议/旧Agent/独立调度器不直接开放或复刻。候选Tool尚未注册，须单独设计与验证。"
+}

@@ -1,10 +1,16 @@
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
+import {positionRiskQuestion} from '../position-risk-summary.js'
 import {businessApi,businessTool,confirmBusiness,cancelled,requestKey,textField,versionField,type Ask} from './business-tools.js'
 export const investmentToolNames = ['read_investment_facts','preview_investment_change','commit_investment_change','read_investment_collection','bind_mandate_investment_collection']
 const number={type:'number',minimum:0,maximum:1e12}
 const payload={type:'object',additionalProperties:false,properties:{ticker:{type:'string',pattern:'^[0-9]{6}$'},name:textField,quantity:number,cost_price:{anyOf:[number,{type:'null'}]},effective_at:textField,reason:{type:'string',maxLength:500},remove:{type:'boolean'},side:{type:'string',enum:['buy','sell']},price:{...number,exclusiveMinimum:0},fees:number,traded_at:textField,affects_holdings:{type:'boolean'},trade_request_id:textField,operation:{type:'string',enum:['amend','void']}}}
 const labels:Record<string,string>={holding:'持仓录入/校正',watchlist:'自选变更',trade:'实际成交记录',revision:'成交更正/撤销'}
 export function investmentQuestion(p:any):string{
+  if(p.command==='position_risk')return positionRiskQuestion(p)
+  if(p.command==='risk_adjust'){
+    const r=p.after.risk_profile, policy=p.after.risk_policy
+    return `确认调整风险偏好？${p.before.risk_profile.label} → ${r.label}。\n承受度 ${r.manual_adjust.risk_tolerance}，期限 ${r.manual_adjust.horizon_years} 年。原问卷答案与 ${r.score}/${r.max_score} 分保留。\n生效预算：单股权重上限 ${policy.risk_budget.single_stock_weight_max*100}%，集中度 HHI ${policy.risk_budget.hhi_max}。\n用于研究约束，不改持仓、已有委托、通知或交易。`
+  }
   if(p.command==='risk_profile'){
     const r=p.after.risk_profile
     return `确认保存风险偏好？${r.label}，${r.score}/${r.max_score} 分。\n${r.answers.map((x:any)=>x.label).join('\n')}\n仅供研究背景，不改变持仓、委托、通知或交易。`
@@ -26,7 +32,8 @@ export function investmentQuestion(p:any):string{
     if(a.traded_at||a.effective_at)lines.push(`发生/确认时间：${when(a.traded_at||a.effective_at)}`)
   }
   if(a.reason)lines.push(`原因：${a.reason}`)
-  lines.push(`依据事实版本 ${p.fact_version}。保存不会向券商下单，不创建或结束委托；未知成本保留未知。`)
+  if(p.impact?.position_risk_impact?.length)lines.push(...p.impact.position_risk_impact,`依据事实版本 ${p.fact_version}。会按已确认的持仓风险约定更新对应委托；不向券商下单。`)
+  else lines.push(`依据事实版本 ${p.fact_version}。保存不会向券商下单，不创建或结束委托；未知成本保留未知。`)
   return lines.join('\n')
 }
 export function createInvestmentTools(address:string,token:string,ask?:Ask):ToolDefinition[]{

@@ -328,6 +328,12 @@ _TOOLS: list[ToolDefinition] = [
     ),
     # ── 卖方观点 / 公告正文 / 海外市场 / 衍生品 ─────────────────────
     _tool(
+        "research_report_document_lookup", "研报正文读取", "研究", "configured",
+        "toolbox.handlers.report_document.research_report_document_lookup",
+        "读取已确认公司研报列表中选定报告的1至5页正文，保留页码、文档校验和与截断；不接受任意URL，扫描件与失败保持不可用。",
+        supported_entity_types=["ENTITY_01_01", "ENTITY_01_02"],
+    ),
+    _tool(
         "research_report_lookup", "研报与一致预期", "研究", "configured",
         "toolbox.handlers.coverage.research_report_lookup + akshare.stock_research_report_em",
         "个股卖方研报清单、东财评级、机构与年度盈利预测（一致预期线索）；评级是卖方观点，不是事实。",

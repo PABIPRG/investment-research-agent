@@ -7,6 +7,7 @@ import { type Instance, InstanceApiError, profileName, request } from './instanc
 import { activityObservation, type RuntimeObserver } from './observation.js'
 import { strategyLoop } from './strategy-worker.js'
 import { boundedManifest } from '../product/tools/bounded-operations.js'
+import {runPositionAttempt} from './position-worker.js'
 
 export function runtimeEnvironment(config: Instance): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {}
@@ -73,6 +74,7 @@ export async function finishAttempt(config: Instance, job: any, result: unknown,
 }
 
 export async function runAttempt(config: Instance, job: any, signal: AbortSignal, observer?: RuntimeObserver): Promise<'completed' | 'uncertain'> {
+  if(job.position_rule===true)return runPositionAttempt(config,job,signal,observer)
   const emit = (kind: string, data: Record<string, unknown> = {}) => {
     // 观察消费者故障不能改变任务执行或结果提交。
     try { observer?.({ ...data, kind, observed_at: new Date().toISOString(), execution_id: job.execution_id, attempt_id: job.attempt_id }) } catch { /* 观察为可选。 */ }

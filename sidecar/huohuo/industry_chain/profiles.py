@@ -186,6 +186,10 @@ class Profiles:
             if c.get('code') not in known:
                 rows.append(c)
                 known.add(c.get('code'))
+        for c in self.universe_index().values():
+            if c['code'] not in known:
+                rows.append({**c,'is_subject':False})
+                known.add(c['code'])
         for c in rows:
             name = (c.get('name') or '').lower()
             code = (c.get('code') or '').lower()
@@ -200,6 +204,8 @@ class Profiles:
     def company_profile(self, code: str) -> dict | None:
         c = self._view(code)
         if not c:
+            if code in self.universe_index():
+                return self.entity_profile(code)
             return None
         cap = self._cap_index().get(code) or {}
         ov = self._overlay().get(code) or {}

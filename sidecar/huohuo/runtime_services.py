@@ -9,9 +9,14 @@ from .research_partner.market_bridge import MarketBridge
 from .industry_chain.service import IndustryChainService
 from .research_entities.toolbox.context import ToolUnavailable
 from .strategies.worker_http import handle as strategy_worker
+from .personalization.service import Personalization
+from .personalization.http import handle as personalization_http
+from .research_review import ResearchReview
 
 
 def install(server):
+    server.research_review = ResearchReview(server.repo,server.mandates.entities,server.investment)
+    server.personalization = Personalization(server.mandates.store)
     root = Path(server.config['database']).parent
     server.transfer = TransferService(server.mandates.store, server.mandates.instance)
     server.market = MarketData()
@@ -27,8 +32,20 @@ def install(server):
 
 
 def handle(handler, parts):
+    if personalization_http(handler, parts): return True
     if transfer_http(handler, parts): return True
     api, principal = handler.server, handler.server.config['principal']
+    if parts[0] == 'research-reviews' and handler.command == 'POST':
+        handler.authorized('user')
+        body=handler.body()
+        if parts == ['research-reviews','run']:
+            exact(body,('session_id','call_id','arguments'))
+            result=api.research_review.run(principal,body['session_id'],body['call_id'],body['arguments'])
+        elif parts == ['research-reviews','history']:
+            result=api.research_review.history(principal,body)
+        else:raise Invalid('研究建议操作无效')
+        handler.reply(200,result)
+        return True
     if parts[:2] == ['worker', 'strategies']:
         handler.authorized('worker')
         strategy_worker(handler, parts[1:])

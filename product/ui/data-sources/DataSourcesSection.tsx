@@ -153,7 +153,7 @@ export function DataSourcesSection() {
           </section>
         )}
       </section>
-      {state?.available && (
+      {state?.basic_available && (
         <section className={local.source}>
           <h3>检查资料覆盖</h3>
           <form

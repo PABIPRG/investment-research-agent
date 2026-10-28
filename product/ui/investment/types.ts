@@ -48,6 +48,8 @@ export type Revision = {
   reason: string
 }
 export type Facts = {
+  position_risk?: import('./position-risk-model.js').PositionRiskView
+  risk_policy?: RiskPolicy | null
   risk_profile?: RiskProfile | null
   risk_profile_history?: RiskProfile[]
   risk_questionnaire?: Record<'quick' | 'full', RiskQuestion[]>
@@ -64,6 +66,11 @@ export type Facts = {
 }
 export type RiskQuestion = { qid: string; title: string; options: string[] }
 export type RiskProfile = {
+  statement?: string
+  method?: string
+  profile?: string
+  inferred_profile?: string
+  manual_adjust?: { risk_tolerance: number; horizon_years: number }
   tier: 'quick' | 'full'
   label: string
   score: number
@@ -72,12 +79,28 @@ export type RiskProfile = {
   fact_version?: number
   answers: { qid: string; label: string; option: number }[]
 }
+export type RiskPolicy = {
+  profile: string
+  inferred_profile: string
+  label: string
+  risk_budget: {
+    single_stock_weight_max: number
+    hhi_max: number
+    portfolio_vol_max: number
+    beta_max: number
+  }
+  guardrail: { buy_risk_score_max?: number; sell_risk_score_min?: number }
+}
 export type Preview = {
   preview_id: string
   fact_version: number
   before: Facts
   after: Facts
-  impact: { gaps?: { detail: string }[]; entry?: { name?: string } }
+  impact: {
+    position_risk_impact?: string[]
+    gaps?: { detail: string }[]
+    entry?: { name?: string }
+  }
 }
 export type EditTarget = {
   kind: 'holding' | 'watchlist' | 'trade' | 'revision' | 'remove'

@@ -42,10 +42,12 @@ def query(service, principal, path, params=None):
         return service.status(principal)
     with service.lock:
         state = service.seed.status()
-        if not state['available']:
-            raise ToolUnavailable('产业链数据尚未就绪；请到设置 → 资料源确认下载，完成后重试')
         revision, document = service.document(principal)
-        service.graph.configure((principal, revision, state['generation']), document)
+        basic = path == '/companies' or path.startswith(('/companies/','/graph/entity/'))
+        if not state['available'] and (not basic or not (document.get('universe') or document.get('companies'))):
+            raise ToolUnavailable('产业链数据尚未就绪；请到设置 → 资料源确认下载，完成后重试')
+        service.graph.configure((principal, revision, state['generation'],state['available']), document)
+        service.graph.seed_available = state['available']
         graph = service.graph
         if path == '/stats':
             allowed, result = set(), graph.stats_view()
@@ -79,4 +81,4 @@ def query(service, principal, path, params=None):
         if set(params) - allowed:
             raise Invalid('不支持的产业链查询参数')
         return {**deepcopy(result), 'provenance': {'source': state['source'], 'downloaded_at': state['downloaded_at'], 'generation': state['generation'],
-            'overlay_revision': revision, 'universe_source': document.get('universe_source'), 'disclosure': '关系可能来自披露抽取、默认展示权重或算法推断；share_source 标识其性质，默认值不是披露比例。'}}
+            'overlay_revision': revision, 'relationships_available':state['available'], 'universe_source': document.get('universe_source'), 'disclosure': '关系可能来自披露抽取、默认展示权重或算法推断；share_source 标识其性质，默认值不是披露比例。缺少种子时基础档案仍可查询，空关系不代表没有关系。'}}

@@ -91,6 +91,8 @@ class Notifications:
                 if q['channel'] not in policy.channels:reason='渠道不在委托许可内'
             if reason is None and not current_for_delivery(self.core, decision_id):
                 reason="市场资料已过时或证据不可核对，取消本次发送"
+            if reason is None and getattr(self.core,'position_risk',None):
+                reason=self.core.position_risk.reason(q['mandate_id'],exclude_decision=decision_id)
             if reason:
                 db.execute("UPDATE notification_queue SET status='cancelled',detail=?,updated_at=? WHERE decision_id=? AND channel=?",(reason,now,decision_id,channel));return None
             quiet=cfg['quiet_hours']

@@ -8,6 +8,7 @@ import { Arrival } from './Arrival.js'
 import motionCss from './Companion.module.css'
 import introCss from './Intro.module.css'
 import css from './Conversation.module.css'
+import questionsCss from './Questions.module.css'
 import { History } from './History.js'
 import { isHistoryTransition } from './history-transition.js'
 import { Mascot } from './Mascot.js'
@@ -177,7 +178,7 @@ export function Conversation(props: ChatRuntime & Actions) {
               error={loadError}
             />
           )}
-          <div className={css.native}>
+          <div className={`${css.native} ${questionsCss.questions}`}>
             {props.renderFactorySlot(
               'conversation.content',
               { variant: 'embedded', phase: blank ? 'hero' : 'active', hero: false },

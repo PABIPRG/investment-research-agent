@@ -114,7 +114,7 @@
   disabled: true
 - id: ui-settings-models
   config:
-    credentialOnboarding: true
+    credentialOnboarding: false
 - insert:
     - id: huohuo-chat-ui
       name: '@huohuo/chat-ui'

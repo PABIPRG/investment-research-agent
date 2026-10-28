@@ -15,6 +15,8 @@ from .instruments import instrument, identity, annotate
 from .analysis import cost_analysis
 from .names import recorded_names, trade_metadata, restore_names, display_rows
 from .risk_questionnaire import questionnaire, score as score_risk
+from .risk_preferences import adjust as adjust_risk, policy as risk_policy, parse as parse_risk
+from ..position_risk.configuration import apply as apply_position_risk,document as position_config
 
 EMPTY = {'default': [], 'watchlist': [], 'manual_trades': [], 'snapshots': [], 'trade_revisions': [], 'corrections': [], 'holdings_recorded': False, 'watchlist_recorded': False}
 
@@ -43,9 +45,20 @@ class Investment:
                 'holdings':holdings,'watchlist':display_rows(document['watchlist'],names),'trades':display_rows(document['manual_trades'],names),
                 'revisions':document['trade_revisions'],'corrections':document['corrections'],
                 'risk_profile':copy.deepcopy(document.get('risk_profile')), 'risk_questionnaire':questionnaire(),
+                'risk_policy':risk_policy(document.get('risk_profile')),
                 'risk_profile_history':copy.deepcopy(document.get('risk_profile_history', [])),
                 'cost_analysis':cost_analysis([{**x,'name':x['display_name']} for x in holdings],document.get('holdings_recorded',False))}
-    def read(self,principal):return self._view(*self._load(principal))
+    def read(self,principal):
+        version,document,updated=self._load(principal)
+        value=self._view(version,document,updated)
+        if getattr(self.store,'position_risk',None):value['position_risk']=self.store.position_risk.view(principal,document)
+        return value
+    def parse_risk(self,body):return parse_risk(body)
+    def _risk_effects(self,principal,before,after,result):
+        position=getattr(self.store,'position_risk',None)
+        effects=position.effects(principal,before,after) if position else []
+        if effects:result['position_risk_impact']=effects
+        return result
     def snapshot(self,principal,version):
         if type(version) is not int or version<0:raise Invalid('事实版本无效')
         if version==0:return self._view(0,copy.deepcopy(EMPTY),None)
@@ -109,7 +122,14 @@ class Investment:
                 result={'watchlist':doc.value['watchlist'],'gaps':[]}
             elif command=='risk_profile':
                 result=score_risk(payload)
+                result['inferred_profile']=result['profile']
                 doc.value['risk_profile']=result
+            elif command=='risk_adjust':
+                result=adjust_risk(document.get('risk_profile'),payload)
+                doc.value['risk_profile']=result
+            elif command=='position_risk':
+                settings,result=apply_position_risk(document,payload)
+                doc.value['position_risk']=settings
             else:raise Invalid('不支持的投资操作')
         except ValueError as e:raise Invalid(str(e)) from e
         if command in ('holding','trade','revision') and (command=='holding' or payload.get('affects_holdings',True)):doc.value['holdings_recorded']=True
@@ -120,9 +140,12 @@ class Investment:
         with self.store.transaction():
             version,document,_=self._load(principal)
             after,result=self._apply(document,body['command'],body['payload'])
+            result=self._risk_effects(principal,document,after,result)
             pid=str(uuid.uuid4())
             self.store._connect().execute('INSERT INTO investment_previews VALUES(?,?,?,?,?,?)',(principal,pid,version,body['command'],canonical(body['payload']),canonical(result)))
-            return {'preview_id':pid,'fact_version':version,'before':self._view(version,document,None),'after':self._view(version,after,None),'impact':result,'notice':'仅预览；确认后更新投资事实，不创建或终止委托。'}
+            return {'preview_id':pid,'fact_version':version,'command':body['command'],'payload':copy.deepcopy(body['payload']),
+                    'before':self._view(version,document,None),'after':self._view(version,after,None),'impact':result,
+                    'notice':result['notice'] if body['command']=='position_risk' else '确认后按已明确配置的持仓风险约定更新对应委托；不下单。' if result.get('position_risk_impact') else '仅预览；确认后更新投资事实，不创建或终止委托。'}
     def inspect_preview(self,principal,pid):
         text(pid,'预览编号',100)
         with self.store.transaction():
@@ -134,6 +157,7 @@ class Investment:
             version,document,_=self._load(principal)
             if version!=p['version']:raise Conflict('事实版本已变化，请重新预览')
             payload=json.loads(p['payload']);after,result=self._apply(document,p['command'],payload)
+            result=self._risk_effects(principal,document,after,result)
             return {'preview_id':pid,'fact_version':version,'command':p['command'],'payload':payload,'before':self._view(version,document,None),'after':self._view(version,after,None),'impact':result}
     def commit(self,principal,body):
         exact(body,('preview_id','request_key'));key=text(body['request_key'],'请求标识',200)
@@ -153,14 +177,20 @@ class Investment:
                 db.execute('INSERT INTO investment_receipts VALUES(?,?,?,?)',(principal,key,fingerprint,canonical(receipt)))
                 return receipt
             version+=1;at=now()
-            if p['command']=='risk_profile':
+            if p['command'] in ('risk_profile','risk_adjust'):
                 after['risk_profile']['recorded_at']=at
                 after.setdefault('risk_profile_history',[]).append({**copy.deepcopy(after['risk_profile']),'fact_version':version})
             encoded=canonical(after)
             db.execute('INSERT INTO investment_facts VALUES(?,?,?,?) ON CONFLICT(principal) DO UPDATE SET version=excluded.version,document=excluded.document,updated_at=excluded.updated_at',(principal,version,encoded,at))
             db.execute('INSERT INTO investment_versions VALUES(?,?,?,?)',(principal,version,encoded,at))
             db.execute('INSERT INTO investment_audit VALUES(?,?,?,?,?)',(principal,version,p['command'],p['payload'],at))
-            if p['command']=='risk_profile':
+            if p['command'] in ('holding','trade','revision','position_risk') and getattr(self.store,'position_risk',None):
+                self.store.position_risk.reconcile(principal,after)
+            if p['command']=='position_risk':
+                receipt={'saved':True,'facts':self.read(principal),'impact':result}
+                db.execute('INSERT INTO investment_receipts VALUES(?,?,?,?)',(principal,key,fingerprint,canonical(receipt)))
+                return receipt
+            if p['command'] in ('risk_profile','risk_adjust'):
                 # 偏好不改变证券事实，不创建委托或唤醒持仓／自选订阅。
                 receipt={'saved':True,'facts':self._view(version,after,at),'impact':result}
                 db.execute('INSERT INTO investment_receipts VALUES(?,?,?,?)',(principal,key,fingerprint,canonical(receipt)))

@@ -4,7 +4,7 @@
 不调用模型，不设置仓位或通知；保存由 Investment 服务负责。
 """
 from copy import deepcopy
-from ..contracts import Invalid
+from ..contracts import Invalid,text
 
 TIERS = {'quick': ('horizon', 'loss_tolerance', 'goal'),
          'full': ('horizon', 'loss_tolerance', 'goal', 'income_stability', 'experience',
@@ -19,7 +19,7 @@ def questionnaire():
 
 
 def score(payload):
-    if not isinstance(payload, dict) or set(payload) != {'tier', 'answers'}:
+    if not isinstance(payload, dict) or not {'tier','answers'}<=set(payload) or set(payload)-{'tier','answers','statement'}:
         raise Invalid('请选择问卷并完整回答，不接受自填分数或画像')
     tier, answers = payload['tier'], payload['answers']
     if not isinstance(tier, str) or tier not in TIERS:
@@ -40,8 +40,10 @@ def score(payload):
     total = sum(x['score'] for x in chosen.values())
     maximum = 5 * len(qids)
     profile = 'conservative' if total <= round(18 * maximum / 40) else 'balanced' if total <= round(29 * maximum / 40) else 'aggressive'
-    return {'tier': tier, 'answers': [chosen[q] for q in qids], 'score': total, 'max_score': maximum,
-            'profile': profile, 'label': LABELS[profile], 'scoring_version': 'legacy-v1'}
+    value={'tier': tier, 'answers': [chosen[q] for q in qids], 'score': total, 'max_score': maximum,
+            'profile': profile, 'label': LABELS[profile], 'scoring_version': 'legacy-v1','method':'questionnaire'}
+    if 'statement' in payload:value.update(statement=text(payload['statement'],'经核对的偏好描述',4000),method='text_assisted_confirmed')
+    return value
 
 BANK = {'horizon': {'qid': 'horizon',
              'title': '你计划持有这笔资金多久？',

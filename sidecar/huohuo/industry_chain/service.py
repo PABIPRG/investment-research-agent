@@ -39,7 +39,8 @@ class IndustryChainService:
 
     def status(self, principal, db=None):
         revision, document = self._document(db, principal) if db is not None else self.document(principal)
-        return {**self.seed.status(), 'overlay_revision': revision, 'overlay_companies': len(document.get('companies', {})),
+        state=self.seed.status()
+        return {**state, 'basic_available':bool(state['available'] or document.get('universe') or document.get('companies')), 'overlay_revision': revision, 'overlay_companies': len(document.get('companies', {})),
                 'inferred_links': len(document.get('inferred_links', [])), 'universe_companies': len(document.get('universe', [])),
                 'universe_source': document.get('universe_source'), 'requires_confirmation': True}
 
@@ -61,7 +62,26 @@ class IndustryChainService:
             value = json.loads(row['result']) if row and row['result'] else None
             if not value or value.get('status') != 'ok':
                 raise Invalid('产业链增量的资料证据必须来自本用户本会话成功的研究调用')
-            sources[eid] = {'evidence_id': eid, 'tool_id': row['tool_id'], 'result_hash': digest(value), 'source': value.get('source')}
+            body=value.get('data',{})
+            pages=body.get('pages',[])
+            if row['tool_id']!='research_report_document_lookup' or body.get('document_role')!='report_body' or not pages or not all(type(p.get('page')) is int and isinstance(p.get('text'),str) and p['text'].strip() for p in pages):
+                raise Invalid('产业链关系须引用实际研报正文及页码；报价、评级、标题和盈利预测不能替代正文')
+            codes={item['code'] for item in payload['companies'] if eid in item['source_evidence_ids']}
+            if codes and codes!={body.get('security_code')}:raise Invalid('研报主体与待保存公司不一致，请按对应公司获取正文')
+            citations=[]
+            for item in payload['companies']+payload['inferred_links']:
+                if eid not in item['source_evidence_ids']:continue
+                if set(item['source_evidence_ids'])!={loc['evidence_id'] for loc in item['source_locations']}:
+                    raise Invalid('每个引用证据都需要对应的正文定位，不能附加无定位证据')
+                if 'source' in item and body.get('security_code') not in (item['source'],item['target']):raise Invalid('研报主体与推断关系两端均不一致')
+                for loc in item['source_locations']:
+                    if loc['evidence_id']!=eid:continue
+                    page=next((p for p in pages if p['page']==loc['page']),None)
+                    if page is None or ''.join(loc['quote'].split()) not in ''.join(page['text'].split()):
+                        raise Invalid('引用页码或原文与实际读取的正文不一致')
+                    citations.append(loc)
+            sources[eid] = {'evidence_id': eid, 'tool_id': row['tool_id'], 'result_hash': digest(value), 'source': value.get('source'),
+                            'document_role':'report_body','security_code':body.get('security_code'),'pages':[p['page'] for p in pages],'document_sha256':body.get('document_sha256'),'citations':citations}
         return sources
 
     def validate(self, action, payload):

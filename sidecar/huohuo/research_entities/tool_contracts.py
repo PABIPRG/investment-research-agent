@@ -22,6 +22,9 @@ TOOL_REGISTRY = _definitions()
 
 TEXT = {'type': 'string', 'minLength': 1, 'maxLength': 200}
 FIELDS = {
+    'report_id': {'type':'string','pattern':'^AP[0-9]{12,24}$','minLength':14,'maxLength':26,'description':'研报列表返回的 report_id，不是 URL'},
+    'start_page':{'type':'integer','minimum':1,'maximum':400},
+    'page_count':{'type':'integer','minimum':1,'maximum':5},
     'code': {**TEXT, 'description': '公开数据源代码；查询候选用，不表示已确认对象'},
     'name': {**TEXT, 'description': '名称或检索词'},
     'keyword': {**TEXT, 'description': '公开资料检索关键词'},
@@ -64,6 +67,7 @@ FIELDS = {
 WINDOW = 'start_date end_date days limit'
 # 对象工具不开放 code/name 覆盖：实体由本会话确认回执绑定。
 PARAMS = {
+    'research_report_document_lookup':'report_id start_page page_count',
     'security_lookup': 'code name', 'industry_lookup': 'include_members member_limit',
     'theme_lookup': '', 'benchmark_lookup': '', 'benchmark_performance_lookup': WINDOW,
     'peer_group_builder': 'limit', 'portfolio_lookup': '', 'portfolio_risk_analysis': '', 'watchlist_lookup': '',
@@ -125,6 +129,7 @@ def catalog():
             required.append('confirmation_id')
         if key in {'macro_event_search','policy_search','official_document_search','regional_policy_search'}:
             required.append('keyword')
+        if key=='research_report_document_lookup':required.append('report_id')
         description = f'{tool.name}：{tool.description} 返回真实状态、来源、时间及证据编号。'
         if tool.requires_authorization or key=='event_monitor_setup':
             description += '当前独立实例未接通此项授权流程，调用只返回 needs_authorization，不会执行。'

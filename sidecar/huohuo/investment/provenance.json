@@ -1,0 +1,13 @@
+{
+  "source": "backend/dsh-trading-core/adapter/risk_profiles.py",
+  "commit": "9c23b1fdb249d8192748196cb183709e8e2030f4",
+  "source_sha256": "aa0d07b10d14f82bd453192acddafd815056ec7ea274b2c823e5f0e90d22d60e",
+  "functions": [
+    "RISK_PROFILES",
+    "profile",
+    "risk_level_for",
+    "calibrate_stock_decision"
+  ],
+  "changes": "只提取纯算法；当前存储、授权、执行与通知各由新版正式领域持有",
+  "kyc_source": "backend/dsh-trading-core/adapter/kyc.py（题库、滑块与关键词资产；新增严格校验，否定/冲突留空）"
+}

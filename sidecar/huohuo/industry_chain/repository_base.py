@@ -33,6 +33,9 @@ class RepositoryBase:
     def _load(self, name):
         with self._lock:
             if name not in self._caches:
+                if getattr(self,'seed_available',True) is False:
+                    empty={'companies.json':[],'stats.json':{},'market-caps.json':{},'view-data-all.json':{'companies':{}},'network-data.json':{'nodes':[],'links':[]}}
+                    return deepcopy(empty[name])
                 directory = self.seed.data_path()
                 if directory is None:
                     raise FileNotFoundError('请先在设置中确认下载产业链数据')

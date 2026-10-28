@@ -158,29 +158,6 @@
 .native :global([data-composer-seat]:has([data-trigger-menu])) {
   z-index: 41;
 }
-.native :global([data-question-key]) {
-  border-radius: 0 !important;
-}
-.native :global([data-question-key] h2) {
-  white-space: pre-line;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 24px;
-}
-.native :global([data-question-key] button[role='radio']),
-.native :global([data-question-key] button[role='checkbox']) {
-  color: var(--hh-ink);
-  opacity: 1;
-}
-.native :global([data-question-key] .Mbwy4a_description) {
-  color: var(--hh-muted);
-}
-.native :global([data-question-key] > div) {
-  border-radius: 0;
-  box-shadow: none;
-  background: var(--hh-surface);
-  border: 1px solid var(--hh-line);
-}
 .native :global([data-content-phase='hero']) {
   min-height: 140px;
   justify-content: flex-start;
@@ -234,23 +211,9 @@
   .conversation:not([data-quiet='true']) .native {
     --hh-chat-gutter: 76px;
   }
-  .native :global([data-question-key]) {
-    padding: 6px 8px 10px;
-  }
-  /* Integer-height card keeps the nested option scroller on the pixel grid. */
-  .native :global(.Mbwy4a_card) {
-    max-height: min(calc(100dvh - 240px), 520px);
-  }
   .conversation[data-question='true']
     .native
     :global([data-content-phase='active'] [data-composer-seat]) {
     padding-left: 0;
-  }
-  .native :global(.Mbwy4a_footer) {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .native :global(.Mbwy4a_footerActions) {
-    margin-left: auto;
   }
 }

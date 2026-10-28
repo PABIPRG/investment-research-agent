@@ -34,6 +34,17 @@ def references(value):
         raise Invalid('必须引用至少一项不重复的本会话资料证据')
     return [text(x, '来源证据', 100) for x in value]
 
+def locations(value):
+    sequence(value,20)
+    if not value:raise Invalid('关系候选须包含正文页码与原文定位')
+    result=[]
+    for loc in value:
+        exact(loc,('evidence_id','page','quote'))
+        text(loc['evidence_id'],'证据编号',100);text(loc['quote'],'正文定位',240)
+        if type(loc['page']) is not int or not 1<=loc['page']<=400:raise Invalid('正文页码无效')
+        result.append(deepcopy(loc))
+    return result
+
 
 def relation(value):
     exact(value, ('id', 'name', 'type', 'share', 'confidence', 'note'))
@@ -52,8 +63,9 @@ def relation(value):
 
 
 def company(value):
-    exact(value, ('code', 'source_evidence_ids', 'materials', 'products', 'related', 'metrics'))
+    exact(value, ('code', 'source_evidence_ids', 'source_locations', 'materials', 'products', 'related', 'metrics'))
     result = {'code': code(value['code']), 'source_evidence_ids': references(value['source_evidence_ids'])}
+    result['source_locations']=locations(value['source_locations'])
     for group, children in (('materials', 'suppliers'), ('products', 'customers')):
         result[group] = []
         for item in sequence(value[group], 30):
@@ -84,8 +96,9 @@ def validate_overlay(payload):
     if len(set(seen)) != len(seen):
         raise Invalid('同一候选不能重复提交公司')
     for item in sequence(payload['inferred_links'], 100):
-        exact(item, ('source', 'target', 'kind', 'item', 'confidence', 'note', 'source_evidence_ids'))
+        exact(item, ('source', 'target', 'kind', 'item', 'confidence', 'note', 'source_evidence_ids','source_locations'))
         code(item['source']); code(item['target'])
+        item={**item,'source_locations':locations(item['source_locations'])}
         if item['source'] == item['target'] or item['kind'] not in ('supplier', 'customer'):
             raise Invalid('推断边方向或类型无效')
         text(item['item'], '产品或材料', 100)
