@@ -12,6 +12,8 @@ from .manual_trades import ManualTradeRequest, apply_trade
 from .trade_revisions import TradeRevisionRequest, apply_revision
 from .portfolio_performance import _snapshot
 from .instruments import instrument, identity, annotate
+from .analysis import cost_analysis
+from .names import recorded_names, trade_metadata, restore_names, display_rows
 
 EMPTY = {'default': [], 'watchlist': [], 'manual_trades': [], 'snapshots': [], 'trade_revisions': [], 'corrections': [], 'holdings_recorded': False, 'watchlist_recorded': False}
 
@@ -33,10 +35,13 @@ class Investment:
         row=self.store._connect().execute('SELECT * FROM investment_facts WHERE principal=?',(principal,)).fetchone()
         return (row['version'],json.loads(row['document']),row['updated_at']) if row else (0,copy.deepcopy(EMPTY),None)
     def _view(self,version,document,updated):
+        names=recorded_names(document)
+        holdings=display_rows(document['default'],names)
         return {'version':version,'status':'recorded' if version else 'not_recorded','updated_at':updated,
                 'holdings_status':'recorded' if document.get('holdings_recorded') else 'not_recorded','watchlist_status':'recorded' if document.get('watchlist_recorded') else 'not_recorded',
-                'holdings':[annotate(x) for x in document['default']],'watchlist':[annotate(x) for x in document['watchlist']],'trades':[annotate(x) for x in document['manual_trades']],
-                'revisions':document['trade_revisions'],'corrections':document['corrections']}
+                'holdings':holdings,'watchlist':display_rows(document['watchlist'],names),'trades':display_rows(document['manual_trades'],names),
+                'revisions':document['trade_revisions'],'corrections':document['corrections'],
+                'cost_analysis':cost_analysis([{**x,'name':x['display_name']} for x in holdings],document.get('holdings_recorded',False))}
     def read(self,principal):return self._view(*self._load(principal))
     def snapshot(self,principal,version):
         if type(version) is not int or version<0:raise Invalid('事实版本无效')
@@ -63,14 +68,19 @@ class Investment:
                 import hashlib
                 version=hashlib.sha256(json.dumps(doc.value,sort_keys=True,default=str).encode()).hexdigest()
                 model=ManualTradeRequest if command=='trade' else TradeRevisionRequest
-                request=model(**payload,action='commit',version=version)
+                request_payload,name=trade_metadata(document,command,payload)
+                request=model(**request_payload,action='commit',version=version)
                 result=(apply_trade(doc,request) if command=='trade' else apply_revision(doc,request))
                 for x in doc.value['default']:
                     if x['ticker'] in unknown:x['cost_price']=None
-                names={x['ticker']:x.get('name') for x in document['default']+document['watchlist']}
-                for x in doc.value['default']:
-                    if names.get(x['ticker']):x['name']=names[x['ticker']]
+                restore_names(doc.value,document,command,payload,name,result)
                 doc.value.pop('investment_outbox',None) # 正式 outbox 由外层同事务规范化，禁止双发。
+                if command=='revision' and not payload.get('affects_holdings',True) and code in unknown:
+                    # 只修订记录没有成本计算；预览和审计都不能把未知成本显示成零。
+                    impact=result['impact']
+                    impact['current']['cost_price']=None
+                    impact['projected']['cost_price']=None
+                    impact['delta_cost_price']=None
                 result['holdings']=doc.value['default']
             elif command=='holding':
                 exact(payload,('ticker','name','quantity','cost_price','effective_at','reason'))

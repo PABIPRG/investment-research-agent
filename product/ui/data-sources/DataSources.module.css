@@ -1,0 +1,71 @@
+.root {
+  display: grid;
+  gap: 16px;
+}
+.root > header {
+  margin-bottom: 0;
+}
+.source {
+  border-top: 1px solid var(--hh-line);
+  padding-top: 16px;
+}
+.source header,
+.actions,
+.source form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.source form {
+  align-items: flex-end;
+}
+.source header {
+  justify-content: space-between;
+}
+.source h3,
+.source h4 {
+  margin: 0 0 8px;
+}
+.source p {
+  margin: 8px 0 12px;
+}
+.source dl {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+.source dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.source dt,
+.source small {
+  color: var(--hh-muted);
+}
+.source dd {
+  margin: 0;
+}
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 16px 0;
+}
+.check input {
+  margin-top: 5px;
+}
+.preview {
+  border: 1px solid var(--hh-line);
+  padding: 16px;
+  margin-top: 16px;
+}
+.source form label {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+}
+.source ul {
+  padding-left: 20px;
+}

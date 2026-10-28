@@ -302,7 +302,7 @@ def forex_rate_lookup(call: ToolCall):
     except Exception as exc:  # 来源被阻断或代理失败时不能给出任何汇率数字。
         return unavailable(
             call,
-            f"汇率快照来源当前不可用：{exc}",
+            f"汇率快照来源当前不可用：{type(exc).__name__}",
             source="akshare.forex_spot_em",
         )
     records = records_from_frame(frame, latest_first=False)

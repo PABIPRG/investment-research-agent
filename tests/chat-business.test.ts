@@ -27,10 +27,20 @@ test('确认后只提交预览身份，稳定幂等；已保存不重复提问',
   const t=tools.find((t:any)=>t.name==='commit_investment_change');assert.ok(t)
   assert.equal((await t.execute({preview_id:preview.preview_id},exec)).data.saved,true)
   assert.match(questions[0].question,/513130/)
-  assert.match(questions[0].question,/1000/)
+  assert.match(questions[0].question,/1,000/)
+  assert.ok(!questions[0].question.includes('{"证券"'))
   assert.deepEqual(sent,[{preview_id:preview.preview_id,request_key:preview.preview_id}])
   questions=[];assert.equal((await t.execute({preview_id:preview.preview_id},{...exec,callId:'retry'})).data.saved,true)
   assert.deepEqual(questions,[]);assert.equal(sent.length,1)
+ }finally{globalThis.fetch=original}
+})
+test('运行已取消时即便迟到返回确认选项也不能写入',async()=>{
+ const original=globalThis.fetch,abort=new AbortController();let writes=0
+ try {
+  globalThis.fetch=async(_url,init)=>{if(init?.method==='POST')writes++;return Response.json(preview)}
+  const tool=createInvestmentTools('http://127.0.0.1:18930','test',async()=>{abort.abort();return selected}).find(x=>x.name==='commit_investment_change')!
+  assert.equal((await tool.execute({preview_id:preview.preview_id},{...exec,signal:abort.signal}) as any).saved,false)
+  assert.equal(writes,0)
  }finally{globalThis.fetch=original}
 })
 

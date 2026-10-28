@@ -22,6 +22,7 @@ export function apply(ctx:Context){
      B04:['huohuo-mandates','list_mandates','read_investment_collection','bind_mandate_investment_collection'],
      B05:['huohuo-mandates','list_mandates','manage_mandate'],
      B07:['huohuo-mandates','resolve_research_scope','confirm_research_entities','create_mandate'],
+     B09:['huohuo-mandates','resolve_research_scope','confirm_research_entities','create_mandate'],
      B08:['open_product_view'],
      B06:['huohuo-notifications','read_notification_settings','list_notification_deliveries','open_product_view'],
     }
@@ -35,9 +36,10 @@ export function apply(ctx:Context){
      if(action==='preview_investment_change')args={command:'holding',payload:{ticker:id==='B02'?'159740':'513130',name:id==='B02'?'合成恒生科技ETF乙':'合成恒生科技ETF甲',quantity:id==='B02'?200:1000,cost_price:null,effective_at:'2026-01-01T00:00:00+08:00',reason:'用户提供的期初快照，合成验收'}}
      if(action==='commit_investment_change')args={preview_id:result('preview_investment_change').data.preview_id}
      if(action==='open_product_view')args={view:id==='B08'?'settings':id==='B01'?'investment':'notifications'}
-     if(action==='resolve_research_scope')args={query:'600519 财务摘要',mention_texts:['600519']}
+     if(action==='resolve_research_scope')args={query:id==='B09'?'600519 行情条件跟进':'600519 财务摘要',mention_texts:['600519']}
      if(action==='confirm_research_entities'){const r=result('resolve_research_scope').data;args={snapshot_id:r.snapshot_id,version:r.version}}
      if(action==='create_mandate'){const c=result('confirm_research_entities').confirmations[0];args={confirmation_id:c.confirmation_id,goal:'合成验收集合与提醒',scope:{entity_id:c.execution_entity_id,exchange:c.exchange,operation:'financial_summary',period:'20260630',metric:'营业总收入',basis:'source_abstract'},contact_note:'仅应用内，不发送外部通知'}}
+     if(action==='create_mandate'&&id==='B09'){const c=result('confirm_research_entities').confirmations[0];args={confirmation_id:c.confirmation_id,goal:'合成验收：报价从90变为110时按条件联系',scope:{entity_id:c.execution_entity_id,exchange:c.exchange,operation:'market_quote'},contact_note:'仅应用内，不发送外部通知',contact_rule:{mode:'condition',condition:{type:'numeric',metric:'price',operator:'>=',threshold:100},notify_on:'transition',cooldown_minutes:0}}}
      if(action==='update_notification_preferences'){const c=result('read_notification_settings').data;args={expected_revision:c.revision,enabled:false,channels:['app'],timezone:'Asia/Shanghai',quiet_hours:{start:'22:00',end:'08:00'}}}
      if(action==='read_investment_collection')args={collection:'holdings'}
      if(action==='bind_mandate_investment_collection'){const m=result('list_mandates').data.items[0],c=result('read_investment_collection').data;args={mandate_id:m.mandate.mandate_id,collection:'holdings',mode:'fixed',expected_revision:m.mandate.current_revision,expected_generation:m.generation,expected_fact_version:c.fact_version}}

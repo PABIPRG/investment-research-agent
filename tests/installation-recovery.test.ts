@@ -75,7 +75,7 @@ else if(process.argv[3]==='pip' && fs.readFileSync(${JSON.stringify(phase)},'utf
     await writeFile(npm, `#!${process.execPath}
 const fs=require('node:fs'),path=require('node:path');
 if(fs.readFileSync(${JSON.stringify(phase)},'utf8')==='worker-dependencies') process.exit(25);
-for(const name of ['@huohuo/research-agent/lib/distribution/cli.js','@deepseek-ai/dsh/lib/bin.js']) {const file=path.join(process.cwd(),'node_modules',name);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,'fixture');}
+for(const name of ['@huohuo/research-agent/lib/distribution/cli.js','@huohuo/research-agent/lib/product/strategy-worker.js','@deepseek-ai/dsh/lib/bin.js']) {const file=path.join(process.cwd(),'node_modules',name);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,'fixture');}
 `, { mode: 0o700 })
     const run = async (...args: string[]) => {
       const child = spawn(process.execPath, [join(packageRoot, 'lib/distribution/cli.js'), ...args], {
@@ -151,7 +151,7 @@ test('身份已落盘但首份初始化记录缺失时，不能只装 worker 后
     const identity = await readFile(join(f.target, 'instance.json'), 'utf8')
     await rm(join(f.target, 'initialization.json')) // 精确模拟身份与首份记录之间的中断状态。
     await writeFile(join(f.target, 'business.sqlite3'), 'retained-data')
-    await writeFile(join(f.temp, 'npm'), `#!${process.execPath}\nconst fs=require('node:fs'),p=require('node:path');for(const n of ['@huohuo/research-agent/lib/distribution/cli.js','@deepseek-ai/dsh/lib/bin.js']){const f=p.join(process.cwd(),'node_modules',n);fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,'fixture')}\n`, {mode:0o700})
+    await writeFile(join(f.temp, 'npm'), `#!${process.execPath}\nconst fs=require('node:fs'),p=require('node:path');for(const n of ['@huohuo/research-agent/lib/distribution/cli.js','@huohuo/research-agent/lib/product/strategy-worker.js','@deepseek-ai/dsh/lib/bin.js']){const f=p.join(process.cwd(),'node_modules',n);fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,'fixture')}\n`, {mode:0o700})
     const child=spawn(process.execPath,[join(packageRoot,'lib/distribution/cli.js'),'repair-install',f.target],{env:{...process.env,HUOHUO_PYTHON:join(f.temp,'python'),PATH:`${f.temp}:${process.env.PATH}`},stdio:['ignore','pipe','pipe']})
     let output='';child.stdout.on('data',d=>output+=d);child.stderr.on('data',d=>output+=d)
     const code=await new Promise(resolve=>child.once('close',resolve))
@@ -176,7 +176,7 @@ if(process.argv[2]==='-c') {if(process.argv[3].includes('importlib.metadata'))pr
 else if(process.argv[3]==='pip'&&process.argv[4]==='install')fs.writeFileSync(${JSON.stringify(ready)},'ok');
 else if(process.argv[3]==='venv')process.exit(99);
 `,{mode:0o700})
-    await writeFile(join(f.temp,'npm'),`#!${process.execPath}\nconst fs=require('node:fs'),p=require('node:path');for(const n of ['@huohuo/research-agent/lib/distribution/cli.js','@deepseek-ai/dsh/lib/bin.js']){const f=p.join(process.cwd(),'node_modules',n);fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,'fixture')}\n`,{mode:0o700})
+    await writeFile(join(f.temp,'npm'),`#!${process.execPath}\nconst fs=require('node:fs'),p=require('node:path');for(const n of ['@huohuo/research-agent/lib/distribution/cli.js','@huohuo/research-agent/lib/product/strategy-worker.js','@deepseek-ai/dsh/lib/bin.js']){const f=p.join(process.cwd(),'node_modules',n);fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,'fixture')}\n`,{mode:0o700})
     const patch=join(f.target,'dsh/profiles/huohuo-worker/cordis.patch.yml');await writeFile(patch,'keep-user-patch')
     const child=spawn(process.execPath,[join(packageRoot,'lib/distribution/cli.js'),'repair-install',f.target],{env:{...process.env,HUOHUO_PYTHON:join(f.temp,'python'),PATH:`${f.temp}:${process.env.PATH}`},stdio:['ignore','pipe','pipe']})
     let output='';child.stdout.on('data',d=>output+=d);child.stderr.on('data',d=>output+=d)

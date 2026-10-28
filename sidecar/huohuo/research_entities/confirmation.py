@@ -23,6 +23,8 @@ class EntityConfirmation:
                 if text(mention,'mention',100) not in query:raise Invalid('提及必须来自用户原文')
         prior=self.current(principal,session)
         catalog=self.directory(query,mention_texts) if self.directory is default_directory else self.directory()
+        from .instrument_discovery import compose
+        catalog=compose(self.repo,principal,session,query,catalog,ttl=TTL)
         result=resolve(query,catalog,prior,mention_texts)
         for m in result['mentions']:
             matches=[c for c in prior if c['entity_id'] in m['candidate_entity_ids'] and (c['mention']==m['raw_text'] or (m.get('resolution_reason')=='conversation_confirmation' and len(m['candidates'])==1))]
@@ -63,17 +65,16 @@ class EntityConfirmation:
                 for prior in db.execute('SELECT id,payload FROM entity_confirmations WHERE principal=? AND session=? AND active=1',(principal,session)).fetchall():
                     if json.loads(prior['payload'])['mention']==raw:db.execute('UPDATE entity_confirmations SET active=0 WHERE id=?',(prior['id'],))
                 cid=str(uuid.uuid4());item={'confirmation_id':cid,'entity_id':eid,'entity_type_code':candidate['entity_type_code'],'label':candidate['canonical_name'],'mention':raw,'snapshot_id':sid,'version':version,'expires_at':snapshot['expires_at'],'source':'native_user_answer'}
+                details=snapshot.get('entity_details',{}).get(eid,{})
+                item.update(identifiers=details.get('identifiers',{}),attributes=details.get('attributes',{}),source_evidence=details.get('source_evidence'))
                 if eid.startswith(('SEC:CN:A:','CO:CN:A:')):
                     code=eid.split(':')[-1]
                     item['execution_entity_id']='SEC:CN:A:'+code
                     item['exchange']='SSE' if code.startswith(('600','601','603','605','688','689')) else 'SZSE'
-                    item['operations']=['company_profile','financial_summary'] if eid.startswith('CO:') else ['quote_snapshot','company_profile','financial_summary']
-                elif eid.startswith('FUND:CN:'):
-                    # 场内 ETF/LOF 与股票共用报价通道，但不提供公司资料与财务报表操作。
-                    code=eid.split(':')[-1]
-                    item['execution_entity_id']='FUND:CN:'+code
-                    item['exchange']='SSE' if code.startswith(('5','6')) else 'SZSE'
-                    item['operations']=['quote_snapshot']
+                    item['operations']=['company_profile','financial_summary','news'] if eid.startswith('CO:') else ['quote_snapshot','company_profile','financial_summary','market_quote','market_technical','news','market_brief']
+                elif item['entity_type_code']=='ENTITY_01_02' and item['identifiers'].get('exchange') in {'SSE','SZSE'}:
+                    code=item['identifiers'].get('fund_code')
+                    item.update(execution_entity_id='FUND:CN:'+code,exchange=item['identifiers']['exchange'],operations=['quote_snapshot'])
                 else:item['operations']=[]
                 db.execute('INSERT INTO entity_confirmations VALUES(?,?,?,?,?,?,?,?,?,1)',(cid,principal,session,sid,mid,eid,canonical(item),source_call,snapshot['expires_at']))
                 selected.append(item)
@@ -86,7 +87,10 @@ class EntityConfirmation:
             item=json.loads(row['payload'])
             # 公司身份可明确映射到其已确认证券关联供受控公司研究使用。
             expected=item['entity_id']
-            if expected.startswith('CO:CN:A:') and operation in ('company_profile','financial_summary'):
+            if expected.startswith('CO:CN:A:') and operation in ('company_profile','financial_summary','news'):
                 expected=expected.replace('CO:CN:A:','SEC:CN:A:')
+            if item.get('entity_type_code')=='ENTITY_01_02' and operation=='quote_snapshot' and item.get('execution_entity_id'):
+                expected=item['execution_entity_id']
+            if operation is not None and operation not in item.get('operations',[]):raise Invalid('已确认对象不支持此研究操作')
             if expected!=eid:raise Invalid('研究对象与用户确认不一致')
             return item

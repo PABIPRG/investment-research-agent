@@ -1,0 +1,34 @@
+.frame {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 60px;
+  height: 64px;
+  pointer-events: none;
+}
+.frame::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3px;
+  border-top: 1px solid var(--hh-line);
+}
+.frame .image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.frame .fallback {
+  margin: auto;
+  width: 44px;
+  height: 48px;
+}
+@media (max-width: 600px) {
+  .frame {
+    width: 52px;
+    height: 58px;
+  }
+}

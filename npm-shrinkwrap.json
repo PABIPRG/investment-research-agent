@@ -15,9 +15,9 @@
         "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
         "@deepseek-ai/dsh-sdk-client": "0.2.1-rc.2",
         "@deepseek-ai/dsh-skill": "0.2.1-rc.2",
+        "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.2",
         "@deepseek-ai/dsh-system-prompt": "0.2.1-rc.2",
-        "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
-        "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.2"
+        "@deepseek-ai/dsh-tools": "0.2.1-rc.2"
       },
       "bin": {
         "huohuo": "lib/distribution/cli.js"
@@ -26,6 +26,7 @@
         "@types/node": "24.7.2",
         "@types/react": "18.3.26",
         "esbuild": "0.25.11",
+        "prettier": "3.6.2",
         "typescript": "5.9.3"
       },
       "engines": {
@@ -9639,6 +9640,22 @@
       },
       "funding": {
         "url": "https://github.com/sponsors/sindresorhus"
+      }
+    },
+    "node_modules/prettier": {
+      "version": "3.6.2",
+      "resolved": "https://registry.npmjs.org/prettier/-/prettier-3.6.2.tgz",
+      "integrity": "sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==",
+      "dev": true,
+      "license": "MIT",
+      "bin": {
+        "prettier": "bin/prettier.cjs"
+      },
+      "engines": {
+        "node": ">=14"
+      },
+      "funding": {
+        "url": "https://github.com/prettier/prettier?sponsor=1"
       }
     },
     "node_modules/pretty-ms": {

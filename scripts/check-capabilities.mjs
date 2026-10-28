@@ -23,6 +23,12 @@ async function source(file){
   if(ts.isCallExpression(n)&&ts.isPropertyAccessExpression(n.expression)&&n.expression.name.text==='map'&&n.arguments.length===1&&ts.isArrowFunction(n.arguments[0])){
    const f=n.arguments[0];assert.ok(ts.isPropertyAccessExpression(f.body)&&f.body.name.text==='name'&&f.body.expression.getText(ast)===f.parameters[0].name.getText(ast),'只支持注册名映射');return (await evaluate(n.expression.expression)).map(x=>x.name)
   }
+  if(ts.isCallExpression(n)&&ts.isPropertyAccessExpression(n.expression)&&n.expression.name.text==='filter'&&n.arguments.length===1&&ts.isArrowFunction(n.arguments[0])){
+   const f=n.arguments[0],body=f.body
+   assert.ok(ts.isPrefixUnaryExpression(body)&&body.operator===ts.SyntaxKind.ExclamationToken&&ts.isCallExpression(body.operand),'只支持显式排除名单')
+   const call=body.operand;assert.ok(ts.isPropertyAccessExpression(call.expression)&&call.expression.name.text==='includes'&&ts.isIdentifier(call.expression.expression)&&call.arguments.length===1&&call.arguments[0].getText(ast)===f.parameters[0].name.getText(ast)+'.name','只支持注册名过滤')
+   const excluded=await lookup(call.expression.expression.text);return (await evaluate(n.expression.expression)).filter(x=>!excluded.includes(x.name))
+  }
   throw Error('注册源出现新的表达式，请同步检查器：'+n.getText(ast))
  }
  cache.set(file,lookup);return lookup

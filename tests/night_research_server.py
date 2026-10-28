@@ -15,6 +15,18 @@ def fixture(scope):
     document['limitations'].append('明确合成验收资料；不代表真实财务披露。')
     return document
 
+# UI search shares the real endpoint while this isolated server stays synthetic.
+from huohuo.research_entities.security_search import search
+
+def fixture_search(query):
+    result = search(query, loader=lambda: [
+        {'code': '600519', 'name': '贵州茅台'},
+        {'code': '000001', 'name': '平安银行'},
+    ])
+    result['source'] = {'provider': '明确合成 UI 验收目录'}
+    return result
+
+api.search_securities = fixture_search
 api.collect = fixture
 with api.Service(config) as service:
     service.mandates.entities.directory = lambda: {'status': 'ok', 'rows': [

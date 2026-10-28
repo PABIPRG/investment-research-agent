@@ -50,6 +50,11 @@ class WeekdayCalendar:
         return day.weekday() < 5
 
 
+class UnavailableCalendar:
+    def is_trading_day(self, day: date) -> bool:
+        raise ScheduleError('交易日历尚不可用，保留日程等待重试')
+
+
 @dataclass(frozen=True)
 class ScheduleSpec:
     cron: str
@@ -172,14 +177,17 @@ def _next_instance(
 ) -> datetime | None:
     """下一次真正会触发的到期时间；只看交易日的日程跳过休市日。"""
 
-    calendar = calendar or WeekdayCalendar()
     nxt = spec.next_after(after)
-    if not trading_only:
+    if not trading_only or calendar is None:
         return nxt
     guard = 0
     while nxt is not None and guard < 400:
         local_day = nxt.astimezone(ZoneInfo(spec.timezone)).date()
-        if calendar.is_trading_day(local_day):
+        try:
+            if calendar.is_trading_day(local_day):
+                return nxt
+        except Exception:
+            # 保存候选时间，实际触发前仍会核对。日历失败不取消用户的日程。
             return nxt
         nxt = spec.next_after(nxt)
         guard += 1
@@ -237,7 +245,7 @@ class ScheduleService:
     ) -> None:
         self.store = store
         self._now = now or (lambda: datetime.now(timezone.utc))
-        self.calendar = calendar or WeekdayCalendar()
+        self.calendar = calendar or UnavailableCalendar()
         self.max_instances_per_scan = max_instances_per_scan
 
     def scan(self, limit: int = 50) -> int:
@@ -276,7 +284,12 @@ class ScheduleService:
             processed += 1
             key = spec.instance_key(instance)
             local_day = instance.astimezone(ZoneInfo(spec.timezone)).date()
-            if schedule.trading_days_only and not self._is_trading_day(local_day):
+            try:
+                trading_day = not schedule.trading_days_only or self._is_trading_day(local_day)
+            except Exception:
+                # 未知不是休市或交易日：不发送、不推进到期点，待日历恢复。
+                return emitted
+            if not trading_day:
                 # 休市日没有这个实例：不提醒，也不计入漏执行。
                 pass
             elif now - instance <= timedelta(seconds=schedule.catchup_seconds):
@@ -314,11 +327,7 @@ class ScheduleService:
         return emitted
 
     def _is_trading_day(self, day: date) -> bool:
-        try:
-            return bool(self.calendar.is_trading_day(day))
-        except Exception:
-            # 日历不可用时宁可照常提醒，也不静默丢掉用户约定的到期提醒。
-            return True
+        return bool(self.calendar.is_trading_day(day))
 
     def _emit(
         self, schedule: MandateSchedule, key: str, instance: datetime, now: datetime

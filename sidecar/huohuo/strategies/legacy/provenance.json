@@ -1,0 +1,250 @@
+[
+  {
+    "source": "backend/dsh-trading-core/adapter/strategies.py",
+    "sha256": "456759250a5f0a35a4693a4fb8a95a3f97bf33d1f347964442cdd180b8b70c09",
+    "functions": [
+      "_str2md5",
+      "_verification_outcome",
+      "_ma",
+      "_rsi",
+      "_make_df",
+      "signal_series",
+      "_px",
+      "pd_notna",
+      "simulate_trades",
+      "_close_trade",
+      "_date_index_open",
+      "trades_to_decision_rows",
+      "_symbol_equity",
+      "portfolio_equity_curve",
+      "curve_stats",
+      "split_in_out",
+      "_symbol_trade_stats",
+      "_trim_curve"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/shadow.py",
+    "sha256": "02acd3d0fdef4a015d85ae81ba9dc5f2246cadff0a744d007c574a5397c333d3",
+    "functions": [
+      "_replay_pos",
+      "_closed_trade_identity",
+      "_merge_closed_trades",
+      "_regime_hibernation",
+      "_snapshot",
+      "_overall_nav"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/backtest_engine.py",
+    "sha256": "0f2e2346a7aa9e1c3da3322b5349c61e033129f321e7cbbc36ec6fd2c271d3dc",
+    "functions": [
+      "classify_outcome",
+      "_avg",
+      "_sample_std",
+      "_annualized_sharpe",
+      "_max_drawdown_pct",
+      "compute_summary",
+      "_advice_breakdown",
+      "_count_by"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/evolution.py",
+    "sha256": "0544ec6dea783bc1d09d8ad08aab8a5b6ae2bf436c0b14d697a1c7ff32e91f34",
+    "functions": [
+      "_validate_strategy_id",
+      "_scope_key",
+      "_current_preview_key",
+      "_preview_scope",
+      "_record_scope",
+      "_settings_payload",
+      "_hash_source_payload",
+      "_legacy_source_version",
+      "_record_source_version",
+      "_source_version",
+      "_public_preview",
+      "_store_preview",
+      "_discard_current_preview",
+      "current_preview",
+      "_now",
+      "_last_applied_at",
+      "_recent_applied",
+      "_parse_ts",
+      "_shadow_series",
+      "_strategy_record",
+      "_scoped_shadow_series",
+      "_per_strategy_series",
+      "_max_drawdown",
+      "_closed_trades",
+      "attribution",
+      "_pick_variant",
+      "_mutate_params",
+      "_mutate_symbols",
+      "_family_migrate",
+      "_pool_migrated_symbols",
+      "_series_by_sid_map",
+      "_clone_crowded",
+      "_emit_crossover",
+      "_maybe_crossover",
+      "_child_id",
+      "evolve",
+      "_per_strategy_decisions",
+      "_build_preview",
+      "_apply_preview",
+      "_apply_action",
+      "_lifecycle_entry",
+      "_lifecycle",
+      "record_closed_loop_run",
+      "_evolution_counts",
+      "status"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/fitness.py",
+    "sha256": "b4390f08612c4ebf35257c10acbf891c432399e872d5683a9900d5378e2aace1",
+    "functions": [
+      "nav_verdict",
+      "percentile",
+      "overfit_of",
+      "effective_lines",
+      "_fused_verdict",
+      "compute_profile"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/genome.py",
+    "sha256": "b112edbb55db81777969b041281c45b916915bfb32950be4010ff4dda406eb24",
+    "functions": [
+      "regime_gate_default",
+      "_clean_direction",
+      "gene_for",
+      "default_genome",
+      "read_gene",
+      "_normalize_gate",
+      "gate_enabled",
+      "regime_allowed",
+      "factor_family",
+      "pool_scope",
+      "family_of",
+      "family_alternatives"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/governance.py",
+    "sha256": "506c4b391cf29bfeb62349d6874ae50d2898a67dfd8ea35191c9c18e5ab735b0",
+    "functions": [
+      "niche_key",
+      "pearson",
+      "shadow_correlation",
+      "is_better",
+      "clone_blocked",
+      "stagnant",
+      "_num"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/recombine.py",
+    "sha256": "def592369fbc9ebb5e1d585f781ba99a9d38ff91d00fdefeea27a53b73be8bea",
+    "functions": [
+      "_dir",
+      "crossover",
+      "_order_present",
+      "prune_losers",
+      "best_symbols",
+      "trade_scores",
+      "evidence_scores"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/ledger.py",
+    "sha256": "13eb3f6c9e9ed6416f7ff0fbbdaaddf0aec9018e1ad9f197df56dfcb0e656cf6",
+    "functions": [
+      "_now",
+      "event_type_of",
+      "event_date_of",
+      "pool_id",
+      "record_candidate",
+      "symbol_pool",
+      "pool_stats"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/gene_archive.py",
+    "sha256": "b8d3998b8886bcd2da25554d9f5ed65ca19217d2a1dc2ff86701feb3945e51f3",
+    "functions": [
+      "_now",
+      "archive_record",
+      "revival_candidates",
+      "all_archived",
+      "reactivate_archived"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/regime.py",
+    "sha256": "45ccb2e8445d25313ca2ef18e216e263acd3fb1939c10e4cadae50f36284e16a",
+    "functions": [
+      "_now",
+      "_std",
+      "_rolling_std",
+      "_daily_returns",
+      "classify_regime",
+      "record_index_close",
+      "_sorted_dates",
+      "classify_and_store",
+      "latest_regime"
+    ],
+    "adaptations": [
+      "显式注入实例存储、策略配置与时钟",
+      "按函数拆分；DSH替代旧模型假设生成"
+    ]
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/priors.py",
+    "sha256": "f7cf262e2e7f8dc110861861ffe01f18487b16dd882b8dd7cbdfa469602d98aa",
+    "adaptations": [
+      "样本不足不计入已验证先验",
+      "DSH读取聚合结果，不迁入旧模型调用"
+    ]
+  }
+]

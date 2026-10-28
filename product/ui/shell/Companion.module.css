@@ -1,0 +1,169 @@
+:global([data-huohuo-conversation]) {
+  --hh-arrival-width: 340px;
+  --hh-arrival-left: calc(50% - 170px);
+  --hh-dock-width: 96px;
+  --hh-dock-height: 112px;
+}
+:global([data-huohuo-conversation][data-question='true']) {
+  --hh-dock-width: 112px;
+  --hh-dock-height: 128px;
+  --hh-question-space: 102px;
+}
+.dock {
+  position: absolute;
+  left: var(--hh-dock-left, 18px);
+  top: var(--hh-dock-top, 16px);
+  width: var(--hh-dock-width);
+  height: var(--hh-dock-height);
+  z-index: 40;
+  pointer-events: none;
+  visibility: hidden;
+  transition: none;
+}
+:global([data-companion-positioned='true']) .dock {
+  visibility: visible;
+}
+:global([data-companion-travel='true']) .dock {
+  transition:
+    width 0.48s cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 0.48s cubic-bezier(0.2, 0.8, 0.2, 1),
+    left 0.48s cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 0.48s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+:global([data-reply-travel='true']) .dock {
+  transition:
+    left 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mascot,
+.mascot canvas,
+.mascot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.mascot [hidden] {
+  display: none;
+}
+:global([data-huohuo-conversation][data-arrival='true']) .dock {
+  width: var(--hh-arrival-width);
+  height: var(--hh-arrival-height);
+  left: var(--hh-arrival-left);
+  top: var(--hh-arrival-top, 118px);
+}
+:global([data-huohuo-conversation][data-intro='true']) .dock {
+  animation: greet 2300ms both;
+}
+:global([data-huohuo-conversation][data-welcome-transition='waiting']) .dock {
+  transition: none;
+  animation: none;
+  transform: translate(var(--hh-return-x, 0px), var(--hh-return-y, 0px))
+    scale(var(--hh-return-scale, 1));
+}
+:global([data-huohuo-conversation][data-welcome-transition='moving']) .dock {
+  animation: none;
+  transform: none;
+  transition: transform 0.6s ease;
+}
+@keyframes greet {
+  from {
+    transform: translate(var(--hh-greet-start, 0px), var(--hh-greet-y, 0px)) scale(1.35);
+    opacity: 0;
+  }
+  65.2% {
+    opacity: 0;
+  }
+  70% {
+    transform: translate(var(--hh-greet-start, 0px), var(--hh-greet-y, 0px)) scale(1.35);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.22, 0.75, 0.24, 1);
+  }
+  to {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+:global([data-huohuo-conversation][data-history-transition='waiting']) .dock {
+  transition: none;
+  visibility: visible;
+  width: var(--hh-departure-width, var(--hh-arrival-width));
+  height: var(--hh-departure-height, var(--hh-arrival-height));
+  left: var(--hh-departure-left, var(--hh-arrival-left));
+  top: var(--hh-departure-top, var(--hh-arrival-top, calc(50% - 160px)));
+  animation: none;
+  transform: none;
+}
+:global([data-huohuo-conversation][data-history-transition='moving']) .dock {
+  visibility: visible;
+  width: var(--hh-dock-width);
+  height: var(--hh-dock-height);
+  left: var(--hh-dock-left, 18px);
+  top: var(--hh-dock-top, 16px);
+  animation: none;
+  transform: none;
+  transition:
+    left 0.6s ease,
+    top 0.6s ease,
+    width 0.6s ease,
+    height 0.6s ease;
+}
+@media (max-width: 1024px) {
+  :global([data-huohuo-conversation]) {
+    --hh-arrival-width: 300px;
+    --hh-arrival-left: calc(50% - 150px);
+  }
+}
+@media (min-width: 601px) and (max-width: 900px) {
+  :global([data-huohuo-conversation]) {
+    --hh-arrival-left: calc(50% - 125px);
+    --hh-arrival-width: 250px;
+  }
+}
+@media (max-width: 600px) {
+  :global([data-huohuo-conversation]) {
+    --hh-dock-width: 64px;
+    --hh-dock-height: 76px;
+  }
+  :global([data-huohuo-conversation][data-question='true']) {
+    --hh-dock-width: 72px;
+    --hh-dock-height: 88px;
+    --hh-question-space: 74px;
+  }
+  .dock {
+    left: var(--hh-dock-left, 4px);
+  }
+  :global([data-huohuo-conversation]) {
+    --hh-arrival-left: 16px;
+    --hh-arrival-width: 128px;
+    --hh-greet-start: calc(50vw - 80px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dock,
+  :global([data-companion-travel='true']) .dock,
+  :global([data-reply-travel='true']) .dock {
+    transition: none;
+  }
+  :global([data-huohuo-conversation][data-intro='true']) .dock {
+    animation: none;
+  }
+  :global([data-huohuo-conversation][data-history-transition='moving']) .dock {
+    transition: none;
+  }
+  :global([data-huohuo-conversation][data-welcome-transition='moving']) .dock {
+    transition: none;
+  }
+}
+
+.mascot {
+  position: relative;
+}
+.mascot img[data-model-poster] {
+  position: absolute;
+  width: auto;
+  max-width: none;
+  height: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+}

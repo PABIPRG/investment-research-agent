@@ -218,8 +218,8 @@ class ContactDecisionService:
             )
 
         # ── 结果完整性 ──────────────────────────────────────────────
-        if policy.mode == "due_reminder" and job.action != "due_reminder":
-            return _Outcome("suppress", "awaiting_due", "unknown", "到期提醒仅在约定时间触发", policy.condition_key), "", policy
+        if policy.mode in {"due_reminder", "scheduled_delivery", "periodic_check"} and job.action != policy.mode:
+            return _Outcome("suppress", "awaiting_due", "unknown", "定时约定仅在到期任务中获得联系资格", policy.condition_key), "", policy
         if result.outcome != "completed":
             return (
                 _Outcome(

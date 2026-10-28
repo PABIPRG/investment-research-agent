@@ -5,19 +5,30 @@ const number={type:'number',minimum:0,maximum:1e12}
 const payload={type:'object',additionalProperties:false,properties:{ticker:{type:'string',pattern:'^[0-9]{6}$'},name:textField,quantity:number,cost_price:{anyOf:[number,{type:'null'}]},effective_at:textField,reason:{type:'string',maxLength:500},remove:{type:'boolean'},side:{type:'string',enum:['buy','sell']},price:{...number,exclusiveMinimum:0},fees:number,traded_at:textField,affects_holdings:{type:'boolean'},trade_request_id:textField,operation:{type:'string',enum:['amend','void']}}}
 const labels:Record<string,string>={holding:'持仓录入/校正',watchlist:'自选变更',trade:'实际成交记录',revision:'成交更正/撤销'}
 export function investmentQuestion(p:any):string{
-  const a=p.payload
-  const codes=new Set([a.ticker,...(p.impact?.entry?.ticker?[p.impact.entry.ticker]:[])].filter(Boolean))
-  const positions=(facts:any)=>(facts?.holdings||[]).filter((x:any)=>codes.size===0||codes.has(x.ticker)).map((x:any)=>({证券:x.name||x.ticker,代码:x.ticker,数量:x.quantity,单位:x.quantity_unit||'股/份',成本:x.cost_price??'未知'}))
-  const fieldLabels:Record<string,string>={ticker:'证券代码',name:'证券名称',quantity:'数量',cost_price:'持仓成本',effective_at:'确认时间',reason:'原因',remove:'移除自选',side:'成交方向',price:'成交价格',fees:'费用',traded_at:'成交发生时间',affects_holdings:'同时更新持仓',trade_request_id:'原成交编号',operation:'修订方式'}
+  const a=p.payload, code=a.ticker||p.impact?.entry?.ticker
+  const before=p.before.holdings.find((x:any)=>x.ticker===code), after=p.after.holdings.find((x:any)=>x.ticker===code)
+  const unit=after?.quantity_unit||before?.quantity_unit||'股/份'
+  const number=(v:any)=>v==null?'未知':Number(v).toLocaleString('zh-CN',{maximumFractionDigits:6})
+  const when=(v:any)=>v?new Date(v).toLocaleString('zh-CN'):'未提供'
   const values:Record<string,string>={buy:'买入',sell:'卖出',amend:'更正',void:'撤销'}
-  const details=Object.entries(a).filter(([k])=>fieldLabels[k]).map(([k,v])=>`${fieldLabels[k]}：${v===null?'未知':typeof v==='boolean'?(v?'是':'否'):values[String(v)]||String(v)}`).join('；')
-  return `确认${labels[p.command]||'投资记录'}？事实版本 ${p.fact_version}。\n${details}\n持仓之前：${JSON.stringify(positions(p.before))}\n持仓之后：${JSON.stringify(positions(p.after))}\n${p.command==='watchlist'?`自选数量 ${p.before.watchlist.length} → ${p.after.watchlist.length}。`:''}保存不会向券商下单，也不会创建或结束委托。未知成本保留未知。`
-
+  const lines=[`确认${labels[p.command]||'投资记录'}？`, `证券：${a.name||after?.name||after?.display_name||p.impact?.entry?.name||before?.name||code||'原成交证券'}${code?'（'+code+'）':''}`]
+  if(p.command==='watchlist')lines.push(`自选：${a.remove?'移除':'添加或更新'}；数量 ${p.before.watchlist.length} → ${p.after.watchlist.length}`)
+  else {
+    lines.push(`持仓数量：${before?number(before.quantity):p.before.holdings_status==='not_recorded'?'尚未录入':'0'} → ${after?number(after.quantity):'0'} ${unit}`,
+      `单位成本：${number(before?.cost_price)} → ${number(after?.cost_price)} 元/${unit}`)
+    if(a.side)lines.push(`已发生成交：${values[a.side]} ${number(a.quantity)} ${unit}，成交价格 ${number(a.price)} 元，费用 ${number(a.fees)} 元`)
+    if(a.operation)lines.push(`修订方式：${values[a.operation]}`)
+    if(typeof a.affects_holdings==='boolean')lines.push(`持仓处理：${a.affects_holdings?'同步更新持仓':'只补成交记录，不调整持仓'}`)
+    if(a.traded_at||a.effective_at)lines.push(`发生/确认时间：${when(a.traded_at||a.effective_at)}`)
+  }
+  if(a.reason)lines.push(`原因：${a.reason}`)
+  lines.push(`依据事实版本 ${p.fact_version}。保存不会向券商下单，不创建或结束委托；未知成本保留未知。`)
+  return lines.join('\n')
 }
 export function createInvestmentTools(address:string,token:string,ask?:Ask):ToolDefinition[]{
  const api=businessApi(address,token)
  return [
-  businessTool('read_investment_facts','读取本用户持仓、自选、成交、修订及版本。未录入不等于空仓。新增/更正使用预览与确认工具。',{},[],async(_a,e)=>{
+  businessTool('read_investment_facts','读取本用户持仓、自选、成交、修订、版本及程序计算的 cost_analysis 成本集中度（非实时市值权重，缺成本时完整权重未知）。未录入不等于空仓。新增/更正使用预览与确认工具。',{},[],async(_a,e)=>{
     try{return {ok:true,observed_at:new Date().toISOString(),data:await api('/investment',e)}}catch{return {ok:false,error:'investment_read_failed'}}
   }),
   businessTool('preview_investment_change','预览持仓校正、自选、实际成交或修订。不会保存投资事实；确认具体代码、数量、已知成本及发生时间后使用。股票和场内基金均可记录；成本未知填 null。买卖须明确是否更新持仓，不能将计划当成交。',
@@ -43,7 +54,7 @@ export function createInvestmentTools(address:string,token:string,ask?:Ask):Tool
     const snapshot=await api('/investment/collection',e,{collection:a.collection,version:null})
     if(current.mandate.current_revision!==a.expected_revision||current.generation!==a.expected_generation||snapshot.fact_version!==a.expected_fact_version)throw new Error('委托或事实版本已变化，请重新读取')
     if(snapshot.status==='not_recorded'||current.mandate.status==='ended')throw new Error('尚未录入事实或委托已结束，不能关联')
-    if(!await confirmBusiness(ask,e,`为“${current.revision.goal}”关联${a.collection==='holdings'?'持仓':'自选'}？${a.mode==='fixed'?'固定当前快照':'每次使用最新集合'}，事实版本 ${snapshot.fact_version}。对象：${snapshot.members.map((x:any)=>`${x.name} (${x.entity_id})`).join('、')||'已确认空集合'}。将产生新委托版本并撤销旧执行资格，不恢复暂停委托，不自动扩大研究对象。`))return cancelled
+    if(!await confirmBusiness(ask,e,`为“${current.revision.goal}”关联${a.collection==='holdings'?'持仓':'自选'}？${a.mode==='fixed'?'固定当前快照':'每次使用最新集合'}，事实版本 ${snapshot.fact_version}。对象：${snapshot.members.map((x:any)=>`${x.name}（${x.entity_id.split(':').at(-1)}）`).join('、')||'已确认空集合'}。将产生新委托版本并撤销旧执行资格，不恢复暂停委托，不自动扩大研究对象。`))return cancelled
     return {ok:true,data:await api('/investment/bind-collection',e,{...a,request_key:requestKey(e,'bind-collection')})}
    },true)
  ]

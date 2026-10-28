@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Sequence
 
 from .models import EntityCandidate, EntityMention
-from .normalizer import is_six_digit_code, normalize_name, security_kind_for_code
+from .normalizer import is_six_digit_code, normalize_name
 
 
 class CandidateRetriever:
@@ -41,12 +41,7 @@ class CandidateRetriever:
 
         # 2) 六位代码：按标识符精确查询。
         if is_six_digit_code(text):
-            kind = security_kind_for_code(text)
-            keys = {
-                "stock": ("security_code", "company_code"),
-                "fund": ("fund_code", "security_code"),
-                "bond": ("bond_code",),
-            }.get(kind, ("security_code", "index_code", "fund_code", "bond_code", "company_code"))
+            keys = ("security_code", "index_code", "fund_code", "bond_code", "company_code")
             for key in keys:
                 for entity in self.repository.find_by_identifier(key, text):
                     if allowed and entity.entity_type_code not in allowed:

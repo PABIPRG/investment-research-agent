@@ -1,3 +1,4 @@
 pydantic==2.12.3
 akshare==1.17.86
 requests==2.34.2
+baostock==0.9.4

@@ -8,7 +8,8 @@
     ".": "./lib/product/tools/index.js",
     "./chat-tools": "./lib/product/chat/tools.js",
     "./chat-guard": "./lib/product/chat/guard.js",
-    "./ui-host": "./lib/product/ui/host.js"
+    "./ui-host": "./lib/product/ui/host.js",
+    "./strategy-worker": "./lib/product/strategy-worker.js"
   },
   "bin": {
     "huohuo": "./lib/distribution/cli.js"
@@ -37,7 +38,6 @@
     "lib/product",
     "lib/runtime",
     "docs/阅读入口.md",
-    "docs/Skill与Tool能力目录.md",
     "docs/当前架构与装配.md",
     "docs/架构对齐与验证.md",
     "docs/设计基线",
@@ -45,13 +45,16 @@
     "docs/开发指引.md",
     "docs/交付与验收.md",
     "docs/architecture",
+    "docs/策略能力使用指南.md",
+    "docs/Skill与Tool能力目录.md",
     "docs/聊天业务操作实施计划.md",
-    "docs/聊天业务操作验收.md"
+    "docs/聊天业务操作验收.md",
+    "product/profile"
   ],
   "scripts": {
     "start": "node lib/distribution/cli.js",
     "build": "npm run tools:generate && tsc && node scripts/build-chat-ui.mjs",
-    "check": "npm run tools:check && npm run capabilities:check && tsc --noEmit",
+    "check": "npm run tools:check && npm run capabilities:check && npm run check:ui && tsc --noEmit",
     "test:python": "PYTHONPATH=sidecar python3 -m unittest discover -s tests -p 'test_*.py' -v",
     "test:assembly": "node lib/tests/assembly.js",
     "test:node": "node --test lib/tests/*.test.js",
@@ -64,6 +67,8 @@
     "pack:release": "npm run check && npm run build && node scripts/package-release.mjs",
     "smoke:skills": "node scripts/smoke-skills.mjs",
     "handoff": "node scripts/export-handoff.mjs",
+    "check:ui": "node scripts/check-ui-source.mjs",
+    "format:ui": "prettier --write \"product/ui/**/*.{ts,tsx,css,js}\" \"!product/ui/assets/companion/vendor/**\"",
     "capabilities:check": "node scripts/check-capabilities.mjs"
   },
   "dependencies": {
@@ -74,14 +79,15 @@
     "@deepseek-ai/dsh-llm": "0.2.1-rc.2",
     "@deepseek-ai/dsh-sdk-client": "0.2.1-rc.2",
     "@deepseek-ai/dsh-skill": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.2",
     "@deepseek-ai/dsh-system-prompt": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-tools": "0.2.1-rc.2",
-    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.2"
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.2"
   },
   "devDependencies": {
     "@types/node": "24.7.2",
     "@types/react": "18.3.26",
     "esbuild": "0.25.11",
+    "prettier": "3.6.2",
     "typescript": "5.9.3"
   }
 }

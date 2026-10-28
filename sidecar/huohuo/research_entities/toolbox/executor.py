@@ -136,7 +136,7 @@ class ToolExecutor:
                         status="unavailable",
                         entity_ids=list(request.entity_ids),
                         data={"records": [], "count": 0},
-                        error=f"实体库不可用: {exc}",
+                        error=f"实体库暂不可用",
                     ),
                     started,
                 )
@@ -149,17 +149,17 @@ class ToolExecutor:
                 tool_id=request.tool_id,
                 status="unavailable",
                 entity_ids=list(request.entity_ids),
-                data={"records": [], "count": 0, "reason": str(exc)},
-                error=str(exc),
-                warnings=[str(exc)],
+                data={"records": [], "count": 0, "reason": f"数据源或存储暂不可用（{type(exc).__name__}）"},
+                error=f"数据源或存储暂不可用（{type(exc).__name__}）",
+                warnings=[f"数据源或存储暂不可用（{type(exc).__name__}）"],
             )
         except StorageUnavailable as exc:
             result = ToolResult(
                 tool_id=request.tool_id,
                 status="unavailable",
                 entity_ids=list(request.entity_ids),
-                data={"records": [], "count": 0, "reason": f"实体库不可用: {exc}"},
-                error=str(exc),
+                data={"records": [], "count": 0, "reason": f"实体库暂不可用"},
+                error=f"数据源或存储暂不可用（{type(exc).__name__}）",
             )
         except Exception as exc:  # noqa: BLE001 - 工具边界必须归一化
             result = ToolResult(
@@ -167,7 +167,7 @@ class ToolExecutor:
                 status="error",
                 entity_ids=list(request.entity_ids),
                 data={"records": [], "count": 0},
-                error=f"{type(exc).__name__}: {exc}",
+                error=f"工具运行失败（{type(exc).__name__}）",
             )
         if not isinstance(result, ToolResult):
             result = ToolResult(

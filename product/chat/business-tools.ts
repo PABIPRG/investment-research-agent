@@ -53,7 +53,7 @@ export function businessTool(name:string,description:string,properties:Record<st
 export async function confirmBusiness(ask:Ask|undefined,exec:ToolRunContext,question:string):Promise<boolean>{
   if(!ask)throw new Error('原生确认未接通，不能保存')
   const result=await ask([{id:'business-confirm',header:'保存前确认',question,options:[{label:'确认执行',description:'按上述内容保存；以实际业务回执为准。'},{label:'取消',description:'保留现有业务状态，不提交本次修改。'}]}],exec)
-  if(result?.pending||result?.cancelled||!Array.isArray(result?.answers)||result.answers.length!==1)return false
+  if(exec.signal.aborted||result?.pending||result?.cancelled||!Array.isArray(result?.answers)||result.answers.length!==1)return false
   const a=result.answers[0]
   return a.id==='business-confirm'&&!a.custom&&Array.isArray(a.selected)&&a.selected.length===1&&a.selected[0]==='确认执行'
 }

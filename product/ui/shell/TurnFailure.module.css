@@ -1,0 +1,55 @@
+.failure {
+  padding: 18px 20px;
+  border: 1px solid var(--hh-line);
+  background: var(--hh-paper);
+  color: var(--hh-ink);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.failure > strong {
+  font-size: 1.1429rem;
+  line-height: 1.5;
+}
+.failure p {
+  margin: 8px 0 12px;
+}
+.failure details {
+  margin-top: 10px;
+}
+.failure summary {
+  cursor: pointer;
+  width: fit-content;
+  color: var(--hh-accent);
+}
+.failure summary:focus-visible {
+  outline: 2px solid var(--hh-accent);
+  outline-offset: 3px;
+}
+.failure ol {
+  padding-left: 22px;
+  margin: 10px 0;
+}
+.technical {
+  font-size: 0.8571rem;
+  line-height: 1.5;
+  color: var(--hh-muted);
+}
+.technical pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  margin: 6px 0 0;
+}
+.process {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+  line-height: 1.5;
+}
+@media (max-width: 600px) {
+  .failure {
+    padding: 12px;
+  }
+}

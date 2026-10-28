@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from .configuration import CHANNELS, FIELDS, configured, public_config, merge_config, validate_channels
 from .channels import build_adapter
 from .delivery import DeliveryError, DeliverySuppressed
+from .market_gate import current_for_delivery
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from ..contracts import Invalid, canonical
 from ..execution import Conflict
@@ -88,6 +89,8 @@ class Notifications:
             else:
                 policy=parse_contact_policy(self.store.get_revision(m.mandate_id,m.current_revision).contact_policy)
                 if q['channel'] not in policy.channels:reason='渠道不在委托许可内'
+            if reason is None and not current_for_delivery(self.core, decision_id):
+                reason="市场资料已过时或证据不可核对，取消本次发送"
             if reason:
                 db.execute("UPDATE notification_queue SET status='cancelled',detail=?,updated_at=? WHERE decision_id=? AND channel=?",(reason,now,decision_id,channel));return None
             quiet=cfg['quiet_hours']

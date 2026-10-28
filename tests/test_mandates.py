@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 from huohuo.execution import Repository, Conflict
 from huohuo.mandates import Mandates
+from huohuo.research import snapshot
 
 SCOPE = {'entity_id':'SEC:CN:A:600519','exchange':'SSE','operation':'quote_snapshot'}
 
@@ -21,20 +22,20 @@ class MandateIntegrationTests(unittest.TestCase):
     def create(self):
         return self.core.create('alice', {'session_id':'test-chat','confirmation_id':self.confirmation,'request_key':'create-001','goal':'明确委托：研究当前报价','scope':SCOPE,'contact_note':'仅在产品中查看'})
     def complete(self, job):
-        ev=self.repo.save_evidence(job['attempt_id'],job['lease_token'],{'scope':SCOPE,'status':'ok','source':'fixture','observed_at':'2026-10-23T00:00:00Z','values':{'price':'10'}})
+        ev=self.repo.save_evidence(job['attempt_id'],job['lease_token'],snapshot(SCOPE,lambda _:({'data':{'diff':[{'f12':'600519','f2':10,'f18':11,'f124':int(self.repo.clock())}]}},'https://example.invalid/quote')))
         result={'status':'succeeded','execution_id':job['execution_id'],'scope':SCOPE,'summary':'测试来源的报价','evidence_ids':[ev['evidence_id']]}
         self.repo.finish(job['attempt_id'],job['lease_token'],result)
         return result
     def test_etf_quote_mandate_is_supported(self):
-        self.core.entities.directory=lambda:{'status':'ok','rows':[{'code':'513130','name':'恒生科技ETF'}],'source':{'provider':'fixture'}}
-        r=self.core.entities.resolve('alice','etf-chat','513130')
-        eid=r['mentions'][0]['candidates'][0]['entity_id'];self.assertEqual(eid,'FUND:CN:513130')
+        # 使用内置已确认证券目录；保持 canonical 基金身份并映射到执行身份。
+        r=self.core.entities.resolve('alice','etf-chat','510300')
+        eid=next(c['entity_id'] for c in r['mentions'][0]['candidates'] if c['entity_type_code']=='ENTITY_01_02')
         receipt=self.core.entities.confirm('alice','etf-chat',r['snapshot_id'],r['version'],{r['mentions'][0]['mention_id']:eid},'fixture-answer')
         confirmation=receipt['confirmations'][0]
         self.assertEqual(confirmation['operations'],['quote_snapshot'])
-        scope={'entity_id':eid,'exchange':confirmation['exchange'],'operation':'quote_snapshot'}
-        view=self.core.create('alice',{'session_id':'etf-chat','confirmation_id':confirmation['confirmation_id'],'request_key':'etf-create-001','goal':'跟踪恒生科技ETF报价','scope':scope,'contact_note':'仅应用内'})
-        self.assertEqual(view['revision']['scope']['entity_id'],'FUND:CN:513130')
+        scope={'entity_id':confirmation['execution_entity_id'],'exchange':confirmation['exchange'],'operation':'quote_snapshot'}
+        view=self.core.create('alice',{'session_id':'etf-chat','confirmation_id':confirmation['confirmation_id'],'request_key':'etf-create-001','goal':'跟踪已确认ETF报价','scope':scope,'contact_note':'仅应用内'})
+        self.assertEqual(view['revision']['scope']['entity_id'],'FUND:CN:510300')
         self.core.tick();self.assertIsNotNone(self.repo.claim('worker'))
 
     def test_event_chain_and_crash_before_core_receive(self):
@@ -109,7 +110,10 @@ class MandateIntegrationTests(unittest.TestCase):
         self.assertIn('"threshold":1500',job['question'])
     def test_numeric_condition_rejects_series_and_wrong_unit(self):
         from huohuo.contracts import Invalid
-        from huohuo.mandates import contact_condition
+        from huohuo.research_partner.contact_rules import compile_rule, normalize_contact_input
+        def contact_condition(value,operation):
+            rule=normalize_contact_input({'contact_condition':value})['contact_rule']
+            return compile_rule(rule,{'operation':operation},['app'])
         with self.assertRaises(Invalid):
             contact_condition({'type':'percentile','series':'close','operator':'<','threshold':0.1},'quote_snapshot')
         with self.assertRaises(Invalid):

@@ -118,6 +118,15 @@ class Repository:
         text(principal, "principal", 200)
         text(key, "request key", 200)
         scope = validate_scope(scope)
+        return self._create(principal, key, scope, question)
+
+    def create_strategy(self, principal, key, scope, question):
+        from .research_partner.strategy_tasks import validate_execution_scope
+        return self._create(principal, key, validate_execution_scope(scope), question)
+
+    def _create(self, principal, key, scope, question):
+        text(principal, "principal", 200)
+        text(key, "request key", 200)
         text(question, "question")
         fingerprint = digest({"scope": scope, "question": question})
         with self.connection(True) as db:
@@ -135,7 +144,7 @@ class Repository:
 
     def recent(self, principal):
         with self.connection() as db:
-            rows = db.execute("SELECT * FROM executions WHERE principal=? ORDER BY created_at DESC, id DESC LIMIT 51",
+            rows = db.execute("SELECT * FROM executions WHERE principal=? AND COALESCE(json_extract(scope,'$.kind'),'research')!='strategy' ORDER BY created_at DESC, id DESC LIMIT 51",
                               (principal,)).fetchall()
             return {"executions": [self._view(row) for row in rows[:50]], "limit": 50, "has_more": len(rows) > 50}
 
@@ -176,11 +185,22 @@ class Repository:
             db.execute("INSERT INTO commands VALUES(?,?,?,?)", (principal, key, fingerprint, canonical(receipt)))
             return receipt
 
-    def claim(self, worker, lease_seconds=30):
+    def claim(self, worker, lease_seconds=30, *, lane="research", principal=None, execution_id=None):
         text(worker, "worker", 200)
         self._lease_duration(lease_seconds)
         with self.connection(True) as db:
-            row = db.execute("SELECT * FROM executions WHERE status='queued' ORDER BY created_at,id LIMIT 1").fetchone()
+            if lane not in ('research', 'strategy', 'strategy_compute', 'strategy_candidate'):
+                raise Invalid('invalid execution lane')
+            clause = "COALESCE(json_extract(scope,'$.kind'),'research') != 'strategy'" if lane == 'research' else "json_extract(scope,'$.kind')='strategy'"
+            args = []
+            if lane == 'strategy_compute': clause += " AND json_extract(scope,'$.action')!='candidate'"
+            if lane == 'strategy_candidate': clause += " AND json_extract(scope,'$.action')='candidate'"
+            if principal is not None: clause += ' AND principal=?'; args.append(principal)
+            if execution_id is not None: clause += ' AND id=?'; args.append(execution_id)
+            # 策略计算共享版本，按用户串行；这是同一队列的资源约束，不是另一个任务台账。
+            if lane != 'research': clause += " AND NOT EXISTS (SELECT 1 FROM executions busy WHERE busy.principal=executions.principal AND busy.status='running' AND json_extract(busy.scope,'$.kind')='strategy')"
+            order = "created_at,id" if lane == 'research' else "date(created_at,'unixepoch'), CASE json_extract(scope,'$.action') WHEN 'events' THEN 0 WHEN 'backtest' THEN 1 WHEN 'shadow' THEN 2 WHEN 'recall' THEN 3 WHEN 'evolve' THEN 4 ELSE 5 END,created_at,id"
+            row = db.execute("SELECT * FROM executions WHERE status='queued' AND " + clause + " ORDER BY " + order + " LIMIT 1", args).fetchone()
             if row is None:
                 return None
             attempt_id, token = str(uuid.uuid4()), secrets.token_urlsafe(32)
@@ -210,6 +230,10 @@ class Repository:
         if (a["status"] != "running" or row["status"] != "running" or a["lease_until"] <= self.clock()
                 or row["current_attempt"] != a["id"] or row["fence"] != a["fence"]):
             raise Conflict("execution capability expired or revoked")
+        if getattr(self, 'core_store', None) is not None:
+            bound = db.execute('SELECT x.revision,x.generation,m.current_revision,m.status,g.generation AS current_generation FROM execution_jobs x JOIN mandates m USING(mandate_id) JOIN mandate_generation g USING(mandate_id) WHERE x.execution_id=?', (row['id'],)).fetchone()
+            if bound and (bound['status'] != 'tracking' or bound['revision'] != bound['current_revision'] or bound['generation'] != bound['current_generation']):
+                raise Conflict('mandate execution capability revoked')
         return a, row
 
     def active(self, attempt_id, token):
@@ -251,6 +275,9 @@ class Repository:
             binding = json.loads(row["scope"])
             if document.get("status") == "ok" and binding["operation"] == "financial_summary":
                 validate_financial_document(document, binding)
+            from .research_partner.market_sources import MARKET_OPERATIONS, validate_market_document
+            if document.get('status')=='ok' and binding['operation'] in MARKET_OPERATIONS:
+                validate_market_document(document,binding)
             evidence_id = digest([attempt_id, document])
             db.execute("INSERT OR IGNORE INTO evidence VALUES(?,?,?,?)", (evidence_id, attempt_id, canonical(document), self.clock()))
             return {"evidence_id": evidence_id, **document}
@@ -262,7 +289,7 @@ class Repository:
                      **json.loads(r["document"])} for r in db.execute(
                 "SELECT e.*,a.status AS attempt_status FROM evidence e JOIN attempts a ON a.id=e.attempt_id WHERE a.execution_id=? ORDER BY e.created_at,e.id", (execution_id,))]
 
-    def finish(self, attempt_id, token, result):
+    def finish(self, attempt_id, token, result, *, _strategy_validated=False):
         if not isinstance(result, dict) or result.get("status") not in ("succeeded", "failed"):
             raise Invalid("invalid execution result")
         encoded, fingerprint = canonical(result), digest(result)
@@ -270,6 +297,8 @@ class Repository:
             raise Invalid("result too large")
         with self.connection(True) as db:
             a, row = self._attempt(db, attempt_id, token)
+            if json.loads(row["scope"]).get("kind") == "strategy" and not _strategy_validated:
+                raise Conflict("strategy result requires domain validation")
             if a["result_hash"]:
                 if a["result_hash"] != fingerprint:
                     raise Conflict("result already committed with different content")
@@ -291,6 +320,9 @@ class Repository:
                         raise Conflict("result references unavailable evidence")
                     if binding['operation'] == 'financial_summary':
                         validate_financial_document(json.loads(found[0]), binding)
+                    from .research_partner.market_sources import MARKET_OPERATIONS, validate_market_document
+                    if binding['operation'] in MARKET_OPERATIONS:
+                        validate_market_document(json.loads(found[0]),binding)
                 self._validate_judgements(result, set(evidence_ids), binding)
             else:
                 text(result.get("error"), "error", 2000)
@@ -324,11 +356,31 @@ class Repository:
                 if binding['operation'] == 'financial_summary' and judgement['judgement'] != 'unknown':
                     raise Conflict('financial source unit and basis are unverified; judgement must be unknown')
 
-    def recover(self):
+    def cancel_job(self, principal, execution_id):
         with self.connection(True) as db:
-            rows = db.execute("SELECT e.id,a.id AS attempt_id FROM executions e JOIN attempts a ON a.id=e.current_attempt WHERE e.status='running' AND a.lease_until<=?", (self.clock(),)).fetchall()
+            row = self._owned(db, principal, execution_id)
+            if row['status'] not in ('queued','running'): return self._view(row)
+            db.execute("UPDATE attempts SET status='cancelled' WHERE execution_id=? AND status='running'",(execution_id,))
+            db.execute("UPDATE executions SET status='cancelled',revision=revision+1,updated_at=? WHERE id=?",(self.clock(),execution_id))
+            db.execute("UPDATE research_jobs SET status='cancelled',last_error='用户停止本次验证' WHERE job_id IN (SELECT job_id FROM execution_jobs WHERE execution_id=?)",(execution_id,))
+            self._event(db,execution_id,'execution.cancel',{'reason':'user_cancelled_job'})
+            return self._view(self._owned(db,principal,execution_id))
+
+    def cancel_bound(self, mandate_id):
+        with self.connection(True) as db:
+            ids = 'SELECT execution_id FROM execution_jobs WHERE mandate_id=?'
+            db.execute("UPDATE attempts SET status='cancelled' WHERE status='running' AND execution_id IN ("+ids+")", (mandate_id,))
+            db.execute("UPDATE executions SET status='cancelled',revision=revision+1,updated_at=? WHERE status IN ('queued','running') AND id IN ("+ids+")", (self.clock(), mandate_id))
+            db.execute("UPDATE research_jobs SET status='cancelled' WHERE mandate_id=? AND status IN ('pending','running','waiting_data')", (mandate_id,))
+            db.execute("UPDATE strategy_runs SET status='cancelled',error='计划已停止或改约，未写入迟到结果',updated_at=? WHERE status='running' AND execution_id IN ("+ids+")", (self.clock(), mandate_id))
+
+    def recover(self, *, abandoned=False):
+        with self.connection(True) as db:
+            rows = db.execute("SELECT e.id,a.id AS attempt_id FROM executions e JOIN attempts a ON a.id=e.current_attempt WHERE e.status='running' AND (a.lease_until<=? OR ?)", (self.clock(),int(abandoned))).fetchall()
             for row in rows:
                 db.execute("UPDATE executions SET status='interrupted',revision=revision+1,updated_at=? WHERE id=?", (self.clock(), row["id"]))
                 db.execute("UPDATE attempts SET status='interrupted' WHERE id=?", (row["attempt_id"],))
                 self._event(db, row["id"], "execution.interrupted", {"attempt_id": row["attempt_id"], "reason": "lease_expired"})
+            if getattr(getattr(self,'core_store',None),'strategies',None):
+                self.core_store.strategies.tasks.route()
             return len(rows)

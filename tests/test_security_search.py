@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch
 from huohuo.research_entities.security_search import search, reset_cache
+from huohuo.research_entities import security_search
 from huohuo.contracts import Invalid
 
 ROWS=[{'code':'002518','name':'科士达'},{'code':'002519','name':'科士达测试'},{'code':'600519','name':'贵州茅台'},{'code':'510300','name':'沪深300ETF'},{'code':'920001','name':'北交测试'}]
@@ -34,3 +35,32 @@ class SearchTests(unittest.TestCase):
  def test_bad_query(self):
   for q in ['',None,'x'*101]:
    with self.assertRaises(Invalid):search(q,lambda:ROWS)
+
+class DisplayNameCacheTests(unittest.TestCase):
+    def setUp(self): security_search.reset_cache()
+    def tearDown(self): security_search.reset_cache()
+    def test_exact_public_lookup_is_cached_but_never_creates_confirmation(self):
+        from unittest.mock import patch
+        with patch.object(security_search,'suggest',return_value=[{'code':'000001','name':'合成目录银行'}]) as suggest:
+            first=security_search.search('000001',now=1000)
+            second=security_search.search('000001',now=1001)
+        self.assertEqual(suggest.call_count,1)
+        self.assertEqual(first['status'],'ok')
+        self.assertEqual(second['candidates'][0]['entity_id'],'SEC:CN:A:000001')
+        self.assertTrue(first['requires_confirmation'])
+        self.assertEqual(security_search.cached_name('000001',now=1001)['name'],'合成目录银行')
+        self.assertIsNone(security_search.cached_name('000001',now=5000))
+    def test_other_code_never_fills_requested_stock_name(self):
+        from unittest.mock import patch
+        with patch.object(security_search,'suggest',return_value=[{'code':'600519','name':'其他证券'}]):
+            result=security_search.search('000001',now=1000)
+        self.assertEqual(result['status'],'empty')
+        self.assertIsNone(security_search.cached_name('000001',now=1001))
+    def test_name_projection_never_waits_for_catalog_network_lock(self):
+        import time
+        security_search._lock.acquire()
+        try:
+            start=time.monotonic()
+            self.assertIsNone(security_search.cached_name('000001'))
+            self.assertLess(time.monotonic()-start,0.05)
+        finally:security_search._lock.release()

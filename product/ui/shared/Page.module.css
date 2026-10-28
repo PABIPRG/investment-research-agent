@@ -1,0 +1,42 @@
+/* Shared route surface and hierarchy; feature content keeps its own layout. */
+.surface {
+  --hh-control-height: 36px;
+  --hh-control-padding-y: 7px;
+  --hh-control-padding-x: 14px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--hh-surface);
+  color: var(--hh-ink);
+  border: 1px solid var(--hh-line);
+  font:
+    1rem/1.5 system-ui,
+    sans-serif;
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.header h1 {
+  font-size: 1.5714rem;
+  line-height: 1.4;
+  margin: var(--hh-heading-margin, 0 0 4px);
+  font-weight: 600;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .surface {
+    --hh-control-height: 40px;
+  }
+}

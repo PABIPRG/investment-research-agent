@@ -1,0 +1,76 @@
+{
+  "source_repository": "PABIPRG/pa-investment-research",
+  "source_ref": "public/master",
+  "source_commit": "9c23b1fdb249d8192748196cb183709e8e2030f4",
+  "files": [
+    {
+      "path": "backend/market-watch/market_watch/quotes.py",
+      "sha256": "c8504ffe1d816adbc06f8c1095b08f89e6e5785b9c7a7c296fa4dcdd700253ed",
+      "migration": "复用公开来源与字段映射，重建有界查询契约"
+    },
+    {
+      "path": "backend/market-watch/market_watch/scanner.py",
+      "sha256": "56757543d5d8589a6708eb243f6331cb3009fea17b1c80ba15cd199ca39f73fa",
+      "migration": "复用公开来源与字段映射，重建有界查询契约"
+    },
+    {
+      "path": "backend/market-watch/market_watch/indicators.py",
+      "sha256": "6007281c0747fa2e252dcddf0115202329b8726b84a431dde1d60426c4fb5b18",
+      "migration": "原样纯算法"
+    },
+    {
+      "path": "backend/market-watch/market_watch/news.py",
+      "sha256": "3b7b6cfd1a3d22dbbc301d333e583634faefbfcb0f27c3f33b8798ad6b5cca4e",
+      "migration": "复用公开来源与字段映射，重建有界查询契约"
+    },
+    {
+      "path": "backend/market-watch/market_watch/briefs.py",
+      "sha256": "c5a2dc957d418a938e169f5ba3bb8b3880847725939ae49cb35cc139b03a5d92",
+      "migration": "复用公开来源与字段映射，重建有界查询契约"
+    }
+  ],
+  "excluded": [
+    "旧LLM/Agent",
+    "独立watchlist与JsonStore",
+    "直推通知",
+    "旧scheduler"
+  ],
+  "extensions": {
+    "daily_fallback": [
+      "eastmoney_qfq",
+      "sina_unadjusted",
+      "baostock_qfq"
+    ],
+    "news_fast": [
+      "sina",
+      "cls"
+    ],
+    "news_include_slow": [
+      "wallstreetcn",
+      "ithome",
+      "google_36kr",
+      "google_huxiu"
+    ],
+    "directed_news": "eastmoney; never mix global feeds",
+    "baostock": {
+      "version": "0.9.4",
+      "wheel_sha256": "0bf71c6069ab5890ff3596632f9c3f8f1fbc6bfcac582c2f9d6a5c11ab2cfaf8",
+      "artifact": "https://pypi.org/project/baostock/0.9.4/",
+      "transport": "plain_tcp_public",
+      "endpoint": "public-api.baostock.com:10030",
+      "authentication": "only SDK public anonymous protocol constants; no user credentials",
+      "deadline_seconds": 6,
+      "fields": "date,open,high,low,close,volume,amount",
+      "adjustflag": "2 (forward adjusted)",
+      "volume_unit": "share",
+      "amount_unit": "CNY"
+    },
+    "rss_security": "fixed HTTPS feeds; redirects disabled; no DTD/entity expansion or article following; response bound 2 MB",
+    "excluded_legacy_behaviors": [
+      "proxy override",
+      "verify=False",
+      "news LLM summarizer",
+      "scheduler and direct delivery"
+    ]
+  }
+}

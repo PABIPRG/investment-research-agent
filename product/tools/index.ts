@@ -6,6 +6,7 @@ import '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-app-boot'
 import { readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
+import { boundedManifest } from './bounded-operations.js'
 
 export const inject = ['tools', 'skills', 'systemPrompt', 'profileContext']
 export const toolName = 'read_security_snapshot'
@@ -24,7 +25,7 @@ export async function apply(ctx: Context): Promise<void> {
   ctx.systemPrompt.context({ name: 'huohuo:trusted-execution', order: 10, required: true, interpolate: false,
     text: '由产品服务赋予的执行边界：' + JSON.stringify(binding) })
   const definition: ToolDefinition = {
-    name: toolName, description: '读取本次执行绑定的报价、公司资料或财务摘要，返回留存证据。只能执行固定 Scope，不能改变对象、期间或口径。',
+    name: toolName, description: '读取本次绑定的报价、技术指标、新闻、简报资料、公司资料或财务摘要，返回留存证据。只能执行固定 Scope，不能改变对象、期间或口径。',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
     output: { schema: { type: 'object', additionalProperties: true },
       render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
@@ -50,7 +51,7 @@ export async function apply(ctx: Context): Promise<void> {
   const ackPath = process.env.HUOHUO_RUNTIME_ACK_PATH
   if (!ackPath) throw new Error('HUOHUO_ACK_REQUIRED')
   const dshManifest = JSON.parse(await readFile(new URL(import.meta.resolve('@deepseek-ai/dsh/package.json')), 'utf8'))
-  await writeFile(ackPath, JSON.stringify({ version: '1.0.0', policy: 'bounded-research-v1', capability_manifest: { version: 1, operations: ['quote_snapshot', 'company_profile', 'financial_summary'] }, tools: [toolName],
+  await writeFile(ackPath, JSON.stringify({ version: '1.0.0', policy: 'bounded-research-v1', capability_manifest: boundedManifest, tools: [toolName],
     runtime: { pid: process.pid, argv: process.argv, executable: process.execPath, dsh_version: dshManifest.version,
       profile: { name: ctx.profileContext.name, directory: ctx.profileContext.dir, home: ctx.profileContext.home,
         started_bundles: ctx.profileContext.startedBundles } },

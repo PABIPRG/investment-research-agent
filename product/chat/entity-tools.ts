@@ -6,7 +6,7 @@ export const entityToolName = 'confirm_research_entities'
 export function confirmationQuestions(snapshot: any, reconfirm = false) {
   return snapshot.mentions.filter((m: any) => m.candidates.length && (reconfirm || !m.confirmation)).map((m: any) => ({
     id: m.mention_id, header: '确认对象', question: `“${m.raw_text}”指的是哪一个对象？这里只确认讨论对象，不创建持续委托。`,
-    options: [...m.candidates.map((c: any) => ({ label: candidateLabel(c), description: c.entity_type_code === 'ENTITY_01_01' ? '证券身份；可用于受控沪深 A 股研究。' : c.entity_type_code === 'ENTITY_02_01' ? '上市公司身份；与股票分开记录。' : '可识别对象；当前尚不支持执行研究。' })), { label: '重新说明对象', description: '不确认本项，继续补充名称或代码。' }],
+    options: [...m.candidates.map((c: any) => ({ label: candidateLabel(c), description: c.entity_type_code === 'ENTITY_01_01' ? '证券身份；可用于受控沪深 A 股研究。' : c.entity_type_code === 'ENTITY_02_01' ? '上市公司身份；与股票分开记录。' : '确认此对象身份后，可按已接通的工具查询；不创建持续委托。' })), { label: '重新说明对象', description: '不确认本项，继续补充名称或代码。' }],
   }))
 }
 function candidateLabel(c: any): string {

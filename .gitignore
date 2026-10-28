@@ -10,3 +10,7 @@ artifacts/
 /ui/
 
 .cache/
+
+# 用户保留的可编辑 IP 母版不进入公开仓库或交接包。
+design/huohuo/huohuo-warm-cheeks.blend
+design/huohuo/huohuo-magnifier-cheeks.blend

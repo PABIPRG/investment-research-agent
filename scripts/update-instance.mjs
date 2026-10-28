@@ -13,10 +13,12 @@ const run = (args, capture = false) => new Promise((done, fail) => {
 await run(['run', 'build'])
 const { readInstance, installWorker } = await import('../lib/distribution/instance.js')
 const { installChat, checkChatPort, validateChatUpgrade } = await import('../lib/distribution/chat.js')
+const { validateStrategyUpgrade } = await import('../lib/distribution/strategy-profile.js')
 const config = await readInstance(directory)
 await checkChatPort(config.port)
 await checkChatPort(Number(process.env.HUOHUO_WEB_PORT ?? 18387))
 await validateChatUpgrade(config)
+await validateStrategyUpgrade(config)
 const [{ filename }] = JSON.parse(await run(['pack', '--json'], true))
 const previous = join(directory, 'product.before-chat-shell.tgz')
 try { await access(previous) } catch { await copyFile(join(directory, 'product.tgz'), previous) }

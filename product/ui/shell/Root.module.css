@@ -1,0 +1,153 @@
+.root {
+  color: var(--hh-ink);
+  font:
+    1rem/1.6 system-ui,
+    sans-serif;
+}
+.root * {
+  box-sizing: border-box;
+}
+.root button {
+  font: inherit;
+  border-radius: 999px;
+  corner-shape: round;
+  cursor: pointer;
+}
+.root button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.root button:focus-visible,
+.root a:focus-visible {
+  outline: 2px solid var(--hh-accent);
+  outline-offset: 3px;
+}
+.top {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  padding: 8px 28px;
+  background: var(--hh-surface);
+  border-bottom: 1px solid var(--hh-line);
+  min-height: 66px;
+  flex-shrink: 0;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.wordmark {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.wordmark strong {
+  font-size: 1.64rem;
+  line-height: 1.2;
+  font-weight: 650;
+}
+.wordmark small {
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+  line-height: 1.3;
+  font-weight: 400;
+}
+.top > nav {
+  display: flex;
+  position: relative;
+  gap: 4px;
+  overflow: auto;
+  flex: 1;
+}
+.top > nav button {
+  position: relative;
+  z-index: 1;
+  padding: 8px 12px;
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  color: var(--hh-muted);
+}
+.top > nav button[aria-current='page'] {
+  color: var(--hh-accent);
+  font-weight: 650;
+}
+.presence {
+  flex-shrink: 0;
+  border: 1px solid var(--hh-line);
+  background: var(--hh-surface);
+  color: var(--hh-muted);
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+.presence:hover {
+  color: var(--hh-ink);
+  background: var(--hh-soft);
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 5px;
+  border-radius: 999px;
+  background: var(--hh-accent);
+  color: var(--hh-on-accent);
+  font-size: 0.7143rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.settings {
+  flex-shrink: 0;
+}
+/* The native launcher was designed for a side rail; put its tooltip below the top bar. */
+.settings :global([data-slot='settings.launcher'] [role='tooltip']) {
+  transform: translateY(calc(-50% + 38px)) !important;
+}
+.environment {
+  margin: 0;
+  padding: 8px 24px;
+  background: var(--hh-paper);
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--hh-line);
+}
+.environment summary {
+  cursor: pointer;
+}
+.environment p {
+  margin: 6px 0 0;
+}
+.environment summary:focus-visible {
+  outline: 2px solid var(--hh-accent);
+  outline-offset: 2px;
+}
+@media (max-width: 1200px) {
+  .top {
+    gap: 12px;
+    padding: 10px 16px;
+  }
+  .top > nav button {
+    padding: 8px 10px;
+  }
+}
+@media (max-width: 600px) {
+  .top {
+    gap: 12px;
+    padding: 8px 12px;
+  }
+  .wordmark strong {
+    font-size: 1.43rem;
+  }
+  .wordmark small {
+    font-size: 0.7857rem;
+  }
+}

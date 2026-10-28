@@ -1,0 +1,28 @@
+{
+  "designVersion": "1.4",
+  "revision": "r3-color-aligned",
+  "threeRevision": "180",
+  "origin": "保留既有 12 动作 GLB；采用已批准的放大镜扒栏图标和暖橙柔粉腮红，母版见 design/huohuo",
+  "sha256": {
+    "huohuo-animated.glb": "6d95108908890ff14eed6f630e9d2af9486f8cd8839fbc80465393ad02c87302",
+    "fallback.png": "d75fdd6758157d298c57eb0aa6a8bd1092aa2a18cfa8e58a4747511179dc70e6",
+    "vendor/three.module.js": "c8211c69345d2e9949dc7a8ac969380497aa0600a5a8ac6a459c8cd02dd9cb8a",
+    "vendor/three.core.js": "eb077d2417f61d3e6d9264c317cabc4ea35769ed6b0ab533067292a550784c20",
+    "vendor/GLTFLoader.js": "2904f2823e23d5bc1d64512bf4c0d777ac44d728d47c34a9e3d48ce8ef6b761d",
+    "vendor/BufferGeometryUtils.js": "248b3e8420bd3de805ca01845c1b0cc62aa2766f3c56bdcead265e306f8e715c",
+    "vendor/RoomEnvironment.js": "faf5469bea1b9961e4b82d1da6a1671ec16137b6cc5b482a6d75a64a05bdc903",
+    "vendor/THREE-LICENSE.txt": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601",
+    "header-peek.png": "8bb965edcaf97317f489ad41c3fa6f7af76cd6adf6ea144d45067ea97fdf31c7",
+    "renderer.js": "a781876e5f0c96bb5688d0dc269062c9248b7d4bfcfb60df7f2fa86082f07d91"
+  },
+  "brandSha256": {
+    "brand.png": "d75fdd6758157d298c57eb0aa6a8bd1092aa2a18cfa8e58a4747511179dc70e6",
+    "favicon.ico": "b257996b3d03fa875ad89cd1157af12a966cdf9db3d6c0da568a4645cf28de26"
+  },
+  "displayGrade": {
+    "chroma": 1.6,
+    "yellowCastCorrection": 0.04,
+    "appliesTo": "SpiritBody",
+    "reference": "header-peek.png"
+  }
+}

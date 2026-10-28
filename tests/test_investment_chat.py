@@ -24,6 +24,8 @@ class InvestmentChatTests(unittest.TestCase):
             self.assertEqual(row['quantity_unit'],'份')
             self.assertTrue(row['entity_id'].startswith('FUND:'))
             self.assertIsNone(row['cost_price'])
+            self.assertEqual(result['facts']['cost_analysis']['status'],'incomplete')
+            self.assertIsNone(result['facts']['cost_analysis']['top_position_cost_weight'])
             members=CollectionProvider(self.inv,'owner').read_snapshot('holdings')['members']
             self.assertIn(row['entity_id'],[m['entity_id'] for m in members])
             event=json.loads(self.core.store._connect().execute('SELECT envelope FROM investment_outbox WHERE event_id=?',(result['event_id'],)).fetchone()[0])

@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
 from .models import EntityMention
-from .normalizer import infer_exchange, normalize_text, security_kind_for_code
+from .normalizer import infer_exchange, normalize_text
 from .ports import IndexTerm
 
 _CODE_RE = re.compile(r"(?<!\d)(\d{6})(?!\d)")
@@ -47,6 +47,8 @@ class GazetteerEntry:
     canonical_name: str
     aliases: tuple[str, ...] = ()
     entity_type_candidates: tuple[str, ...] = ()
+    identifiers: dict[str, str] = field(default_factory=dict)
+    attributes: dict = field(default_factory=dict)
 
 
 class Gazetteer:
@@ -64,6 +66,8 @@ class Gazetteer:
                     canonical_name=item["canonical_name"],
                     aliases=tuple(item.get("aliases", [])),
                     entity_type_candidates=(item["entity_type_code"],),
+                    identifiers=dict(item.get("identifiers", {})),
+                    attributes=dict(item.get("attributes", {})),
                 )
             )
         self.type_only_terms: list[GazetteerEntry] = []
@@ -272,17 +276,10 @@ class MentionExtractor:
         spans: list[_Span] = []
         for match in _CODE_RE.finditer(text):
             code = match.group(1)
-            kind = security_kind_for_code(code)
             exchange = infer_exchange(code)
-            if kind == "stock":
-                types = ["ENTITY_01_01", "ENTITY_02_01"]
-            elif kind == "fund":
-                types = ["ENTITY_01_02"]
-            elif kind == "bond":
-                types = ["ENTITY_01_04"]
-            else:
-                # 指数与股票代码可能重叠，保留多个候选让实体库裁决。
-                types = ["ENTITY_01_01", "ENTITY_01_03", "ENTITY_01_02"]
+            # 代码前缀只能辅助显示，不能排除已核实的同码基金/指数。
+            # 类型由实体库标识符和用户选择决定，不凭六位数字创建身份。
+            types = ["ENTITY_01_01", "ENTITY_02_01", "ENTITY_01_02", "ENTITY_01_03", "ENTITY_01_04"]
             spans.append(
                 _Span(
                     start=match.start(),

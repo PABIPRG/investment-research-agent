@@ -4,6 +4,7 @@ aiosignal==1.4.0
 akshare==1.17.86
 annotated-types==0.8.0
 attrs==26.1.0
+baostock==0.9.4
 beautifulsoup4==4.15.0
 certifi==2026.10.19
 charset-normalizer==3.5.2

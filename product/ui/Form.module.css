@@ -1,0 +1,218 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9286rem;
+  line-height: 1.5;
+}
+.form small,
+.hint {
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+  line-height: 1.5;
+}
+.form p {
+  margin: 0;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.grid > :only-child {
+  grid-column: 1 / -1;
+}
+.group {
+  min-width: 0;
+}
+.group + .group {
+  border-top: 1px solid var(--hh-line);
+  padding-top: 16px;
+}
+.group > header {
+  margin-bottom: 12px;
+}
+.group h3 {
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+  margin: 0;
+}
+.group > header p {
+  margin: 4px 0 0;
+}
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.form legend {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.form .choice {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 40px;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  bottom: -20px;
+  background: var(--hh-surface);
+  border-top: 1px solid var(--hh-line);
+  padding: 16px 0 20px;
+  margin-bottom: -20px;
+  margin-top: 4px;
+  z-index: 3;
+}
+.steps {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+}
+.steps strong {
+  color: var(--hh-accent);
+}
+.security {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hh-line);
+}
+.security strong {
+  font-size: 1.2857rem;
+}
+.security span,
+.selected span {
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+}
+.selected {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  align-items: baseline;
+}
+.picker {
+  position: relative;
+}
+.picker > label {
+  margin-bottom: 8px;
+}
+.picker > small {
+  display: block;
+  margin-top: 6px;
+}
+.picker details {
+  margin-top: 8px;
+}
+.picker summary {
+  color: var(--hh-accent);
+  cursor: pointer;
+  font-size: 0.8571rem;
+  line-height: 1.5;
+}
+.picker details[open] > div {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0 0;
+}
+.results {
+  position: absolute;
+  z-index: 8;
+  left: 0;
+  right: 0;
+  top: 70px;
+  max-height: 250px;
+  overflow: auto;
+  background: var(--hh-surface);
+  border: 1px solid var(--hh-line);
+  box-shadow: 0 8px 24px #16234820;
+}
+.results p {
+  padding: 12px;
+}
+.results ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+.results li button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.results li[aria-selected='true'],
+.results li:hover {
+  background: var(--hh-soft);
+}
+.results li span {
+  color: var(--hh-muted);
+}
+.error {
+  padding: 10px 12px;
+  border: 1px solid var(--hh-line);
+  color: var(--hh-ink);
+  background: var(--hh-paper);
+}
+.summary {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 20px;
+}
+.summary dt {
+  color: var(--hh-muted);
+}
+.summary dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .actions {
+    bottom: -16px;
+    padding-bottom: 16px;
+    margin-bottom: -16px;
+    flex-wrap: wrap;
+  }
+  .results {
+    top: 72px;
+  }
+  .summary {
+    gap: 8px 12px;
+  }
+}
+.form > fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

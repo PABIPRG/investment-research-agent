@@ -14,7 +14,7 @@ def _definitions():
             key, name, category, availability, implementation, description = values[:6]
             if key in definitions: raise ValueError('重复工具 ID: '+key)
             keywords = {k.arg: ast.literal_eval(k.value) for k in node.keywords}
-            definitions[key] = SimpleNamespace(name=name,description=description,availability=availability,
+            definitions[key] = SimpleNamespace(name=name,description=description,category=category,availability=availability,
                 requires_authorization=keywords.get('requires_authorization', values[6] if len(values)>6 else False))
     return definitions
 
@@ -93,14 +93,14 @@ PARAMS = {
     'performance_forecast_lookup': 'report_period forecast_type keyword limit',
     'market_valuation_lookup': 'index_name limit',
     'stock_valuation_lookup': 'valuation_indicator valuation_period limit',
-    'research_report_lookup': 'code limit',
-    'announcement_document_lookup': 'code days keyword limit',
+    'research_report_lookup': 'limit',
+    'announcement_document_lookup': 'days keyword limit',
     'performance_express_lookup': 'report_period keyword limit',
     'overseas_quote_lookup': 'market code days limit',
     'forex_rate_lookup': 'keyword limit',
     'minute_bar_lookup': 'minute_period limit',
     'bond_yield_curve_lookup': 'days limit',
-    'ipo_detail_lookup': 'code limit',
+    'ipo_detail_lookup': 'limit',
     'strategy_pool_lookup': 'strategy_id', 'strategy_attribution_lookup': 'strategy_id', 'strategy_evolution_preview': 'strategy_id',
 }
 DISCOVERY = {'security_lookup', 'fund_lookup', 'index_lookup', 'convertible_bond_lookup'}
@@ -110,8 +110,8 @@ GLOBAL = {'macro_event_search', 'policy_search', 'official_document_search', 're
           'sector_ranking_lookup', 'sector_fund_flow_lookup', 'market_overview_lookup',
           'hot_stock_rank_lookup', 'limit_pool_lookup', 'market_news_lookup', 'etf_ranking_lookup',
           'performance_forecast_lookup', 'market_valuation_lookup',
-          'research_report_lookup', 'announcement_document_lookup', 'performance_express_lookup',
-          'overseas_quote_lookup', 'forex_rate_lookup', 'bond_yield_curve_lookup', 'ipo_detail_lookup'}
+          'performance_express_lookup',
+          'overseas_quote_lookup', 'forex_rate_lookup', 'bond_yield_curve_lookup'}
 
 def catalog():
     if set(PARAMS) != set(TOOL_REGISTRY):
@@ -128,7 +128,9 @@ def catalog():
         description = f'{tool.name}：{tool.description} 返回真实状态、来源、时间及证据编号。'
         if tool.requires_authorization or key=='event_monitor_setup':
             description += '当前独立实例未接通此项授权流程，调用只返回 needs_authorization，不会执行。'
-        result.append({'name': key, 'description': description, 'availability': tool.availability,
+        result.append({'name': key, 'title': tool.name, 'category': tool.category,
+                       'requires_authorization': tool.requires_authorization or key=='event_monitor_setup',
+                       'description': description, 'availability': tool.availability,
                        'parameters': {'type':'object','properties':props,'required':required,'additionalProperties':False}})
     return result
 

@@ -87,7 +87,7 @@ def performance_forecast_lookup(call: ToolCall):
         records = records_from_frame(frame, latest_first=False)
     except SourceUnavailable as exc:
         return unavailable(
-            call, f"业绩预告数据不可用：{exc}", source="akshare.stock_yjyg_em"
+            call, f"业绩预告数据不可用：{type(exc).__name__}", source="akshare.stock_yjyg_em"
         )
     if not records:
         return empty(
@@ -174,7 +174,7 @@ def market_valuation_lookup(call: ToolCall):
             rows = full[:limit]
         except SourceUnavailable as exc:
             return unavailable(
-                call, f"全 A 估值数据不可用：{exc}", source="akshare.stock_a_ttm_lyr"
+                call, f"全 A 估值数据不可用：{type(exc).__name__}", source="akshare.stock_a_ttm_lyr"
             )
         if not rows:
             return empty(
@@ -212,7 +212,7 @@ def market_valuation_lookup(call: ToolCall):
         except SourceUnavailable as exc:
             return unavailable(
                 call,
-                f"{index_name}估值数据不可用：{exc}",
+                f"{index_name}估值数据不可用：{type(exc).__name__}",
                 source="akshare.stock_index_pe_lg",
             )
         if not rows:
@@ -287,7 +287,7 @@ def stock_valuation_lookup(call: ToolCall):
     except SourceUnavailable as exc:
         return unavailable(
             call,
-            f"个股估值数据不可用：{exc}",
+            f"个股估值数据不可用：{type(exc).__name__}",
             source="akshare.stock_zh_valuation_baidu",
         )
     if not rows:

@@ -1,0 +1,27 @@
+.views {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--hh-line);
+}
+.views button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--hh-muted);
+  padding: 8px 0;
+  position: relative;
+}
+.views button[aria-pressed='true'] {
+  color: var(--hh-accent);
+  background: transparent;
+  font-weight: 600;
+}
+.views button[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--hh-accent);
+}

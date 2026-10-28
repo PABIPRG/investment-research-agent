@@ -129,7 +129,7 @@ def sector_ranking_lookup(call: ToolCall):
         else:
             records, source = _concept_overview(call)
     except SourceUnavailable as exc:
-        return unavailable(call, f"{sector_type}板块排行数据不可用：{exc}", source="akshare 同花顺板块")
+        return unavailable(call, f"{sector_type}板块排行数据不可用：{type(exc).__name__}", source="akshare 同花顺板块")
     if not records:
         return empty(call, reason=f"{sector_type}板块没有返回数据。", source=source)
     field, reverse = sort_spec
@@ -266,6 +266,7 @@ def _index_snapshot(call: ToolCall) -> list[dict[str, Any]]:
 def _breadth_from_spot(call: ToolCall) -> dict[str, Any]:
     frame = call.ctx.call_akshare("stock_zh_a_spot_em", timeout=20)
     rows = records_from_frame(frame, latest_first=False)
+    if not rows:raise SourceUnavailable("全 A 行情样本为空，不能统计市场广度")
     up = down = flat = 0
     for row in rows:
         change = _number(row.get("涨跌幅"))
@@ -295,7 +296,7 @@ def market_overview_lookup(call: ToolCall):
         else:
             warnings.append("指数快照中没有匹配到主要宽基指数。")
     except SourceUnavailable as exc:
-        warnings.append(f"指数快照不可用：{exc}")
+        warnings.append(f"指数快照不可用：{type(exc).__name__}")
 
     activity: dict[str, Any] | None = None
     try:
@@ -311,7 +312,7 @@ def market_overview_lookup(call: ToolCall):
         else:
             warnings.append("赚钱效应接口返回空表。")
     except SourceUnavailable as exc:
-        warnings.append(f"赚钱效应（涨跌家数/涨停跌停）不可用：{exc}")
+        warnings.append(f"赚钱效应（涨跌家数/涨停跌停）不可用：{type(exc).__name__}")
 
     if activity is None:
         try:
@@ -319,7 +320,7 @@ def market_overview_lookup(call: ToolCall):
             sources.append("akshare.stock_zh_a_spot_em（涨跌家数统计）")
             warnings.append("涨跌家数由全 A 实时行情按涨跌幅符号统计，未单独判定涨停/跌停。")
         except SourceUnavailable as exc:
-            warnings.append(f"全 A 行情涨跌家数统计也不可用：{exc}")
+            warnings.append(f"全 A 行情涨跌家数统计也不可用：{type(exc).__name__}")
 
     if activity is not None:
         data["market_activity"] = activity
@@ -480,7 +481,7 @@ def market_news_lookup(call: ToolCall):
                 )
             sources.append("akshare.stock_info_global_em")
         except SourceUnavailable as exc:
-            warnings.append(f"东方财富快讯不可用：{exc}")
+            warnings.append(f"东方财富快讯不可用：{type(exc).__name__}")
 
     if source_choice in ("全部", "财联社"):
         try:
@@ -501,7 +502,7 @@ def market_news_lookup(call: ToolCall):
                 )
             sources.append("akshare.stock_info_global_cls")
         except SourceUnavailable as exc:
-            warnings.append(f"财联社电报不可用：{exc}")
+            warnings.append(f"财联社电报不可用：{type(exc).__name__}")
 
     # 两家来源可能转载同一标题；按标题/内容去重，保留先出现的一条。
     seen: set[str] = set()
@@ -512,6 +513,8 @@ def market_news_lookup(call: ToolCall):
             continue
         seen.add(key_text)
         deduped.append(item)
+    if not sources:
+        return unavailable(call, "请求的快讯来源均不可用，不能认定没有新闻", source="market_news")
     if not deduped:
         reason = (
             f"近期公开快讯中没有检索到“{keyword}”。" if keyword else "快讯来源没有返回数据。"

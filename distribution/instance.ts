@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
+import { installStrategyProfile } from './strategy-profile.js'
 import { resolvePython } from '../runtime/python.mjs'
 import { npmCommand } from '../runtime/npm.mjs'
 
@@ -148,6 +149,7 @@ export async function installWorker(config: Instance, refresh = false): Promise<
   await runProcess(npm.command, [...npm.prefix, 'install', ...(refresh ? ['@huohuo/research-agent@file:../../../product.tgz'] : []), '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund', '--prefer-offline', '--cache', join(config.dsh_home, '../cache/npm')], profile)
   await access(join(profile, 'node_modules/@huohuo/research-agent/lib/distribution/cli.js'))
   await access(join(profile, 'node_modules/@deepseek-ai/dsh/lib/bin.js'))
+  await installStrategyProfile(config, refresh)
   await writeFile(join(config.dsh_home, '../worker-install.json'), JSON.stringify({ version: '1.0.0', complete: true }), { mode: 0o600 })
 }
 
@@ -184,12 +186,12 @@ export class InstanceApiError extends Error {
   }
 }
 
-export async function request(config: Instance, path: string, body?: unknown, role: 'user' | 'worker' = 'user', attemptToken?: string): Promise<any> {
+export async function request(config: Instance, path: string, body?: unknown, role: 'user' | 'worker' = 'user', attemptToken?: string, signal?: AbortSignal): Promise<any> {
   const response = await fetch(`http://${config.host}:${config.port}${path}`, {
     method: body === undefined ? 'GET' : 'POST',
     headers: { Authorization: `Bearer ${config[`${role}_token`]}`, 'Content-Type': 'application/json',
       ...(attemptToken ? { 'X-Attempt-Token': attemptToken } : {}) },
-    body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(path === '/worker/discover' ? 30_000 : 15_000),
+    body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout((path === '/worker/strategies/tick' || path.endsWith('/strategy-run')) ? 115_000 : path === '/worker/discover' ? 60_000 : 15_000)]),
   })
   const result = await response.json() as any
   if (!response.ok) throw new InstanceApiError(response.status,
@@ -209,6 +211,7 @@ export async function ensureInstalled(config: Instance): Promise<void> {
     const modules = join(config.dsh_home, 'profiles', profileName, 'node_modules')
     await access(join(modules, '@huohuo/research-agent/lib/distribution/cli.js'))
     await access(join(modules, '@deepseek-ai/dsh/lib/bin.js'))
+    await access(join(config.dsh_home, 'profiles/huohuo-strategy-worker/node_modules/@huohuo/research-agent/lib/product/strategy-worker.js'))
   } catch (cause) {
     throw new Error(`实例依赖安装未完成；保留原实例，请运行 huohuo repair-install ${JSON.stringify(root)}。`, { cause })
   }

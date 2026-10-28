@@ -27,7 +27,7 @@ class FollowupTests(unittest.TestCase):
         return self.core.create(principal,{'session_id':'test','confirmation_id':c['confirmations'][0]['confirmation_id'],'request_key':key,'goal':'合成验收：跟进已确认范围变化','scope':self.scope,'contact_note':'仅应用内',**extra})
     def document(self,value=100):
         if self.scope['operation']=='quote_snapshot':
-            return snapshot(self.scope,lambda _: ({'data':{'diff':[{'f12':'600519','f2':value,'f18':99,'f124':1792713600}]}},'https://example.invalid/quote'))
+            return snapshot(self.scope,lambda _: ({'data':{'diff':[{'f12':'600519','f2':value,'f18':99,'f124':int(self.repo.clock())}]}},'https://example.invalid/quote'))
         if self.scope['operation']=='company_profile':
             return collect(PROFILE_SCOPE,lambda _: {'code':'600519','records':[{'公司名称':'贵州茅台','主营业务':'白酒'}]})
         return collect(SCOPE,lambda _: {'code':'600519','records':[{'指标':'营业总收入','20260630':value}]})
@@ -41,15 +41,15 @@ class FollowupTests(unittest.TestCase):
         self.core.tick()
     def enable(self):return self.core.notifications.save('alice',{'expected_revision':0,'enabled':True,'channels':['app'],'timezone':'Asia/Shanghai','quiet_hours':None})
     def jobs(self):return self.core.store._connect().execute('SELECT * FROM research_jobs').fetchall()
-    def test_failed_baseline_blocks_reviews_and_is_retried(self):
+    def test_failed_baseline_blocks_reviews_until_explicit_retry(self):
         self.core.sources.accept('alice',self.document(101));m=self.create();self.core.tick()
         self.result(fail=True)
         reviews=[r for r in self.jobs() if r['action']=='event_review']
         self.assertTrue(reviews and all(r['status']=='pending' for r in reviews))
         # 失败后没有派发任何执行：事件复核必须等基准成功。
         self.assertIsNone(self.repo.claim('probe'))
-        with self.core.store.transaction():
-            self.core.store._connect().execute("UPDATE research_jobs SET next_run_at=? WHERE action='baseline_review'",(datetime.now(timezone.utc).isoformat(),))
+        current=self.core.get('alice',m['mandate']['mandate_id'])
+        self.core.command('alice',m['mandate']['mandate_id'],'retry_baseline',{'request_key':'confirmed-retry','expected_revision':current['mandate']['current_revision'],'expected_generation':current['generation']})
         self.core.tick()
         retry=self.repo.claim('probe');self.assertIsNotNone(retry);self.assertIn('baseline_review',retry['question'])
         self.assertIsNone(self.repo.claim('probe-2'))
@@ -169,6 +169,8 @@ class FollowupTests(unittest.TestCase):
     def test_quote_discovery_emits_versioned_event_only_when_price_changes(self):
         self.scope=QUOTE_SCOPE
         self.core.repo.clock=lambda: datetime(2026,10,26,10,0,tzinfo=ZoneInfo('Asia/Shanghai')).timestamp()
+        from types import SimpleNamespace
+        self.core.service.calendar=SimpleNamespace(is_trading_day=lambda day:True)
         view=self.create(key='quote-discovery')
         self.assertTrue(view['monitoring']['enabled'])
         self.assertEqual(self.core.sources.discover(lambda _: self.document(100))['status'],'ok')

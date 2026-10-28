@@ -14,13 +14,22 @@ description: 当用户明确交代持续研究，或查询、修改、暂停、�
 用户明确委托且取得有效 confirmation_id 后使用 create_mandate；只返回持久接受回执，不能声称研究已完成。list_mandates/get_mandate 查询实际初次研究与证据，提示在「委托查询」管理。manage_mandate 与详情页共用服务；必须先读取版本/代次，冲突后请用户核对，不覆盖。暂停后旧尝试资格撤销，恢复不复活旧尝试。修改约定提交完整 definition。
 不要把 execution 的单次任务 ID 当 mandate ID；不要凭记忆编造证据或基准。
 
-contact_note 只是联系备注，不代表任意自然语言条件已经变成可执行规则。用户明确说出一个可判定的持续联系条件时（例如“公告出现重大资产重组才联系”），可把该条件用一句短语填进 create_mandate/manage_mandate 的 contact_condition.claim，并在提交前向用户复述；实际联系人仍由程序按“结论满足 + 有本次证据 + 达到置信度”判定，无法举证时不联系。
-
-报价类委托还支持用户明确说出的单点数值阈值：metric 取 price（最新价，元/股）、change（相对昨收涨跌额，元）或 change_percent（涨跌幅，%），配 operator 与 threshold。提交前必须把指标、比较符、数字和口径复述给用户；数值由程序从报价快照核对，模型汇报的数字不参与判定。均线、回撤、估值分位需要历史序列，暂不支持；财务摘要与公司资料委托仍只支持语义条件。不能把用户口述的阈值写进备注后说已在跟踪。条件与每日到期提醒不能同时设置。用户要求的条件、期限或外部渠道超出现有接口支持时，明确说明范围，不把接受备注说成已按该条件开始跟踪。
+当前 create_mandate 将 contact_note 保存为联系备注，实际新建策略固定为 notable_change 和应用内渠道；保存备注不代表任意自然语言条件已经变成可执行规则。用户要求的条件、期限或外部渠道超出现有接口支持时，明确说明范围，不把接受备注说成已按该条件开始跟踪。
 
 
 联系条件、渠道、期限以用户明确约定及程序回执为准；资料发现与通知是否可用，以实际实例状态和记录为准。配置或工具存在不代表已经监控、已经发送。unknown/error 不变成 false，不把应用内 delivered 说成外部送达或已读。
 
 ## 页面操作与聊天等价
 
-manage_mandate 的 definition 现在支持 reminder_time（北京时间每日 HH:MM，null 关闭，省略保留）、contact_channels（app/wecom/serverchan/email）和 contact_condition（单一语义条件），三者互斥规则见上。先读取当前委托及通知配置，不猜版本。修改这些字段时工具会等待真实原生确认；选择外部渠道须先完成安全配置。投资集合关联先读 read_investment_collection，再调用 bind_mandate_investment_collection；固定与动态含义须明确，不扩大单证券执行范围。需要页面复核用 open_product_view，返回链接由用户点击。
+manage_mandate 的 definition 现在支持 reminder_time（北京时间每日 HH:MM，null 关闭，省略保留）和 contact_channels（app/wecom/serverchan/email）。先读取当前委托及通知配置，不猜版本。修改这些字段时工具会等待真实原生确认；选择外部渠道须先完成安全配置。普通 contact_note 仍只是备注，不代表任意自然语言规则已编译。投资集合关联先读 read_investment_collection，再调用 bind_mandate_investment_collection；固定与动态含义须明确，不扩大单证券执行范围。需要页面复核用 open_product_view，返回链接由用户点击。
+
+## 可执行资料发现与联系规则
+
+财务摘要、market_quote 行情、market_technical 日线技术、news 新闻与 market_brief（pre 盘前、post 盘后）可持续发现来源版本。先确认实体，再明确范围、时间、条件与模型调用；create_mandate 的原生确认后才持久启用。备注不会执行任意监控。
+
+contact_rule 支持条件联系、每日定时交付、定时条件检查、到时直接提醒。数值指标须来自对应行情/技术范围，阈值和 AND/OR 关系向用户解释并确认；未知不当作不满足或已命中。日历未知时等候，不以工作日猜测交易日。条件重试预算默认为零。规则保存产生版本、撤销旧执行资格；不会自行订阅持仓之外的新证券或发送未启用的外部渠道。
+
+首次研究失败或中断时，没有成功基准就不开始后续复核。用户明确要求后用 manage_mandate 的 retry_baseline 重建基准；不自动重复费用。暂停、恢复、修改、结束仍以真实版本和代次为准。
+
+
+兼容旧报价与公司资料委托：quote_snapshot 在可靠交易日历确认的交易时段每15分钟发现变化，company_profile 每6小时检查；日历未知时不猜测交易日。contact_rule 支持用户明确说出的简短语义 claim（默认 notable_change），也支持 quote_snapshot 的 price/change/change_percent 单点阈值；后者数字由本 attempt 的有效来源证据核对。新调用使用 contact_rule；旧 contact_condition 仅由 API 兼容，不混用两套字段。基准失败不会自动追加模型调用；查询后经用户确认使用 retry_baseline。

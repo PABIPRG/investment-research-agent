@@ -21,6 +21,7 @@ def text(value, name, limit=4000):
 def scope(value):
     keys = {"entity_id", "exchange", "operation"}
     if isinstance(value, dict) and value.get("operation") == "financial_summary": keys |= {"period", "metric", "basis"}
+    if isinstance(value, dict) and value.get("operation") == "market_brief": keys |= {"period"}
     if not isinstance(value, dict) or set(value) != keys:
         raise Invalid("scope requires entity_id, exchange and operation")
     entity = value["entity_id"]
@@ -38,7 +39,7 @@ def scope(value):
         expected = "SSE" if code.startswith(("600", "601", "603", "605", "688", "689")) else "SZSE" if code.startswith(("000", "001", "002", "003", "300", "301")) else None
     if expected is None or value["exchange"] != expected:
         raise Invalid("first batch supports explicit SSE/SZSE A shares only")
-    if value["operation"] not in ("quote_snapshot", "company_profile", "financial_summary"):
+    if value["operation"] not in ("quote_snapshot", "company_profile", "financial_summary", "market_quote", "market_technical", "news", "market_brief"):
         raise Invalid("unsupported operation")
     if is_fund and value["operation"] != "quote_snapshot":
         raise Invalid("funds only support quote_snapshot")
@@ -46,5 +47,7 @@ def scope(value):
         if not isinstance(value["period"], str) or not re.fullmatch(r"20[0-9]{2}(0331|0630|0930|1231)", value["period"]): raise Invalid("explicit reporting period required")
         text(value["metric"], "metric", 100)
         if value["basis"] != "source_abstract": raise Invalid("only source abstract basis is supported")
+    if value['operation'] == 'market_brief' and value['period'] not in {'pre', 'post'}:
+        raise Invalid('简报范围须明确为盘前或盘后')
     return dict(value)
 

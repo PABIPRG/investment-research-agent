@@ -1,0 +1,138 @@
+.routeHeader {
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--hh-line);
+}
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  padding: 0 0 20px;
+  color: var(--hh-muted);
+  font-size: 0.9286rem;
+  line-height: 1.6;
+}
+.summary b {
+  margin-left: 8px;
+  color: var(--hh-ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.empty {
+  padding: 0 0 24px;
+}
+.empty h2 {
+  margin: 0 0 8px;
+  font-size: 1.2857rem;
+  line-height: 1.5;
+}
+.empty p {
+  margin: 0 0 16px;
+  color: var(--hh-muted);
+}
+.background {
+  padding: 20px 0;
+  margin-bottom: 16px;
+  border-block: 1px solid var(--hh-line);
+}
+.backgroundHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.backgroundHead > div {
+  min-width: 0;
+}
+.backgroundHead h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.backgroundHead p {
+  margin: 0;
+}
+.backgroundHead > button {
+  flex-shrink: 0;
+}
+.status {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--hh-paper);
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+  line-height: 1.5;
+  font-weight: 400;
+}
+.background > :not(:first-child) {
+  margin-top: 20px;
+}
+.background details > summary,
+.history > summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 0.9286rem;
+  line-height: 1.5;
+}
+.background small {
+  display: block;
+  margin-top: 4px;
+}
+.proposal article + article {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hh-line);
+}
+.proposal article p {
+  margin: 8px 0;
+}
+.disclaimer {
+  margin: 0;
+}
+.history,
+.running {
+  margin-top: 20px;
+  border-top: 1px solid var(--hh-line);
+  padding-top: 12px;
+}
+.running h2 {
+  font-size: 1.1429rem;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+@media (max-width: 600px) {
+  .summary {
+    gap: 12px 20px;
+  }
+  .empty {
+    padding-bottom: 24px;
+  }
+  header.routeHeader {
+    align-items: flex-start;
+    gap: 12px;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  .backgroundHead {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .background {
+    padding: 16px 0;
+  }
+}
+
+.proposal {
+  border-bottom: 1px solid var(--hh-line);
+  padding: 0 0 20px;
+  margin-bottom: 20px;
+}
+.proposal h2 {
+  font-size: 1.1429rem;
+  line-height: 1.5;
+}

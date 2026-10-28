@@ -1,0 +1,129 @@
+.trigger,
+.close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border: 1px solid var(--hh-line);
+  color: var(--hh-ink);
+  background: var(--hh-surface);
+}
+.trigger {
+  margin-left: auto;
+}
+.trigger svg,
+.close svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+.drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(340px, calc(100vw - 24px));
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--hh-line);
+  border-radius: 24px 0 0 24px;
+  background: var(--hh-surface);
+  color: var(--hh-ink);
+  font:
+    1rem/1.5 system-ui,
+    sans-serif;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+.drawer[open] {
+  display: flex;
+  flex-direction: column;
+  animation: enter 180ms ease-out;
+}
+.drawer::backdrop {
+  background: color-mix(in srgb, var(--hh-ink) 30%, transparent);
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--hh-line);
+}
+.head h2 {
+  font-size: 1.2857rem;
+  line-height: 1.5;
+  font-weight: 600;
+  margin: 0;
+}
+.navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.navigation button,
+.presence {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--hh-ink);
+  text-align: left;
+}
+.navigation button[aria-current='page'] {
+  background: var(--hh-soft);
+  color: var(--hh-accent);
+  font-weight: 600;
+}
+.navigation button:not([aria-current='page']):hover,
+.presence:hover {
+  background: var(--hh-paper);
+}
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+  padding: 16px 12px max(16px, env(safe-area-inset-bottom));
+  margin-top: auto;
+  border-top: 1px solid var(--hh-line);
+}
+.settings :global(button[aria-haspopup='dialog']) {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  color: var(--hh-ink);
+}
+@keyframes enter {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer[open] {
+    animation: none;
+  }
+}
