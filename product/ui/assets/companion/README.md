@@ -1,4 +1,4 @@
-# 火火 IP 资源 V1.4-r3-color-aligned
+# 火火 IP 资源 V1.4-r4-live-motion
 
 保留已有 `huohuo-animated.glb` 的几何和 12 个动作片段，复用现有 Three.js 播放器。`renderer.js` 在身体局部坐标中加入与新版 Blender 对齐的柔粉腮红，所有动作统一使用；静态后备 `fallback.png` 同步采用新版待机形象。资产哈希见 `resource-manifest.json`。
 
@@ -14,3 +14,8 @@ Three.js r180 及 GLTFLoader、BufferGeometryUtils、RoomEnvironment 为本地�
 
 
 2026-10-27 显示校色：用户确认聊天角色相对顶部图标偏浅、偏黄。身体材质在 tone mapping 和输出色域转换后，以最大通道为基准增加1.6倍色度，并对橙黄色区减少0.04倍色度的绿色通道，保留高光峰值、体积与腮红；只作用于SpiritBody，不给整个canvas或页面施加滤镜。参数见resource-manifest.json的displayGrade；静态母图和GLB几何/12动作不变。
+
+
+2026-10-28 实时动作接线：优先读取DSH当前trajectory的partial尾块和runningCalls。推理与工具参数准备为thinking，工具实际start为working，正文text输出为speaking；原生pendingInteraction最高优先，结束后不从历史推理文本推测仍在运行。移除DOM笼统data-streaming对正文／推理的误分类。
+
+thinking和working复用现有8秒thinking_notes片段，分别从3.7秒咬笔前段和0.8秒笔记整理段起播，随后保留原片段的连贯循环；没有修改GLB或新增模型。相同clip的业务阶段切换仍更新起始时间与动作标签；不在每个token更新时重启动作。失败继续一次轻叹，普通完成回待命，不以动画宣称研究结论正确、发现机会或收益。

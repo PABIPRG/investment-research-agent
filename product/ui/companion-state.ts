@@ -3,6 +3,7 @@ export type CompanionMotion =
   | 'idle'
   | 'listening'
   | 'thinking'
+  | 'working'
   | 'speaking'
   | 'awaiting_reply'
   | 'sigh'
@@ -11,9 +12,11 @@ export function companionMotion(input: {
   pending?: boolean
   running?: boolean
   streaming?: boolean
+  working?: boolean
   draft?: string
 }): CompanionMotion {
   if (input.pending) return 'awaiting_reply'
+  if (input.running && input.working) return 'working'
   if (input.streaming) return 'speaking'
   if (input.running) return 'thinking'
   if (input.draft?.trim()) return 'listening'

@@ -81,7 +81,7 @@ export function Mascot({
       data-motion={motion}
       data-companion-model={ready ? 'ready' : failed ? 'failed' : 'loading'}
       role="img"
-      aria-label={`火火 · ${{ sigh: '轻叹后继续陪你', idle: '在这里', listening: '聆听', thinking: '思考中', speaking: '回应中', awaiting_reply: '等待你的回答' }[motion]}`}
+      aria-label={`火火 · ${{ sigh: '轻叹后继续陪你', idle: '在这里', listening: '聆听', thinking: '咬笔思考', working: '查阅与整理资料', speaking: '回应中', awaiting_reply: '等待你的回答' }[motion]}`}
     >
       <canvas ref={canvas} hidden={!ready || failed} />
       {!ready && !failed && modelPoster && <img data-model-poster src={modelPoster} alt="" />}

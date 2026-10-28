@@ -48,6 +48,9 @@ export type Revision = {
   reason: string
 }
 export type Facts = {
+  risk_profile?: RiskProfile | null
+  risk_profile_history?: RiskProfile[]
+  risk_questionnaire?: Record<'quick' | 'full', RiskQuestion[]>
   version: number
   status: string
   holdings_status: string
@@ -58,6 +61,16 @@ export type Facts = {
   trades: Trade[]
   revisions: Revision[]
   corrections: Correction[]
+}
+export type RiskQuestion = { qid: string; title: string; options: string[] }
+export type RiskProfile = {
+  tier: 'quick' | 'full'
+  label: string
+  score: number
+  max_score: number
+  recorded_at?: string
+  fact_version?: number
+  answers: { qid: string; label: string; option: number }[]
 }
 export type Preview = {
   preview_id: string

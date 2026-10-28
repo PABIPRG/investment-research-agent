@@ -118,21 +118,37 @@ export async function mount(canvas, onReady, onError) {
       sighTime = 0
       canvas.dataset.sighCount = String(Number(canvas.dataset.sighCount || 0) + 1)
     }
-    const next = clips[name === 'sigh' ? 'cautious' : name]
+    const clipName =
+      name === 'sigh'
+        ? 'cautious'
+        : ['thinking', 'working'].includes(name)
+          ? 'thinking_notes'
+          : name
+    const next = clips[clipName]
     if (!next) return
-    if (next === active) return
+    const offset = name === 'thinking' ? 3.7 : name === 'working' ? 0.8 : 0
+    canvas.dataset.motion = name
+    canvas.dataset.clip = clipName
+    if (next === active) {
+      if (changed) {
+        next.time = offset
+        mixer.update(0)
+        draw()
+      }
+      return
+    }
     const old = active
     active = next
     next.reset().setEffectiveWeight(1).play()
+    next.time = offset
     if (old) old.crossFadeTo(next, 0.25, false)
     if (reduced.matches) {
       mixer.stopAllAction()
       next.play()
-      next.time = Math.min(next.getClip().duration * 0.3, 1)
+      next.time = offset || Math.min(next.getClip().duration * 0.3, 1)
       mixer.update(0)
       draw()
     }
-    canvas.dataset.motion = name
     resume()
   }
   function visibility() {

@@ -5,6 +5,10 @@ description: 用户要求查看、录入、校正持仓或 ETF，添加移除自
 
 # 投资事实与用户记录
 
+## 风险偏好问卷
+
+用户明确要求风险偏好测试时使用 `assess_risk_preference`，tier 为 quick（三题）或 full（八题）。工具从服务题库展示原生选项，程序计分并再次确认；不能依据聊天内容代答、传入分数或替用户选择。读取已有结果用 `read_investment_facts` 的 risk_profile，历史用 risk_profile_history。未填写保持未知，结果是自述研究背景，不是券商适当性认证，也不自动修改委托、仓位、提醒或交易。提交未知时保留同一 preview_id，使用 `commit_investment_change` 先核对原回执，不重新发起问卷。页面入口为「持仓与自选 → 风险偏好」。
+
 先调用 read_investment_facts，区分未录入、已确认空仓与读取失败。已有记录的代码、成交编号、版本来自实际回执，不从记忆补造。建议、计划、模拟与已发生成交不同。
 
 ## 从聊天录入

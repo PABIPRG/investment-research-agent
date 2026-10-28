@@ -17,6 +17,7 @@ import { useConversationFeedback } from './useConversationFeedback.js'
 import { useCompanionDock } from './useCompanionDock.js'
 import { useQuiet } from './useQuiet.js'
 import { beginWelcomeTransition } from './welcome-transition.js'
+import { conversationActivity } from './companion-feedback.js'
 const View = createContext<'chat' | 'trajectory'>('chat')
 function NativeViews(props: ChatRuntime) {
   const view = useContext(View)
@@ -40,6 +41,7 @@ export function Conversation(props: ChatRuntime & Actions) {
         s.systemPrompts?.length,
     ),
   )
+  const activityPhase = props.useTrajectory(conversationActivity)
   useEffect(() => {
     if (!hasTrajectory) setView('chat')
   }, [hasTrajectory, props.sessionId])
@@ -65,7 +67,7 @@ export function Conversation(props: ChatRuntime & Actions) {
   const [activity, setActivity] = useState<MandateView[]>([]),
     [loadError, setLoadError] = useState(false)
   const root = useRef<HTMLDivElement>(null)
-  const { streaming, failed } = useConversationFeedback(
+  const { failed } = useConversationFeedback(
     root,
     props.sessionId,
     Boolean(input?.draft?.trim() || pending),
@@ -94,7 +96,8 @@ export function Conversation(props: ChatRuntime & Actions) {
   const motion = companionMotion({
     pending,
     running: status?.running,
-    streaming,
+    streaming: Boolean(status?.running && activityPhase === 'speaking'),
+    working: activityPhase === 'working',
     failed,
     draft: input?.draft,
   })

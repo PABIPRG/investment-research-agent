@@ -14,6 +14,7 @@ from .portfolio_performance import _snapshot
 from .instruments import instrument, identity, annotate
 from .analysis import cost_analysis
 from .names import recorded_names, trade_metadata, restore_names, display_rows
+from .risk_questionnaire import questionnaire, score as score_risk
 
 EMPTY = {'default': [], 'watchlist': [], 'manual_trades': [], 'snapshots': [], 'trade_revisions': [], 'corrections': [], 'holdings_recorded': False, 'watchlist_recorded': False}
 
@@ -41,6 +42,8 @@ class Investment:
                 'holdings_status':'recorded' if document.get('holdings_recorded') else 'not_recorded','watchlist_status':'recorded' if document.get('watchlist_recorded') else 'not_recorded',
                 'holdings':holdings,'watchlist':display_rows(document['watchlist'],names),'trades':display_rows(document['manual_trades'],names),
                 'revisions':document['trade_revisions'],'corrections':document['corrections'],
+                'risk_profile':copy.deepcopy(document.get('risk_profile')), 'risk_questionnaire':questionnaire(),
+                'risk_profile_history':copy.deepcopy(document.get('risk_profile_history', [])),
                 'cost_analysis':cost_analysis([{**x,'name':x['display_name']} for x in holdings],document.get('holdings_recorded',False))}
     def read(self,principal):return self._view(*self._load(principal))
     def snapshot(self,principal,version):
@@ -104,6 +107,9 @@ class Investment:
                 doc.value['watchlist']=[x for x in document['watchlist'] if x['ticker']!=code]
                 if not payload['remove']:doc.value['watchlist'].append({'ticker':code,'name':payload['name'],'reason':payload['reason'],'added_at':old['added_at'] if old else now()})
                 result={'watchlist':doc.value['watchlist'],'gaps':[]}
+            elif command=='risk_profile':
+                result=score_risk(payload)
+                doc.value['risk_profile']=result
             else:raise Invalid('不支持的投资操作')
         except ValueError as e:raise Invalid(str(e)) from e
         if command in ('holding','trade','revision') and (command=='holding' or payload.get('affects_holdings',True)):doc.value['holdings_recorded']=True
@@ -146,10 +152,19 @@ class Investment:
                 receipt={'saved':True,'facts':self.read(principal),'duplicate':True}
                 db.execute('INSERT INTO investment_receipts VALUES(?,?,?,?)',(principal,key,fingerprint,canonical(receipt)))
                 return receipt
-            version+=1;at=now();encoded=canonical(after)
+            version+=1;at=now()
+            if p['command']=='risk_profile':
+                after['risk_profile']['recorded_at']=at
+                after.setdefault('risk_profile_history',[]).append({**copy.deepcopy(after['risk_profile']),'fact_version':version})
+            encoded=canonical(after)
             db.execute('INSERT INTO investment_facts VALUES(?,?,?,?) ON CONFLICT(principal) DO UPDATE SET version=excluded.version,document=excluded.document,updated_at=excluded.updated_at',(principal,version,encoded,at))
             db.execute('INSERT INTO investment_versions VALUES(?,?,?,?)',(principal,version,encoded,at))
             db.execute('INSERT INTO investment_audit VALUES(?,?,?,?,?)',(principal,version,p['command'],p['payload'],at))
+            if p['command']=='risk_profile':
+                # 偏好不改变证券事实，不创建委托或唤醒持仓／自选订阅。
+                receipt={'saved':True,'facts':self._view(version,after,at),'impact':result}
+                db.execute('INSERT INTO investment_receipts VALUES(?,?,?,?)',(principal,key,fingerprint,canonical(receipt)))
+                return receipt
             codes=sorted({x['ticker'] for x in after['default']+document['default']+after['watchlist']+document['watchlist']})
             code=payload.get('ticker') or result.get('entry',{}).get('ticker')
             event_id='investment:'+digest([principal,version])

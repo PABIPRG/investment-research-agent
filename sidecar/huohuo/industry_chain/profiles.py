@@ -61,12 +61,17 @@ class Profiles:
             return base
         merged = dict(base)
         for code, extra in ov.items():
-            rec = base.get(code)
-            if rec is None:
-                continue
+            matched = False
             for alias, item in base.items():
                 if alias == code or item.get('code') == code:
                     merged[alias] = self._apply_overlay(item, extra)
+                    matched = True
+            if not matched:
+                u = self.universe_index().get(code, {})
+                record = {'id': code, 'code': code, 'name': u.get('name'),
+                          'industry': u.get('industry'), 'is_subject': False,
+                          'materials': [], 'products': [], 'source': 'confirmed_report_overlay'}
+                merged[code] = self._apply_overlay(record, extra)
         return merged
 
     def view_companies(self) -> dict:
@@ -160,7 +165,6 @@ class Profiles:
         if code:
             p = self.company_profile(code)
             if p:
-                p['is_subject'] = True
                 return p
         rec = self._external_index().get(key)
         if rec:
@@ -176,7 +180,13 @@ class Profiles:
     def search_companies(self, keyword: str, limit: int=20) -> list[dict]:
         q = (keyword or '').strip().lower()
         out: list[dict] = []
-        for c in self.companies():
+        rows = list(self.companies())
+        known = {c.get('code') for c in rows}
+        for c in self.view_companies().values():
+            if c.get('code') not in known:
+                rows.append(c)
+                known.add(c.get('code'))
+        for c in rows:
             name = (c.get('name') or '').lower()
             code = (c.get('code') or '').lower()
             industry = (c.get('industry') or '').lower()
