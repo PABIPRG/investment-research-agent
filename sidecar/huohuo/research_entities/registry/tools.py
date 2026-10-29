@@ -197,8 +197,8 @@ _TOOLS: list[ToolDefinition] = [
     # ── 资金 / 风格 ─────────────────────────────────────────────────
     _tool(
         "capital_flow_lookup", "资金流向", "资金", "configured",
-        "toolbox.handlers.equity.capital_flow_lookup + akshare.stock_fund_flow_individual",
-        "同花顺即时资金流快照（流入/流出/净额）。",
+        "toolbox.handlers.equity.capital_flow_lookup + akshare.stock_individual_fund_flow",
+        "东方财富个股资金流近 20 个交易日（主力/超大单/大单/中单/小单净流入及占比）。",
         supported_entity_types=["ENTITY_05_01", "ENTITY_01_01", "ENTITY_02_01"],
     ),
     _tool(

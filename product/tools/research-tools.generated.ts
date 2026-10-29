@@ -195,7 +195,7 @@ export const researchToolCatalog = [
   {
     "availability": "configured",
     "category": "资金",
-    "description": "资金流向：同花顺即时资金流快照（流入/流出/净额）。 返回真实状态、来源、时间及证据编号。",
+    "description": "资金流向：东方财富个股资金流近 20 个交易日（主力/超大单/大单/中单/小单净流入及占比）。 返回真实状态、来源、时间及证据编号。",
     "name": "capital_flow_lookup",
     "parameters": {
       "additionalProperties": false,
