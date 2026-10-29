@@ -91,7 +91,7 @@ class ApiTests(unittest.TestCase):
         return job
 
     def claim(self):
-        status, attempt = self.call("/worker/claim", {"worker_id": "test-worker"}, token="worker-secret")
+        status, attempt = self.call("/worker/claim", {"worker_id": "test-worker", "admission_policy": "hook-model-gate-v1"}, token="worker-secret")
         self.assertEqual(200, status)
         return attempt
 

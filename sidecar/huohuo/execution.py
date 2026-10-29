@@ -124,6 +124,16 @@ class Repository:
         from .research_partner.strategy_tasks import validate_execution_scope
         return self._create(principal, key, validate_execution_scope(scope), question)
 
+    def request_research(self, principal, key, scope, question):
+        """仅供经 user 认证的当场研究入口；委托任务不能借此补造人工授权。"""
+        with self.connection(True) as db:
+            result = self.create(principal, key, scope, question)
+            if db.execute('SELECT 1 FROM execution_jobs WHERE execution_id=?', (result['execution_id'],)).fetchone():
+                raise Conflict('委托任务不能转成人工研究请求')
+            if not db.execute("SELECT 1 FROM events WHERE execution_id=? AND kind='research.requested'", (result['execution_id'],)).fetchone():
+                self._event(db, result['execution_id'], 'research.requested', {'principal': principal})
+            return result
+
     def _create(self, principal, key, scope, question):
         text(principal, "principal", 200)
         text(key, "request key", 200)

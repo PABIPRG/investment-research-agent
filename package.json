@@ -38,6 +38,7 @@
     "lib/product",
     "lib/runtime",
     "docs/阅读入口.md",
+    "docs/概念",
     "docs/当前架构与装配.md",
     "docs/架构对齐与验证.md",
     "docs/设计基线",

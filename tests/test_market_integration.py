@@ -59,7 +59,7 @@ class MarketIntegrationTests(unittest.TestCase):
         self.core.command('alice',mid,'revise',{'request_key':'scheduled-rule','expected_revision':1,'expected_generation':0,
             'goal':m['revision']['goal'],'scope':SCOPE,'contact_note':'每日交付',
             'contact_rule':{'mode':'scheduled_delivery','time':'23:59','trading_days_only':False}})
-        self.core.tick(); self.finish(999)
+        self.core.tick(); self.assertIsNone(self.repo.claim('before-due'))
         self.assertEqual(self.core.get('alice',mid)['notifications'],[])
         self.market.price=120; self.core.sources.accept('alice',collect_market(SCOPE,self.market)); self.core.tick()
         self.assertIsNone(self.repo.claim('fixture'))

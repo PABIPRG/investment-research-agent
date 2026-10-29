@@ -69,6 +69,13 @@ class PriceExecutionTests(unittest.TestCase):
         job = self.repo.claim('test')
         with self.assertRaises(Invalid): run(self.server(), job['attempt_id'], job['lease_token'])
 
+    def test_price_entry_cannot_bypass_missing_trusted_hook(self):
+        from huohuo.research_partner.price_execution import run
+        self.create(); self.core.tick(); job = self.repo.claim('test')
+        self.core.store._connect().execute('UPDATE research_jobs SET trigger_event_id=NULL')
+        with self.assertRaises(Invalid): run(self.server(), job['attempt_id'], job['lease_token'])
+        self.assertEqual(self.repo.evidence('alice', job['execution_id']), [])
+
     def test_pause_and_expired_lease_reject_before_write(self):
         from huohuo.research_partner.price_execution import run
         m = self.create(); self.core.tick(); job = self.repo.claim('test')

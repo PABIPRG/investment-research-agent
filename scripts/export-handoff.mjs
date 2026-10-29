@@ -23,7 +23,7 @@ async function walk(rel){for(const item of await readdir(join(root,rel),{withFil
  if(['tests/final-package-startup.mjs','tests/worker-finish-runtime.mjs','tests/night-research-runtime.mjs'].includes(path))continue
  if(item.isDirectory())await walk(path);else files.push(path)
 }}
-for(const dir of [...roots,'docs/architecture','docs/设计基线'])await walk(dir)
+for(const dir of [...roots,'docs/architecture','docs/设计基线','docs/概念'])await walk(dir)
 const manifest=[]
 for(const path of [...new Set(files)].sort()){
  if(forbidden.test(path))throw Error('禁止路径 '+path)

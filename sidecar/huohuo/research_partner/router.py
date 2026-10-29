@@ -139,6 +139,14 @@ class EventRouter:
         mandate = self.store.get_mandate_internal(mandate_id)
         if mandate is None or mandate.status != "tracking":
             return 0
+        revision_record = self.store.get_revision(mandate_id, revision)
+        if revision_record is None:
+            return 0
+        policy = revision_record.contact_policy
+        from .baseline_policy import requires_comparison_baseline
+        if (policy.get('mode') in {'due_reminder', 'scheduled_delivery'}
+                or (policy.get('mode') == 'periodic_check' and not requires_comparison_baseline(policy))):
+            return 0  # 到期交付与确定性周期检查不因创建委托提前启动研究。
         key = self.baseline_key(envelope, mandate) if self.baseline_key else f"baseline:{mandate_id}:{revision}"
         if key is None: return 0
         return self._create_job(

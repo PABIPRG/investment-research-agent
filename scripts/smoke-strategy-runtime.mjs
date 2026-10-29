@@ -97,7 +97,7 @@ async function modelRun(title) {
     securities: [{ code: '600519', name: '贵州茅台' }], evidence_ref: 'synthetic:runtime-smoke' }
   const ingest = await request(config, '/worker/strategies/events', { events: [event] }, 'worker')
   assert.equal(ingest.queued.length, 1)
-  const job = await request(config, '/worker/claim', { worker_id: 'synthetic-runtime-worker', lane: 'strategy' }, 'worker')
+  const job = await request(config, '/worker/claim', { worker_id: 'synthetic-runtime-worker', lane: 'strategy', admission_policy: 'hook-model-gate-v1' }, 'worker')
   assert.equal(job.job_id, ingest.queued[0])
   assert.ok(job.execution_id && job.attempt_id, '候选必须绑定统一 execution/attempt')
   assert.equal(await runStrategyPlanner(config, job, controller.signal), 'completed', '真实 DSH 应完成并交回候选')
@@ -135,7 +135,7 @@ try {
   await stop(); await start()
   view = await request(config, '/strategies')
   assert.equal(view.suggestions[0].id, suggestion.id); assert.equal(view.strategies.length, 1)
-  assert.equal(await request(config, '/worker/claim', { worker_id: 'restart', lane: 'strategy' }, 'worker'), null)
+  assert.equal(await request(config, '/worker/claim', { worker_id: 'restart', lane: 'strategy', admission_policy: 'hook-model-gate-v1' }, 'worker'), null)
   check('restart-persistence', '重启侧车后候选仍在，已完成任务不重放，正式策略不新增')
   await command('accept_suggestion', { suggestion_id: suggestion.id })
   view = await request(config, '/strategies')

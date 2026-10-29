@@ -212,7 +212,7 @@ class Handler(BaseHTTPRequestHandler):
                     body = self.body()
                     if parts == ["executions"]:
                         fields(body, ("request_key", "scope", "question"))
-                        return self.reply(201, repo.create(principal, body["request_key"], body["scope"], body["question"]))
+                        return self.reply(201, repo.request_research(principal, body["request_key"], body["scope"], body["question"]))
                     if len(parts) == 3 and parts[2] in ("cancel", "retry"):
                         fields(body, ("request_key", "expected_revision"))
                         return self.reply(200, repo.command(principal, parts[1], parts[2], body["request_key"], body["expected_revision"]))
@@ -229,7 +229,10 @@ class Handler(BaseHTTPRequestHandler):
                             calendar_state = 'unavailable'
                         return self.reply(200,dict(self.server.mandates.sources.discover(), calendar=calendar_state))
                     if parts == ["worker", "claim"]:
-                        fields(body, ("worker_id","lane") if 'lane' in body else ("worker_id",))
+                        from .research_partner.model_admission import POLICY
+                        fields(body, ("worker_id", "admission_policy", "lane") if 'lane' in body else ("worker_id", "admission_policy"))
+                        if body['admission_policy'] != POLICY:
+                            raise Invalid('worker 模型准入协议不兼容；请成组更新 worker 与侧车')
                         lane=body.get('lane','research')
                         if lane == 'strategy':
                             return self.reply(200,self.server.strategies.tasks.claim(config['principal'],body['worker_id']))
@@ -250,6 +253,14 @@ class Handler(BaseHTTPRequestHandler):
                         return self.reply(200, {"interrupted": repo.recover()})
                     if len(parts) == 4 and parts[1] == "attempts":
                         attempt, token = parts[2], self.headers.get("X-Attempt-Token", "")
+                        if parts[3] == 'model-admission':
+                            fields(body, ('phase',))
+                            from .research_partner.model_admission import admit
+                            return self.reply(200, admit(self.server, attempt, token, body['phase']))
+                        if parts[3] == 'program-run':
+                            fields(body, ())
+                            from .research_partner.model_admission import run_program
+                            return self.reply(200, run_program(self.server, attempt, token))
                         if parts[3]=='position-run':
                             fields(body,())
                             from .position_risk.execution import run

@@ -21,7 +21,7 @@ class UnifiedWorkerApi(unittest.TestCase):
         self.command('schedule',{**DEFAULT,'enabled':True,'strategy_ids':[s['id']],'event_candidates':True},'schedule')
         event={'id':'synthetic','source':'synthetic','observed_at':time.time(),'title':'合成事件','summary':'仅验收','securities':candidate['securities'],'evidence_ref':'synthetic-ref'}
         self.assertEqual(self.call('/worker/strategies/events',{'events':[event]},'test-worker')[0],200)
-        code,job=self.call('/worker/claim',{'worker_id':'unified','lane':'strategy'},'test-worker');self.assertEqual(code,200,job)
+        code,job=self.call('/worker/claim',{'worker_id':'unified','lane':'strategy','admission_policy':'hook-model-gate-v1'},'test-worker');self.assertEqual(code,200,job)
         self.assertEqual(job['action'],'candidate')
         return job
     def test_same_result_receipt_different_result_conflict_and_trace(self):
@@ -44,7 +44,7 @@ class UnifiedWorkerApi(unittest.TestCase):
         code,ex=self.call('/executions',{'request_key':'one-off','scope':scope,'question':'合成证券研究'});self.assertEqual(code,201)
         code,result=self.call('/executions');self.assertEqual(code,200)
         self.assertEqual([r['execution_id'] for r in result['executions']],[ex['execution_id']])
-        code,job=self.call('/worker/claim',{'worker_id':'research'},'test-worker');self.assertEqual(code,200)
+        code,job=self.call('/worker/claim',{'worker_id':'research','admission_policy':'hook-model-gate-v1'},'test-worker');self.assertEqual(code,200)
         self.assertEqual(job['execution_id'],ex['execution_id'])
     def test_plan_stop_revokes_existing_capability(self):
         job=self.ready();policy=self.call('/strategies')[1]['automation']
@@ -66,7 +66,7 @@ class UnifiedWorkerApi(unittest.TestCase):
         s=self.command('create',{'name':'HTTP计算合成验收','kind':'momentum','params':{'n':5},'securities':[{'code':'600519','name':'贵州茅台'}],'direction':'利好','rationale':'仅回归'},'calc-create')['strategy']
         self.command('schedule',{**DEFAULT,'enabled':True,'strategy_ids':[s['id']],'actions':['backtest']},'calc-plan')
         now[0]+=3601
-        code,job=self.call('/worker/claim',{'worker_id':'calculator','lane':'strategy'},'test-worker');self.assertEqual(code,200)
+        code,job=self.call('/worker/claim',{'worker_id':'calculator','lane':'strategy','admission_policy':'hook-model-gate-v1'},'test-worker');self.assertEqual(code,200)
         path='/worker/attempts/'+job['attempt_id']+'/strategy-run'
         first=self.call(path,{},'test-worker',job['lease_token']);self.assertEqual(first[0],200,first)
         self.assertEqual(first[1]['run']['status'],'completed',first)
