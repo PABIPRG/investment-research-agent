@@ -9,6 +9,7 @@ import { semanticCondition } from './ContactRuleEditor.js'
 import { AgreementForm } from './AgreementForm.js'
 import { MandateDecisions } from './MandateDecisions.js'
 import { ResearchHistory } from './ResearchHistory.js'
+import { TriggerSummary } from './TriggerFilter.js'
 import { MandateEvidence } from './MandateEvidence.js'
 import { statuses, sourceReason } from './model.js'
 import type { MandateController } from './useMandates.js'
@@ -82,6 +83,7 @@ export function MandateDetail({ model }: { model: MandateController }) {
           </p>
           <p>{state.detail}</p>
           <p className={css.note}>{current.monitoring.detail}</p>
+          <TriggerSummary item={current} />
           {current.execution_mode === 'program_price' && (
             <p className={css.note}>价格条件由程序执行，不额外调用研究模型。</p>
           )}

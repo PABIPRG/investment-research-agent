@@ -1,6 +1,6 @@
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import {businessApi,businessTool,confirmBusiness,cancelled,versionField,channelsField,type Ask} from './business-tools.js'
-export const notificationToolNames=['read_notification_settings','list_notification_deliveries','update_notification_preferences','clear_notification_channel']
+import {businessApi,businessTool,confirmBusiness,cancelled,requestKey,versionField,channelsField,type Ask} from './business-tools.js'
+export const notificationToolNames=['read_notification_settings','list_notification_deliveries','update_notification_preferences','clear_notification_channel','prepare_notification_test','send_notification_test','read_notification_tests']
 const labels:Record<string,string>={app:'应用内',wecom:'企业微信',serverchan:'Server 酱',email:'邮件'}
 export function publicSettings(config:any){
  return {revision:config.revision,enabled:config.enabled,channels:config.channels,timezone:config.timezone,quiet_hours:config.quiet_hours,external_status:config.external_status,external:Object.fromEntries(Object.entries(config.external||{}).map(([k,v]:[string,any])=>[k,{configured:!!v.configured,secret_saved:v.secret_saved}]))}
@@ -28,6 +28,18 @@ export function createNotificationTools(address:string,token:string,ask?:Ask):To
    const channels=c.channels.filter((x:string)=>x!==a.channel);if(!channels.length)channels.push('app')
    if(!await confirmBusiness(ask,e,`清除${labels[a.channel]}的凭据和接收目标，并从启用渠道移除？需要重新填写才能恢复。保留渠道：${channels.map((x:string)=>labels[x]).join('、')}。已在途请求无法撤回。`))return cancelled
    return {ok:true,data:publicSettings(await api('/notifications/config',e,{expected_revision:c.revision,enabled:c.enabled,timezone:c.timezone,quiet_hours:c.quiet_hours,channels,external:{[a.channel]:{clear:true}}}))}
-  },true)
+  },true),
+  businessTool('prepare_notification_test','用户明确要求测试提醒后，核对已配置渠道及接收目标，准备一条测试；准备不会发送。测试忽略静默，仍需总开关、渠道启用和有效配置。不接受凭据或任意目标。',{
+   channel:{type:'string',enum:['app','wecom','serverchan','email']},expected_revision:versionField
+  },['channel','expected_revision'],async(a,e)=>({ok:true,data:await api('/notifications/tests/prepare',e,{...a,session_id:e.agent!.session.id,request_key:requestKey(e,'notification-test')})})),
+  businessTool('send_notification_test','发送已准备的一条固定测试提醒；本工具从服务端读取目标并发起原生确认，不要提前重复询问。忽略静默，总开关/渠道/配置仍须有效。已提交或结果未知只返回记录，不重发。',{
+   test_id:{type:'string',pattern:'^NTT_[a-f0-9]{32}$'}
+  },['test_id'],async(a,e)=>{
+   const p=await api('/notifications/tests/inspect',e,{test_id:a.test_id,session_id:e.agent!.session.id})
+   if(p.status!=='prepared')return {ok:true,data:p,submitted:false}
+   if(!await confirmBusiness(ask,e,`发送一条测试提醒？\n渠道：${labels[p.channel]}\n接收目标：${p.target_summary}\n固定消息：火火 · 测试提醒；不含研究结论，不建立委托。\n本次忽略静默时间；仍需总开关、渠道启用与已保存配置有效。渠道受理不代表送达或已读，未知结果不自动重发。`)){await api('/notifications/tests/cancel',e,{test_id:p.test_id,session_id:e.agent!.session.id});return cancelled}
+   return {ok:true,data:await api('/notifications/tests/send',e,{test_id:p.test_id,request_key:p.request_key,session_id:e.agent!.session.id})}
+  },true),
+  businessTool('read_notification_tests','查询本实例最近20条手动测试提醒记录。与正式委托通知分开；渠道受理不等于送达或已读，未知不得自动重发。',{},[],async(_a,e)=>({ok:true,data:await api('/notifications/tests',e)}))
  ]
 }

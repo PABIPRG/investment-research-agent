@@ -10,10 +10,13 @@ export type MandateView = {
     reason?: string | null
   }
   mandate: { mandate_id: string; current_revision: number; status: string }
+  dependencies?: { hook_type: string; active?: boolean }[]
+  schedules?: { enabled?: boolean; next_due_at: string; timezone: string }[]
   generation: number
   requires_comparison_baseline?: boolean
   execution_mode?: 'program_price' | 'research'
   revision: {
+    triggers?: { hook_type: string }[]
     goal: string
     scope: Scope
     basis: {
@@ -21,7 +24,7 @@ export type MandateView = {
       contact_note?: string
       entity_confirmation?: { label?: string }
     }
-    contact_policy?: { reminder_time?: string; channels?: string[] }
+    contact_policy?: { mode?: string; reminder_time?: string; channels?: string[] }
   }
   contact_rule_description?: string
   baseline_revision?: number

@@ -1,8 +1,11 @@
 import page from './shared/Page.module.css'
+import { ReadStatus } from './shared/ReadStatus.js'
 import { useEffect, useState } from 'react'
 import business from './Business.module.css'
 import type { EditSection } from './notifications/editor-model.js'
 import { channelLabels, decisionText, deliveryLabels, type Config } from './notifications/model.js'
+import { NotificationTestDialog } from './notifications/NotificationTestDialog.js'
+import { NotificationTestHistory } from './notifications/NotificationTestHistory.js'
 import { NotificationEditor } from './notifications/NotificationEditor.js'
 import css from './Query.module.css'
 import { errorText, request } from './shared/api.js'
@@ -26,7 +29,9 @@ export function NotificationsPage({
     [revision, setRevision] = useState(0),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(''),
-    [notice, setNotice] = useState('')
+    [notice, setNotice] = useState(''),
+    [testChannel, setTestChannel] = useState<string>(),
+    [testRefresh, setTestRefresh] = useState(0)
   useEffect(() => {
     const abort = new AbortController()
     setLoading(true)
@@ -60,7 +65,7 @@ export function NotificationsPage({
           刷新
         </button>
       </header>
-      {loading && <p role="status">{config ? '正在刷新，保留上次配置…' : '正在读取…'}</p>}
+      <ReadStatus loading={loading} hasData={config !== undefined} />
       {error && <p role="alert">{error} 已显示的配置可能过期。</p>}
       {notice && <p role="status">{notice}</p>}
       {config && (
@@ -116,6 +121,19 @@ export function NotificationsPage({
                       >
                         配置
                       </button>
+                      <button
+                        aria-label={`测试${label}提醒`}
+                        disabled={
+                          loading ||
+                          !!error ||
+                          !config.enabled ||
+                          !config.channels.includes(key) ||
+                          (key !== 'app' && !config.external[key]?.configured)
+                        }
+                        onClick={() => setTestChannel(key)}
+                      >
+                        发送测试提醒
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -123,7 +141,7 @@ export function NotificationsPage({
             </table>
           </div>
           <p className={business.note}>
-            渠道配置与委托授权分别管理。配置已保存不代表消息已经送达。
+            渠道配置与委托授权分别管理。配置已保存不代表消息已经送达。开启总开关并启用渠道后，可手动发送测试提醒；测试会忽略静默时间。
           </p>
         </>
       )}
@@ -140,9 +158,22 @@ export function NotificationsPage({
           }}
         />
       )}
+      {testChannel && config && (
+        <NotificationTestDialog
+          key={testChannel}
+          channel={testChannel}
+          config={config}
+          changed={() => setTestRefresh((n) => n + 1)}
+          close={() => {
+            setTestChannel(undefined)
+            setTestRefresh((n) => n + 1)
+          }}
+        />
+      )}
+      <NotificationTestHistory refresh={revision + testRefresh} />
       <details className={css.section}>
         <summary>联系与回访记录 · {rows.length} 条</summary>
-        {!loading && !error && !rows.length && (
+        {config && !error && !rows.length && (
           <p className={business.note}>尚无投递记录，保持静默的原因可在委托详情查看。</p>
         )}
         {rows.map((row) => (

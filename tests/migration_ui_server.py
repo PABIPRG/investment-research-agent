@@ -2,6 +2,8 @@
 import json
 import sys
 import threading
+import time
+from urllib.parse import urlsplit
 from pathlib import Path
 from huohuo import server as api
 from huohuo.research_entities.security_search import search
@@ -23,6 +25,30 @@ def history(code, start, end):
             'source': 'synthetic:migration-ui', 'adjustment': 'qfq'}
 
 with api.Service(config) as service:
+    # Optional controls live only in this isolated UAT fixture, never in product routes.
+    class ControlledReads(api.Handler):
+        def handle_request(self):
+            path=urlsplit(self.path).path
+            if self.command=='GET' and path in {'/mandates','/strategies','/executions','/notifications/config','/notifications'}:
+                try:control=json.loads((Path(config['workspace'])/'ui-read-control.json').read_text())
+                except (FileNotFoundError,ValueError):control={}
+                if path in control.get('paths',[]):
+                    time.sleep(max(0,min(3,float(control.get('delay',0)))))
+                    if control.get('fail'):
+                        return self.reply(503,{'detail':'合成验收：暂时无法读取，请重试。'})
+            return super().handle_request()
+    service.RequestHandlerClass=ControlledReads
+    class SyntheticNotificationAdapter:
+        def send(self,job):
+            control=Path(config['workspace'])/'notification-test-control.json'
+            try:mode=json.loads(control.read_text())
+            except (FileNotFoundError,ValueError):mode={}
+            with (Path(config['workspace'])/'notification-transport-proof.jsonl').open('a') as proof:
+                proof.write(json.dumps({'synthetic':True,'title':job['title'],'content':job['content']},ensure_ascii=False)+'\n')
+            if mode.get('delay'):time.sleep(min(3,float(mode['delay'])))
+            if mode.get('unknown'):raise RuntimeError('synthetic transport uncertainty')
+            return None
+    service.mandates.notifications.adapters={c:SyntheticNotificationAdapter() for c in ('wecom','serverchan','email')}
     service.mandates.entities.directory = lambda: {'status': 'ok', 'rows': rows, 'source': {'provider': '明确合成目录'}}
     service.market.provider = market.query
     service.strategies.history = history

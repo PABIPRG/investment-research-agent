@@ -1,16 +1,27 @@
+import {
+  ConversationProgress,
+  type ConversationProgressProps,
+} from './activity/ConversationProgress.js'
+import type { MandateView } from './mandates/model.js'
+import { FollowupProgress } from './activity/FollowupProgress.js'
 import page from './shared/Page.module.css'
+import { ReadStatus } from './shared/ReadStatus.js'
 import { useEffect, useState } from 'react'
 import { markActivitySeen, refreshActivity, useActivity } from './activity/store.js'
 import { mandateName } from './business-model.js'
 import css from './Business.module.css'
 import { time } from './model.js'
 import { channelLabels, decisionText, deliveryLabels } from './notifications/model.js'
-export function ActivityPage({ visit }: { visit: (mandate: string, decision: string) => void }) {
-  const { items, error: activityError, loading } = useActivity()
-  const [mandates, setMandates] = useState<any[]>([]),
+export function ActivityPage(
+  props: ConversationProgressProps & { visit: (mandate: string, decision: string) => void },
+) {
+  const { visit } = props
+  const { items, error: activityError, loading, loaded } = useActivity()
+  const [mandates, setMandates] = useState<MandateView[]>([]),
     [error, setError] = useState(''),
     [detailsLoading, setDetailsLoading] = useState(true),
-    [refresh, setRefresh] = useState(0)
+    [refresh, setRefresh] = useState(0),
+    [readAt, setReadAt] = useState(0)
   useEffect(() => {
     const abort = new AbortController()
     setError('')
@@ -20,7 +31,12 @@ export function ActivityPage({ visit }: { visit: (mandate: string, decision: str
         if (!response.ok) throw Error('相关委托暂时无法读取。')
         return response.json()
       })
-      .then((data) => setMandates(data.items))
+      .then((data) => {
+        if (!abort.signal.aborted) {
+          setMandates(data.items)
+          setReadAt(Date.now() / 1000)
+        }
+      })
       .catch((e) => {
         if (!abort.signal.aborted) setError(e.message)
       })
@@ -30,15 +46,19 @@ export function ActivityPage({ visit }: { visit: (mandate: string, decision: str
     return () => abort.abort()
   }, [refresh])
   useEffect(() => {
+    const timer = setInterval(() => setRefresh((n) => n + 1), 30000)
+    return () => clearInterval(timer)
+  }, [])
+  useEffect(() => {
     if (!loading && !detailsLoading && !activityError && !error) markActivitySeen(items)
   }, [items, loading, detailsLoading, activityError, error])
-  const failure = activityError || error
+  const failure = activityError
   return (
     <main className={`${page.surface} ${css.page}`}>
       <header className={`${page.header} ${css.header}`}>
         <div>
           <h1>动态</h1>
-          <p className={css.note}>{items.length} 条已保存联系记录 · 可回到委托核对依据</p>
+          <p className={css.note}>查看委托的跟进进展与已保存提醒</p>
         </div>
         <button
           onClick={() => {
@@ -50,7 +70,17 @@ export function ActivityPage({ visit }: { visit: (mandate: string, decision: str
           刷新动态
         </button>
       </header>
-      {loading && <p role="status">正在读取…</p>}
+      <ConversationProgress {...props} refresh={refresh} />
+      <FollowupProgress
+        items={mandates}
+        loading={detailsLoading}
+        error={error}
+        readAt={readAt}
+        visit={visit}
+      />
+      <h2>提醒记录</h2>
+      <p className={css.note}>{items.length} 条已保存联系记录 · 可回到委托核对依据</p>
+      <ReadStatus loading={loading} hasData={loaded} />
       {failure && <p role="alert">{failure} 已显示内容可能过期。</p>}
       <div className={css.tableWrap}>
         <table className={css.table}>
@@ -62,10 +92,10 @@ export function ActivityPage({ visit }: { visit: (mandate: string, decision: str
             </tr>
           </thead>
           <tbody>
-            {!loading && !failure && !items.length && (
+            {loaded && !failure && !items.length && (
               <tr>
                 <td colSpan={4} className={css.empty}>
-                  暂无已保存动态。委托产生联系记录后会显示在这里。
+                  暂无提醒记录。委托有需要联系你的结果后，会显示在这里；这不代表后台没有研究任务。
                 </td>
               </tr>
             )}

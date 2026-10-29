@@ -49,6 +49,9 @@ const toolTitles: Record<string, string> = {
   list_notification_deliveries: '查询联系记录',
   update_notification_preferences: '修改提醒偏好',
   clear_notification_channel: '清除提醒渠道',
+  prepare_notification_test: '核对测试提醒渠道与目标',
+  send_notification_test: '确认发送一条测试提醒',
+  read_notification_tests: '读取测试提醒回执',
   open_product_view: '打开产品页面',
   confirm_research_entities: '确认研究对象',
 }

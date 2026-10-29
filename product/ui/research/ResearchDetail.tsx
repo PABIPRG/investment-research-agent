@@ -14,12 +14,10 @@ import { Notice, State, useRead } from './Resource.js'
 export function Detail({
   id,
   refresh,
-  back,
   names,
 }: {
   id: string
   refresh: number
-  back: () => void
   names: Record<string, string>
 }) {
   const task = useRead<Execution>('execution', refresh, id)
@@ -31,9 +29,6 @@ export function Detail({
   }, [id])
   return (
     <section className={css.detail} aria-labelledby="huohuo-detail-title">
-      <button className={css.textButton} onClick={back}>
-        ← 返回列表
-      </button>
       <h2 id="huohuo-detail-title" tabIndex={-1} ref={heading}>
         研究详情
       </h2>

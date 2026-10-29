@@ -1,0 +1,55 @@
+.root {
+  display: flex;
+  gap: 16px 24px;
+  align-items: start;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+}
+.filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--hh-muted);
+  font-size: 0.9286rem;
+}
+.filter > span {
+  width: 220px;
+  max-width: 100%;
+}
+.hooks {
+  flex: 1;
+  min-width: min(100%, 240px);
+  padding: 10px 0;
+  font-size: 0.9286rem;
+}
+.hooks summary {
+  cursor: pointer;
+  color: var(--hh-accent);
+}
+.hooks p {
+  max-width: 68ch;
+}
+.hooks ul {
+  padding-left: 20px;
+  margin: 12px 0;
+  display: grid;
+  gap: 12px;
+}
+.hooks li > span {
+  display: block;
+  margin-top: 2px;
+  color: var(--hh-muted);
+  line-height: 1.6;
+}
+@media (max-width: 600px) {
+  .filter {
+    width: 100%;
+  }
+  .filter > span {
+    flex: 1;
+    min-width: 0;
+  }
+  .root {
+    gap: 4px;
+  }
+}

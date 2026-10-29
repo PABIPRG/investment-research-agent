@@ -1,3 +1,4 @@
+import { ReadStatus } from '../shared/ReadStatus.js'
 import { useEffect, useState } from 'react'
 import { request, errorText } from '../shared/api.js'
 import {
@@ -31,7 +32,9 @@ export function StrategyPage() {
     setLoading(true)
     setError('')
     request<StrategyView>('strategies', undefined, abort.signal)
-      .then(setView)
+      .then((data) => {
+        if (!abort.signal.aborted) setView(data)
+      })
       .catch((e) => {
         if (!abort.signal.aborted) setError(errorText(e))
       })
@@ -85,7 +88,7 @@ export function StrategyPage() {
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
-      {loading && <p role="status">正在读取策略与验证记录…</p>}
+      <ReadStatus loading={loading} hasData={view !== undefined} label="正在读取策略与验证记录…" />
       {view && (
         <>
           {hasStrategies && (

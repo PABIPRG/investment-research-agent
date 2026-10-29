@@ -16,6 +16,8 @@ class Notifications:
         self.core=core;self.store=core.store
         core.repo.path.chmod(0o600)
         self.adapters=adapters or {} # 不读取旧凭据，不装配旧 dispatcher。
+        from .testing import NotificationTests
+        self.tests=NotificationTests(self)
 
     def channel_config(self, principal, channel):
         row=self.store._connect().execute('SELECT config FROM notification_channels WHERE principal=? AND channel=?',(principal,channel)).fetchone()
