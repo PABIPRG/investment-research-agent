@@ -13,7 +13,7 @@ class MandateIntegrationTests(unittest.TestCase):
         self.repo = Repository(Path(self.tmp.name)/'business.sqlite')
         self.core = Mandates(self.repo, 'test-instance')
         self.core.entities.directory=lambda:{'status':'ok','rows':[{'code':'600519','name':'贵州茅台'}],'source':{'provider':'fixture'}}
-        r=self.core.entities.resolve('alice','test-chat','600519')
+        r=self.core.entities.resolve('alice','test-chat','600519股票')
         receipt=self.core.entities.confirm('alice','test-chat',r['snapshot_id'],r['version'],{r['mentions'][0]['mention_id']:SCOPE['entity_id']},'fixture-answer')
         self.confirmation=receipt['confirmations'][0]['confirmation_id']
     def tearDown(self):

@@ -17,7 +17,7 @@ from .models import EntityMention
 from .normalizer import infer_exchange, normalize_text
 from .ports import IndexTerm
 
-_CODE_RE = re.compile(r"(?<!\d)(\d{6})(?!\d)")
+_CODE_RE = re.compile(r"(?<!\d)(\d{6})(?:\.(SH|SZ|BJ))?(?!\d)", re.IGNORECASE)
 
 _COLLECTION_RULES: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"我的持仓|我持仓|我的仓位|持仓里|当前持仓|我的股票池"), "USER_PORTFOLIO"),
@@ -284,7 +284,7 @@ class MentionExtractor:
                 _Span(
                     start=match.start(),
                     end=match.end(),
-                    raw_text=code,
+                    raw_text=match.group(0),
                     candidate_entity_ids=[],
                     entity_type_candidates=types,
                     dynamic_collection_types=[],

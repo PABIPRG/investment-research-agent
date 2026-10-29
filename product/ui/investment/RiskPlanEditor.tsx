@@ -1,3 +1,5 @@
+import { Select } from '../shared/Select.js'
+import { securityName } from '../business-model.js'
 import { useState } from 'react'
 import { DetailPanel } from '../DetailPanel.js'
 import { FieldGroup } from '../shared/FieldGroup.js'
@@ -21,10 +23,12 @@ const draft = (t?: RuleTarget): DraftTarget => ({
 export function RiskPlanEditor({
   view,
   edit,
+  name,
   close,
 }: {
   view: PositionRiskView
   edit: RiskEdit
+  name?: string
   close: () => void
 }) {
   const config =
@@ -45,6 +49,9 @@ export function RiskPlanEditor({
     [unknown, setUnknown] = useState(false),
     [error, setError] = useState('')
   const configurable = edit.operation === 'global' || edit.operation === 'override'
+  const label = edit.ticker
+    ? `${securityName(edit.ticker, name, view.plans.find((p) => p.ticker === edit.ticker)?.name)}（${edit.ticker}）`
+    : ''
   const finish = () => {
     window.dispatchEvent(new Event('huohuo-investment-changed'))
     close()
@@ -126,7 +133,7 @@ export function RiskPlanEditor({
   }
   return (
     <DetailPanel
-      title={edit.operation === 'global' ? '全局持仓风险配置' : `${edit.ticker} 持仓风险`}
+      title={edit.operation === 'global' ? '全局持仓风险配置' : `${label} 持仓风险`}
       close={() => {
         if (!busy) close()
       }}
@@ -142,6 +149,9 @@ export function RiskPlanEditor({
               </button>
               <button disabled={busy || unknown} onClick={() => setPreview(undefined)}>
                 返回修改
+              </button>
+              <button disabled={busy} onClick={close}>
+                取消
               </button>
             </div>
           </>
@@ -159,7 +169,7 @@ export function RiskPlanEditor({
                   <p>
                     目标按激活时成本计算；成本变化后保持原线，重新布防才采用新成本。价格比较由程序执行，不额外调用研究模型。
                   </p>
-                  <label>
+                  <label className={form.choice}>
                     <input
                       type="checkbox"
                       checked={disabled}
@@ -189,67 +199,71 @@ export function RiskPlanEditor({
                       填入当前画像建议（仍需核对确认）
                     </button>
                   )}
-                  {(['take_profit', 'stop_loss'] as TargetKind[]).map((kind) => {
-                    const t = targets[kind],
-                      change = (fields: Partial<DraftTarget>) =>
-                        setTargets((old) => ({ ...old, [kind]: { ...old[kind], ...fields } }))
-                    return (
-                      <FieldGroup key={kind} title={targetNames[kind]}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={t.enabled}
-                            disabled={disabled}
-                            onChange={(e) => change({ enabled: e.target.checked })}
-                          />
-                          启用{targetNames[kind]}
-                        </label>
-                        {edit.operation === 'override' && (
-                          <label>
-                            目标方式
-                            <select
-                              value={t.mode}
-                              disabled={disabled || !t.enabled}
-                              onChange={(e) =>
-                                change({ mode: e.target.value as RuleTarget['mode'], value: '' })
-                              }
-                            >
-                              <option value="percent">相对激活成本百分比</option>
-                              <option value="price">绝对价格</option>
-                            </select>
+                  <div className={form.grid}>
+                    {(['take_profit', 'stop_loss'] as TargetKind[]).map((kind) => {
+                      const t = targets[kind],
+                        change = (fields: Partial<DraftTarget>) =>
+                          setTargets((old) => ({ ...old, [kind]: { ...old[kind], ...fields } }))
+                      return (
+                        <FieldGroup key={kind} title={targetNames[kind]}>
+                          <label className={form.choice}>
+                            <input
+                              type="checkbox"
+                              checked={t.enabled}
+                              disabled={disabled}
+                              onChange={(e) => change({ enabled: e.target.checked })}
+                            />
+                            启用{targetNames[kind]}
                           </label>
-                        )}
-                        <label>
-                          {t.mode === 'percent' ? '幅度（%）' : '目标价格（元）'}
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            required={!disabled && t.enabled}
-                            disabled={disabled || !t.enabled}
-                            value={t.value}
-                            onChange={(e) => change({ value: e.target.value })}
-                          />
-                        </label>
-                      </FieldGroup>
-                    )
-                  })}
-                  <label>
-                    生效时间（留空为确认后，本机时区）
-                    <input
-                      type="datetime-local"
-                      value={effective}
-                      onChange={(e) => setEffective(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    到期时间（可选，本机时区）
-                    <input
-                      type="datetime-local"
-                      value={expires}
-                      onChange={(e) => setExpires(e.target.value)}
-                    />
-                  </label>
+                          {edit.operation === 'override' && (
+                            <label>
+                              目标方式
+                              <Select
+                                value={t.mode}
+                                disabled={disabled || !t.enabled}
+                                onChange={(e) =>
+                                  change({ mode: e.target.value as RuleTarget['mode'], value: '' })
+                                }
+                              >
+                                <option value="percent">相对激活成本百分比</option>
+                                <option value="price">绝对价格</option>
+                              </Select>
+                            </label>
+                          )}
+                          <label>
+                            {t.mode === 'percent' ? '幅度（%）' : '目标价格（元）'}
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              required={!disabled && t.enabled}
+                              disabled={disabled || !t.enabled}
+                              value={t.value}
+                              onChange={(e) => change({ value: e.target.value })}
+                            />
+                          </label>
+                        </FieldGroup>
+                      )
+                    })}
+                  </div>
+                  <div className={form.grid}>
+                    <label>
+                      生效时间（留空为确认后，本机时区）
+                      <input
+                        type="datetime-local"
+                        value={effective}
+                        onChange={(e) => setEffective(e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      到期时间（可选，本机时区）
+                      <input
+                        type="datetime-local"
+                        value={expires}
+                        onChange={(e) => setExpires(e.target.value)}
+                      />
+                    </label>
+                  </div>
                 </>
               ) : (
                 <p>
@@ -268,11 +282,6 @@ export function RiskPlanEditor({
               </button>
             </div>
           </form>
-        )}
-        {preview && (
-          <button disabled={busy} onClick={close}>
-            关闭
-          </button>
         )}
       </div>
     </DetailPanel>

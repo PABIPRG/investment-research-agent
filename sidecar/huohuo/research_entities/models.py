@@ -114,6 +114,19 @@ class EntityCandidate(_StrictModel):
     source: str | None = None
 
 
+class DiscussionSubject(_StrictModel):
+    """快照内的讨论对象组，不取代长期标准实体 ID。"""
+
+    subject_id: str = Field(min_length=1)
+    mention_ids: list[str]
+    raw_text: str = Field(min_length=1)
+    primary_entity_id: str | None = None
+    resolution_status: ResolutionStatus
+    candidates: list[EntityCandidate] = Field(default_factory=list)
+    related_entity_ids: list[str] = Field(default_factory=list)
+    merge_reason: str
+
+
 class EntityMention(_StrictModel):
     """用户原文中的一次实体提及。"""
 
@@ -187,6 +200,8 @@ class ScopeEntity(_StrictModel):
     """Scope 中的实体条目。"""
 
     mention_id: str = Field(min_length=1)
+    subject_id: str | None = None
+    mention_ids: list[str] = Field(default_factory=list)
     entity_id: str | None = None
     entity_type_code: str | None = None
     raw_text: str = Field(min_length=1)

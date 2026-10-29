@@ -72,6 +72,7 @@ function AdjustmentEditor({ facts, close }: { facts: Facts; close: () => void })
   }
   return (
     <DetailPanel
+      compact
       title="手动调整风险偏好"
       close={() => {
         if (!busy) close()
@@ -90,50 +91,62 @@ function AdjustmentEditor({ facts, close }: { facts: Facts; close: () => void })
             <p>
               风险承受度 {risk}，投资期限 {years} 年。短于两年最高为稳健型，五年以上最低为稳健型。
             </p>
-            <button
-              disabled={busy}
-              onClick={() => void perform(unknown ? 'inspect-preview' : 'commit')}
-            >
-              {unknown ? '核对保存结果' : '确认保存调整'}
-            </button>
-            <button disabled={busy || unknown} onClick={() => setPreview(undefined)}>
-              返回修改
-            </button>
           </FieldGroup>
         ) : (
           <FieldGroup title="风险承受度与期限">
-            <label>
-              风险承受度：{risk}（0 保守、0.5 稳健、1 进取）
-              <input
-                aria-label="风险承受度"
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={risk}
-                onChange={(e) => setRisk(Number(e.target.value))}
-              />
-            </label>
-            <label>
-              投资期限：{years} 年
-              <input
-                aria-label="投资期限"
-                type="range"
-                min="1"
-                max="30"
-                step="1"
-                value={years}
-                onChange={(e) => setYears(Number(e.target.value))}
-              />
-            </label>
-            <button disabled={busy} onClick={() => void perform('preview')}>
-              预览调整结果
-            </button>
+            <div className={form.grid}>
+              <label>
+                风险承受度：{risk}（0 保守、0.5 稳健、1 进取）
+                <input
+                  aria-label="风险承受度"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={risk}
+                  onChange={(e) => setRisk(Number(e.target.value))}
+                />
+              </label>
+              <label>
+                投资期限：{years} 年
+                <input
+                  aria-label="投资期限"
+                  type="range"
+                  min="1"
+                  max="30"
+                  step="1"
+                  value={years}
+                  onChange={(e) => setYears(Number(e.target.value))}
+                />
+              </label>
+            </div>
           </FieldGroup>
         )}
-        <button disabled={busy} onClick={close}>
-          关闭
-        </button>
+        <div className={form.actions}>
+          <button
+            data-variant="primary"
+            disabled={busy}
+            onClick={() =>
+              void perform(preview ? (unknown ? 'inspect-preview' : 'commit') : 'preview')
+            }
+          >
+            {busy
+              ? '正在核对…'
+              : preview
+                ? unknown
+                  ? '核对保存结果'
+                  : '确认保存调整'
+                : '预览调整结果'}
+          </button>
+          {preview && (
+            <button disabled={busy || unknown} onClick={() => setPreview(undefined)}>
+              返回修改
+            </button>
+          )}
+          <button disabled={busy} onClick={close}>
+            取消
+          </button>
+        </div>
       </div>
     </DetailPanel>
   )

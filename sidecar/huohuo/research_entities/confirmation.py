@@ -26,10 +26,19 @@ class EntityConfirmation:
         from .instrument_discovery import compose
         catalog=compose(self.repo,principal,session,query,catalog,ttl=TTL)
         result=resolve(query,catalog,prior,mention_texts)
-        for m in result['mentions']:
-            matches=[c for c in prior if c['entity_id'] in m['candidate_entity_ids'] and (c['mention']==m['raw_text'] or (m.get('resolution_reason')=='conversation_confirmation' and len(m['candidates'])==1))]
-            if len(matches)==1:m['confirmation']=matches[0]
-        result['requires_confirmation']=any(not m.get('confirmation') for m in result['mentions']) or not result['mentions']
+        for subject in result['discussion_subjects']:
+            if subject['merge_reason']=='name_code_conflict':continue
+            primary=subject.get('primary_entity_id')
+            members=[m for m in result['mentions'] if m['mention_id'] in subject['mention_ids']]
+            # 先验证标准身份；名称/代码仅用于无歧义上下文，不扩大公司回执的操作权限。
+            matches=[c for c in prior if (c['entity_id']==primary if primary else
+                any(c['entity_id'] in m['candidate_entity_ids'] and c['mention']==m['raw_text'] for m in members))]
+            identities={c['entity_id'] for c in matches}
+            if len(identities)==1:
+                receipt=max(matches,key=lambda c:c['expires_at'])
+                subject['confirmation']=receipt
+                for m in members:m['confirmation']=receipt
+        result['requires_confirmation']=any(not s.get('confirmation') for s in result['discussion_subjects']) or not result['discussion_subjects']
         result['inferred_scope_status']=result['status']
         if result['requires_confirmation']:result['status']='pending_clarification'
         sid=str(uuid.uuid4());version=digest(result);expires=min(self.repo.clock()+TTL,result.get('source_expires_at') or self.repo.clock()+TTL)
@@ -53,18 +62,56 @@ class EntityConfirmation:
         if not isinstance(choices,dict) or not choices:raise Invalid('尚未选择对象')
         with self.repo.connection(True) as db:
             snapshot=self.snapshot(principal,session,sid,version)
-            mentions={m['mention_id']:m for m in snapshot['mentions']};selected=[]
-            for mid,eid in choices.items():
-                candidate=next((c for c in mentions.get(mid,{}).get('candidates',[]) if c['entity_id']==eid),None)
+            mentions={m['mention_id']:m for m in snapshot['mentions']}
+            grouped=snapshot.get('confirmation_protocol')=='discussion_subjects_v1'
+            subjects={s['subject_id']:s for s in snapshot['discussion_subjects']} if grouped else {
+                mid:{'subject_id':mid,'mention_ids':[mid],'candidates':m['candidates']} for mid,m in mentions.items()}
+            member_groups={mid:s['subject_id'] for s in subjects.values() for mid in s['mention_ids']}
+            normalized={}
+            for key,eid in choices.items():
+                gid=key if key in subjects else member_groups.get(key)
+                candidate=next((c for c in subjects.get(gid,{}).get('candidates',[]) if c['entity_id']==eid),None)
                 if not candidate:raise Invalid('选择不属于候选版本')
-                old=db.execute('SELECT * FROM entity_confirmations WHERE snapshot_id=? AND mention_id=? AND active=1',(sid,mid)).fetchone()
-                if old and old['entity_id']==eid:
+                if gid in normalized and normalized[gid]!=eid:raise Invalid('同一讨论对象不能选择不同身份')
+                normalized[gid]=eid
+            # 两个原先有歧义的组若被用户明确选为同一标准实体，也只保存一份回执。
+            if grouped:
+                by_entity={};coalesced={}
+                for gid,eid in normalized.items():
+                    if eid in by_entity:
+                        target=by_entity[eid]
+                        subjects[target]=dict(subjects[target],mention_ids=list(dict.fromkeys(subjects[target]['mention_ids']+subjects[gid]['mention_ids'])))
+                    else:
+                        by_entity[eid]=gid;coalesced[gid]=eid
+                normalized=coalesced
+            selected=[]
+            selected_entities=set(normalized.values())
+            for gid,eid in normalized.items():
+                subject=subjects[gid]
+                candidate=next(c for c in subject['candidates'] if c['entity_id']==eid)
+                old=db.execute('SELECT * FROM entity_confirmations WHERE snapshot_id=? AND mention_id=? AND active=1',(sid,gid)).fetchone()
+                if old and old['entity_id']==eid and set(json.loads(old['payload']).get('mention_ids',[gid]))>=set(subject['mention_ids']):
                     selected.append(json.loads(old['payload']));continue
-                # 改选同一文字提及撤销旧确认，保留其他对象。
+                mid=subject['mention_ids'][0]
+                if subject.get('merge_reason')=='name_code_conflict':
+                    mid=next(m for m in subject['mention_ids'] if mentions[m]['resolved_entity_id']==eid)
                 raw=mentions[mid]['raw_text']
+                aliases={mentions[m]['raw_text'] for m in subject['mention_ids']
+                    if subject.get('merge_reason')!='name_code_conflict' or mentions[m]['resolved_entity_id']==eid}
+                aliases.add(candidate['canonical_name'])
+                # 改选撤销整个对象组及其别名回执，其他独立对象保持有效。
+                references={'它们','他们','这两家','这家公司','这只股票','它','该公司','该股'}
+                aliases-=references
+                candidate_ids={c['entity_id'] for mid in subject['mention_ids'] for c in mentions[mid]['candidates']}
                 for prior in db.execute('SELECT id,payload FROM entity_confirmations WHERE principal=? AND session=? AND active=1',(principal,session)).fetchall():
-                    if json.loads(prior['payload'])['mention']==raw:db.execute('UPDATE entity_confirmations SET active=0 WHERE id=?',(prior['id'],))
+                    previous=json.loads(prior['payload'])
+                    previous_aliases=set(previous.get('mention_texts',[previous['mention']]))|{previous['label']}
+                    changing=(previous['entity_id'] in candidate_ids and previous['entity_id'] not in selected_entities
+                        and aliases & (previous_aliases-references))
+                    if changing or previous['entity_id']==eid:
+                        db.execute('UPDATE entity_confirmations SET active=0 WHERE id=?',(prior['id'],))
                 cid=str(uuid.uuid4());item={'confirmation_id':cid,'entity_id':eid,'entity_type_code':candidate['entity_type_code'],'label':candidate['canonical_name'],'mention':raw,'snapshot_id':sid,'version':version,'expires_at':snapshot['expires_at'],'source':'native_user_answer'}
+                if grouped:item.update(subject_id=gid,mention_ids=subject['mention_ids'],mention_texts=sorted(aliases),confirmation_protocol='discussion_subjects_v1')
                 details=snapshot.get('entity_details',{}).get(eid,{})
                 item.update(identifiers=details.get('identifiers',{}),attributes=details.get('attributes',{}),source_evidence=details.get('source_evidence'))
                 if eid.startswith(('SEC:CN:A:','CO:CN:A:')):
@@ -76,7 +123,7 @@ class EntityConfirmation:
                     code=item['identifiers'].get('fund_code')
                     item.update(execution_entity_id='FUND:CN:'+code,exchange=item['identifiers']['exchange'],operations=['quote_snapshot'])
                 else:item['operations']=[]
-                db.execute('INSERT INTO entity_confirmations VALUES(?,?,?,?,?,?,?,?,?,1)',(cid,principal,session,sid,mid,eid,canonical(item),source_call,snapshot['expires_at']))
+                db.execute('INSERT INTO entity_confirmations VALUES(?,?,?,?,?,?,?,?,?,1)',(cid,principal,session,sid,gid,eid,canonical(item),source_call,snapshot['expires_at']))
                 selected.append(item)
             return {'confirmations':selected,'mandate_created':False,'guidance':'已确认讨论对象；尚未授权或创建持续委托。'}
     def validate(self,principal,session,cid,eid,operation=None):

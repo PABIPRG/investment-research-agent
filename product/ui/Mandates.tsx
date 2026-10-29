@@ -14,7 +14,8 @@ export function MandatesPage({ switcher }: { goChat: () => void; switcher: React
           <h1>我的委托</h1>
           <p className={business.note}>
             {items.filter((x) => x.mandate.status === 'tracking').length} 项跟踪 ·{' '}
-            {items.filter((x) => !x.baseline).length} 项尚无研究基准
+            {items.filter((x) => !x.baseline && x.requires_comparison_baseline !== false).length}{' '}
+            项待建立比较基准
           </p>
         </div>
         <div className={business.tools}>

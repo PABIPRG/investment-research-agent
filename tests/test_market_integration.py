@@ -24,7 +24,7 @@ class MarketIntegrationTests(unittest.TestCase):
         self.repo=Repository(self.path); self.core=Mandates(self.repo,'fixture')
         self.market=Market(); self.core.market=self.market
         self.core.entities.directory=lambda:{'status':'ok','rows':[{'code':'600519','name':'贵州茅台'}],'source':{'provider':'fixture'}}
-        r=self.core.entities.resolve('alice','test','600519')
+        r=self.core.entities.resolve('alice','test','600519行情')
         c=self.core.entities.confirm('alice','test',r['snapshot_id'],r['version'],{r['mentions'][0]['mention_id']:SCOPE['entity_id']},'fixture')
         self.cid=c['confirmations'][0]['confirmation_id']
     def tearDown(self): self.core.store.close(); self.tmp.cleanup()

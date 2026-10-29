@@ -72,7 +72,7 @@ def validate(request):
     if not isinstance(request, dict) or request.get("operation") not in OPERATIONS:
         raise Invalid("需指定 quotes、scan、technical、news 或 brief 查询")
     op = request["operation"]
-    fields = {"quotes": {"codes"}, "scan": {"kind", "limit", "min_amount_yi"},
+    fields = {"quotes": {"codes", "asset_scope"}, "scan": {"kind", "limit", "min_amount_yi"},
               "technical": {"code", "lookback"}, "news": {"code", "limit", "include_slow"},
               "brief": {"codes", "period", "include_slow"}}[op]
     if set(request) - (fields | {"operation"}):
@@ -82,7 +82,13 @@ def validate(request):
         codes = request.get("codes")
         if not isinstance(codes, list) or not 1 <= len(codes) <= 20:
             raise Invalid("codes 需包含 1–20 只明确证券；不会默认读取自选或扫描全市场")
-        out["codes"] = list(dict.fromkeys(security_code(c) for c in codes))
+        if request.get("asset_scope") is not None:
+            if op!="quotes" or request["asset_scope"]!="investment":raise Invalid("行情身份范围无效")
+            from ..investment.instruments import instrument
+            for c in codes:instrument(c)
+            out["asset_scope"]="investment"
+            out["codes"]=list(dict.fromkeys(codes))
+        else:out["codes"] = list(dict.fromkeys(security_code(c) for c in codes))
     if op == "technical":
         out.update(code=security_code(request.get("code")), lookback=bounded_int(request.get("lookback", 120), 20, 250, "lookback"))
     if op == "news":

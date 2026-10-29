@@ -1,3 +1,4 @@
+import { Select } from '../shared/Select.js'
 import { useState } from 'react'
 import { DetailPanel } from '../DetailPanel.js'
 import form from '../Form.module.css'
@@ -8,7 +9,9 @@ import type { Facts, RiskProfile } from './types.js'
 import { RiskStatementInput } from './RiskStatementInput.js'
 const notice = '有效画像用于风险预算、研究建议护栏和个性化匹配；不自动交易或更改联系授权。'
 export function RiskEditor({ facts, close }: { facts: Facts; close: () => void }) {
-  const [tier, setTier] = useState<'quick' | 'full'>('quick')
+  const [tier, setTier] = useState<'quick' | 'full'>(
+    facts.risk_profile?.tier === 'full' ? 'full' : 'quick',
+  )
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [statement, setStatement] = useState('')
   const [preview, setPreview] = useState<{ preview_id: string; after: Facts }>()
@@ -153,7 +156,7 @@ export function RiskEditor({ facts, close }: { facts: Facts; close: () => void }
               <FieldGroup title="问卷类型">
                 <label>
                   选择问卷
-                  <select
+                  <Select
                     value={tier}
                     onChange={(e) => {
                       setTier(e.target.value as typeof tier)
@@ -164,7 +167,7 @@ export function RiskEditor({ facts, close }: { facts: Facts; close: () => void }
                   >
                     <option value="quick">三题速测</option>
                     <option value="full">八题完整问卷</option>
-                  </select>
+                  </Select>
                 </label>
               </FieldGroup>
               <RiskStatementInput
@@ -178,7 +181,7 @@ export function RiskEditor({ facts, close }: { facts: Facts; close: () => void }
                 {bank.map((q, i) => (
                   <label key={q.qid}>
                     {i + 1}. {q.title}
-                    <select
+                    <Select
                       required
                       value={answers[q.qid] ?? ''}
                       onChange={(e) => setAnswers((old) => ({ ...old, [q.qid]: e.target.value }))}
@@ -191,7 +194,7 @@ export function RiskEditor({ facts, close }: { facts: Facts; close: () => void }
                           {label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   </label>
                 ))}
               </FieldGroup>

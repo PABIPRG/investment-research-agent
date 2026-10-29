@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Sequence
 
 from .models import EntityCandidate, EntityMention
-from .normalizer import is_six_digit_code, normalize_name
+from .normalizer import is_six_digit_code, normalize_name, qualified_security_code, infer_exchange
 
 
 class CandidateRetriever:
@@ -19,6 +19,9 @@ class CandidateRetriever:
     def retrieve(self, mention: EntityMention) -> list[EntityCandidate]:
         candidates: dict[str, EntityCandidate] = {}
         text = mention.normalized_text or mention.raw_text
+        qualified = qualified_security_code(text)
+        if qualified:
+            text = qualified[0]
         allowed = list(mention.entity_type_candidates) or None
 
         # 1) 抽取阶段已经命中的索引项。
@@ -68,6 +71,15 @@ class CandidateRetriever:
                 candidate.source,
             )
 
+        if qualified:
+            def matches_exchange(candidate):
+                entity = self.repository.get(candidate.entity_id)
+                if entity is None:return False
+                exchange=entity.identifiers.get('exchange') or entity.attributes.get('exchange')
+                if not exchange and candidate.entity_type_code in {'ENTITY_01_01','ENTITY_02_01'}:
+                    exchange=infer_exchange(entity.identifiers.get('security_code',''))
+                return {'SSE':'SH','SZSE':'SZ','BSE':'BJ'}.get(exchange,exchange)==qualified[1]
+            candidates={eid:c for eid,c in candidates.items() if matches_exchange(c)}
         return sorted(candidates.values(), key=lambda item: (-item.confidence, item.entity_id))
 
     @staticmethod

@@ -39,10 +39,10 @@ export function HoldingsTable({
     <section aria-label="持仓明细">
       <div className={business.metrics}>
         <span>
-          持仓成本 <b>{money(holdingCost(facts))}</b>
+          持仓成本 <b>{money(facts.holdings.length ? holdingCost(facts) : 0)}</b>
         </span>
         <span>
-          持仓浮盈 <b>—</b>
+          持仓浮盈 <b>{facts.holdings.length ? '待补全' : '0.00'}</b>
         </span>
         <span>
           已关联委托{' '}
@@ -54,7 +54,11 @@ export function HoldingsTable({
                 : `${holdings.filter((p) => mandates.some((m) => m.revision.scope.entity_id.endsWith(':' + p.ticker))).length} / ${holdings.length}`}
           </b>
         </span>
-        <small>不含现金 · 行情与收益数据尚未接入</small>
+        <small>
+          {facts.holdings.length
+            ? '不含现金 · 下表逐仓报价尚未提供，金额按本地记录展示'
+            : '按本地投资记录统计 · 不含现金'}
+        </small>
       </div>
       <div className={business.tableWrap}>
         <table className={business.table}>
@@ -107,7 +111,7 @@ export function HoldingsTable({
                   </small>
                 </td>
                 <td>
-                  —<small>暂无行情</small>
+                  —<small>报价待提供</small>
                 </td>
                 <td>
                   —<small>—</small>

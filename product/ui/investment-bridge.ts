@@ -1,5 +1,9 @@
 /** 固定投资事实接口；主体和凭据由已认证的 DSH Host 注入。 */
-export const investmentPaths = ['/api/huohuo/investment', '/api/huohuo/investment-command']
+export const investmentPaths = [
+  '/api/huohuo/investment',
+  '/api/huohuo/investment-command',
+  '/api/huohuo/investment-account',
+]
 export function createInvestmentBridge(address: string, token: string) {
   const base = new URL(address)
   if (
@@ -21,7 +25,12 @@ export function createInvestmentBridge(address: string, token: string) {
     let path = '/investment'
     let method = 'GET'
     let body: unknown
-    if (request.method === 'GET' && url.pathname === investmentPaths[0] && !url.search) {
+    if (
+      request.method === 'GET' &&
+      investmentPaths.filter((_, i) => i !== 1).includes(url.pathname) &&
+      !url.search
+    ) {
+      if (url.pathname === investmentPaths[2]) path = '/investment/account'
       /* read */
     } else if (request.method === 'POST' && url.pathname === investmentPaths[1] && !url.search) {
       if (request.headers.get('Content-Type')?.split(';')[0] !== 'application/json')
@@ -70,7 +79,10 @@ export function createInvestmentBridge(address: string, token: string) {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined,
         redirect: 'error',
-        signal: AbortSignal.any([request.signal, AbortSignal.timeout(10000)]),
+        signal: AbortSignal.any([
+          request.signal,
+          AbortSignal.timeout(path === '/investment/account' ? 25000 : 10000),
+        ]),
       })
       const raw = await response.text()
       if (raw.length > 8_000_000) return reply(502, { detail: '响应过大，请缩小查询范围' })

@@ -50,7 +50,7 @@ class BaselineRecoveryIntegrationTests(unittest.TestCase):
         self.core = Mandates(self.repo, 'baseline-fixture')
         self.core.entities.directory = lambda: {'status': 'ok', 'rows': [{'code': '600519', 'name': '贵州茅台'}],
                                                'source': {'provider': 'fixture'}}
-        resolved = self.core.entities.resolve('alice', 'baseline-test', '600519')
+        resolved = self.core.entities.resolve('alice', 'baseline-test', '600519股票')
         confirmation = self.core.entities.confirm('alice', 'baseline-test', resolved['snapshot_id'], resolved['version'],
                                                   {resolved['mentions'][0]['mention_id']: QUOTE['entity_id']}, 'fixture')
         self.cid = confirmation['confirmations'][0]['confirmation_id']

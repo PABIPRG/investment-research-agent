@@ -19,7 +19,7 @@ class ResearchReviewTest(unittest.TestCase):
         self.inv = Investment(self.core.store)
         self.entities = EntityConfirmation(self.repo, directory=lambda: {'status':'ok', 'rows':[
             {'code':'600519','name':'合成研究公司'}, {'code':'000001','name':'另一公司'}], 'source':{'provider':'fixture'}})
-        snap = self.entities.resolve('alice','chat','合成研究公司')
+        snap = self.entities.resolve('alice','chat','合成研究公司股票')
         self.cid = self.entities.confirm('alice','chat',snap['snapshot_id'],snap['version'],
             {snap['mentions'][0]['mention_id']:'SEC:CN:A:600519'},'native')['confirmations'][0]['confirmation_id']
         self.review = ResearchReview(self.repo,self.entities,self.inv)

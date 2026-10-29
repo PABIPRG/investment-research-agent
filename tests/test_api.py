@@ -38,6 +38,18 @@ class ApiTests(unittest.TestCase):
         with response:
             return response.status, json.load(response)
 
+    def test_account_is_owner_authenticated_read_and_empty_values_are_zero(self):
+        from unittest.mock import Mock
+        self.service.market.query=Mock(side_effect=AssertionError('empty account must not query market'))
+        self.assertEqual(self.call('/investment/account',token='worker-secret')[0],403)
+        before=self.call('/investment')[1]
+        status,value=self.call('/investment/account')
+        self.assertEqual(status,200)
+        self.assertEqual(value['holdings_count'],0)
+        self.assertEqual(value['market_value']['value'],0)
+        self.assertEqual(self.call('/investment')[1],before)
+        self.service.market.query.assert_not_called()
+
     def test_security_search_auth_and_read_only(self):
         from unittest.mock import patch
         from huohuo.research_entities.security_search import reset_cache
@@ -142,6 +154,24 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(self.call(path)[1]['after']['holdings'][0]['quantity_unit'],'份')
         saved=self.call('/investment/commit',{'preview_id':p['preview_id'],'request_key':p['preview_id']})[1]
         self.assertEqual(self.call(path)[1]['receipt'],saved)
+
+    def test_discussion_subject_confirmation_is_authenticated_grouped_and_persistent(self):
+        self.service.mandates.entities.directory=lambda:{'status':'ok','rows':[{'code':'000001','name':'平安银行'}],'source':{'provider':'fixture'}}
+        body={'session_id':'group-http','query':'平安银行 000001 行情'}
+        self.assertEqual(self.call('/entities/resolve',body,token='worker-secret')[0],403)
+        status,r=self.call('/entities/resolve',body)
+        self.assertEqual(status,200);self.assertEqual(len(r['discussion_subjects']),1)
+        g=r['discussion_subjects'][0]
+        answer={'session_id':'group-http','snapshot_id':r['snapshot_id'],'version':r['version'],'choices':{g['subject_id']:'SEC:CN:A:000001'},'source_call':'native-http'}
+        self.assertEqual(self.call('/entities/confirm',answer|{'session_id':'other'})[0],400)
+        self.assertEqual(self.call('/entities/confirm',answer|{'choices':{g['subject_id']:'CO:CN:A:000001'}})[0],400)
+        status,saved=self.call('/entities/confirm',answer)
+        self.assertEqual(status,200);self.assertEqual(len(saved['confirmations']),1)
+        self.assertEqual(self.call('/entities/confirm',answer)[1],saved)
+        again=self.call('/entities/resolve',body|{'query':'000001行情'})[1]
+        self.assertFalse(again['requires_confirmation'])
+        self.assertEqual(again['discussion_subjects'][0]['confirmation']['confirmation_id'],saved['confirmations'][0]['confirmation_id'])
+        self.assertEqual(self.call('/mandates')[1]['items'],[])
 
 
 if __name__ == "__main__":

@@ -140,6 +140,7 @@ class Handler(BaseHTTPRequestHandler):
             elif parts[0] == "investment":
                 self.authorized("user")
                 inv, principal = self.server.investment, config["principal"]
+                if self.command == "GET" and parts == ["investment","account"]: return self.reply(200,inv.account(principal,self.server.market))
                 if self.command == "GET" and parts == ["investment"]: return self.reply(200, inv.read(principal))
                 if self.command == "GET" and len(parts)==3 and parts[1]=="previews": return self.reply(200,inv.inspect_preview(principal,parts[2]))
                 if self.command == "POST":
@@ -238,6 +239,9 @@ class Handler(BaseHTTPRequestHandler):
                         if job:
                             bound=self.server.mandates.store._connect().execute('SELECT mandate_id FROM execution_jobs WHERE execution_id=?',(job['execution_id'],)).fetchone()
                             if bound and self.server.mandates.position_risk.bindings.for_mandate(bound[0]):job['position_rule']=True
+                            elif bound:
+                                from .research_partner.price_execution import binding
+                                if binding(self.server.mandates,job['execution_id'],config['principal']):job['price_rule']=True
                             row=self.server.mandates.store._connect().execute('SELECT * FROM investment_run_facts WHERE execution_id=?',(job['execution_id'],)).fetchone()
                             if row:job['investment_facts']={**self.server.investment.snapshot(row['principal'],row['version']),'collection':row['collection'],'mode':row['mode'],'members':json.loads(row['members'])}
                         return self.reply(200, job)
@@ -249,6 +253,10 @@ class Handler(BaseHTTPRequestHandler):
                         if parts[3]=='position-run':
                             fields(body,())
                             from .position_risk.execution import run
+                            return self.reply(200,run(self.server,attempt,token))
+                        if parts[3]=='price-run':
+                            fields(body,())
+                            from .research_partner.price_execution import run
                             return self.reply(200,run(self.server,attempt,token))
                         if parts[3] in ('strategy-run','strategy-result'):
                             with repo.connection() as db:

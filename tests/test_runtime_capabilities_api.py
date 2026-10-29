@@ -51,7 +51,7 @@ class RuntimeCapabilitiesApiTests(unittest.TestCase):
     def test_research_tool_reuses_instance_chain_and_keeps_session_evidence(self):
         core=self.service.mandates
         core.entities.directory=lambda:{'status':'ok','rows':[{'code':'600001','name':'核心甲'}], 'source':{'provider':'synthetic'}}
-        resolved=core.entities.resolve('alice','chat','600001')
+        resolved=core.entities.resolve('alice','chat','600001股票')
         confirmation=core.entities.confirm('alice','chat',resolved['snapshot_id'],resolved['version'],
             {resolved['mentions'][0]['mention_id']:'SEC:CN:A:600001'},'selected')['confirmations'][0]['confirmation_id']
         body={'session_id':'chat','call_id':'before','tool_id':'industry_chain_lookup','arguments':{'confirmation_id':confirmation}}

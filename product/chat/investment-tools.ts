@@ -39,8 +39,8 @@ export function investmentQuestion(p:any):string{
 export function createInvestmentTools(address:string,token:string,ask?:Ask):ToolDefinition[]{
  const api=businessApi(address,token)
  return [
-  businessTool('read_investment_facts','读取本用户持仓、自选、成交、修订、版本及程序计算的 cost_analysis 成本集中度（非实时市值权重，缺成本时完整权重未知）。未录入不等于空仓。新增/更正使用预览与确认工具。',{},[],async(_a,e)=>{
-    try{return {ok:true,observed_at:new Date().toISOString(),data:await api('/investment',e)}}catch{return {ok:false,error:'investment_read_failed'}}
+  businessTool('read_investment_facts','读取本用户持仓、自选、成交、修订、版本及程序计算的 cost_analysis 成本集中度（非实时市值权重，缺成本时完整权重未知）。未录入不等于空仓。include_account=true 时查询同一本地账户的市值、日盈亏、数量、行情时间与缺口，成功空记录为0不代表券商空仓；读取失败不当0。新增/更正使用预览与确认工具。',{include_account:{type:'boolean'}},[],async(a,e)=>{
+    try{return {ok:true,observed_at:new Date().toISOString(),data:a.include_account?{account:await api('/investment/account',e)}:await api('/investment',e)}}catch{return {ok:false,error:'investment_read_failed'}}
   }),
   businessTool('preview_investment_change','预览持仓校正、自选、实际成交或修订。不会保存投资事实；确认具体代码、数量、已知成本及发生时间后使用。股票和场内基金均可记录；成本未知填 null。买卖须明确是否更新持仓，不能将计划当成交。',
    {command:{type:'string',enum:['holding','watchlist','trade','revision']},payload},['command','payload'],async(a,e)=>{

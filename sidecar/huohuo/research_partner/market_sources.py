@@ -4,10 +4,32 @@ from datetime import datetime, timezone
 from ..contracts import Invalid, scope as validate_scope
 from ..execution import digest
 from .contact_rules import METRICS
+from ..market.contracts import UNITS
 
 MARKET_OPERATIONS = {'market_quote', 'market_technical', 'news', 'market_brief'}
 HOOKS = {'market_quote': 'market.quote_changed', 'market_technical': 'market.technical_changed',
          'news': 'market.news_changed', 'market_brief': 'market.brief_changed'}
+
+
+def quote_price_usable(raw, scope):
+    """价格准入不依赖量比等可选字段；时间、身份、价格和单位仍严格核验。"""
+    if raw.get('status') != 'ok' or raw.get('stale') is not False or raw.get('cache') == 'stale':
+        return False
+    data = raw.get('data')
+    if not isinstance(data, dict):
+        return False
+    rows = data.get('items', [])
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        return False
+    row = rows[0]; value = row.get('price')
+    try:
+        when = datetime.fromisoformat(row.get('as_of'))
+    except (ValueError, TypeError):
+        return False
+    return (row.get('code') == scope['entity_id'].split(':')[-1] and row.get('time_known') is True
+            and when.tzinfo is not None and row.get('stale') is not True
+            and type(value) in (int, float) and math.isfinite(value) and value > 0
+            and isinstance(row.get('units'), dict) and row['units'].get('price') == 'CNY/share')
 
 
 def collect_market(scope, market, calendar=None):
@@ -38,12 +60,11 @@ def collect_market(scope, market, calendar=None):
     empty_news = operation == 'news' and response.get('status') == 'empty'
     if response.get('status') != 'ok' and not empty_news:
         return dict(base, status=response.get('status', 'unavailable'), reason='market_source_unavailable')
-    if operation != 'market_brief' and (response.get('stale') is not False or response.get('complete') is not True):
+    if operation not in {'market_brief', 'market_quote'} and (response.get('stale') is not False or response.get('complete') is not True):
         return dict(base, status='unavailable', reason='market_source_stale_or_partial')
     if operation == 'market_quote':
-        rows = response.get('data', {}).get('items', [])
-        if len(rows) != 1 or rows[0].get('code') != code or not rows[0].get('time_known'):
-            return dict(base, status='unavailable', reason='market_quote_time_or_subject_unknown')
+        if not quote_price_usable(response, sc):
+            return dict(base, status='unavailable', reason='market_quote_price_time_or_subject_unavailable')
     document = dict(base, status='ok')
     validate_market_document(document, sc)
     return document
@@ -57,7 +78,8 @@ def validate_market_document(document, scope):
         raise Invalid('行情资料指纹不匹配')
     is_brief = scope['operation'] == 'market_brief'
     allowed = {'ok','empty'} if scope['operation']=='news' else {'ok'}
-    if raw.get('status') not in allowed or raw.get('complete') is not True or (not is_brief and raw.get('stale') is not False):
+    is_quote = scope['operation'] == 'market_quote'
+    if raw.get('status') not in allowed or (not is_quote and raw.get('complete') is not True) or (not is_brief and raw.get('stale') is not False):
         raise Invalid('缺失或过时行情不能作为新的判断依据')
     if is_brief:
         basis = document.get('basis', {})
@@ -68,9 +90,8 @@ def validate_market_document(document, scope):
     data = raw.get('data', {})
     code = scope['entity_id'].split(':')[-1]
     if scope['operation'] == 'market_quote':
-        rows = data.get('items')
-        if not isinstance(rows, list) or len(rows) != 1 or rows[0].get('code') != code or not rows[0].get('time_known'):
-            raise Invalid('行情来源证券或时间无法核对')
+        if not quote_price_usable(raw, scope):
+            raise Invalid('行情来源价格、单位、证券或时间无法核对')
     if scope['operation'] == 'market_technical' and data.get('code') != code:
         raise Invalid('技术指标来源证券不匹配')
 
@@ -107,6 +128,8 @@ def bound_metrics(db, attempt_id, result, scope):
         elif scope['operation'] == 'market_quote':
             values = values['items'][0]
             stamp = values.get('as_of')
+            # 每个指标单独核验单位；缺字段或错误单位不阻断其他合格指标。
+            values = {k: v for k, v in values.items() if k in UNITS and values.get('units', {}).get(k) == UNITS[k]}
         elif scope['operation'] == 'market_technical':
             stamp = values.get('through')
             indicators = values.get('indicators', {})
