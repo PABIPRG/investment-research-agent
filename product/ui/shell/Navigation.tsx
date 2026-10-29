@@ -9,7 +9,6 @@ const NAV = [
   ['huohuo-research', '我的委托'],
   ['huohuo-activity', '动态'],
   ['huohuo-investment', '持仓与自选'],
-  ['huohuo-framework', '我的框架'],
   ['huohuo-evolution', '验证与演进'],
   ['huohuo-notifications', '提醒方式'],
 ] as const

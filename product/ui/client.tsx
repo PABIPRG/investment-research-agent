@@ -3,7 +3,7 @@ import { DataSourcesSection } from './data-sources/DataSourcesSection.js'
 import { installProductNavigation } from './navigation.js'
 import { CapabilitiesSection } from './capabilities/CapabilitiesSection.js'
 import { StrategyPage } from './strategies/StrategyPage.js'
-import { ActivityPage, PlannedPage } from './Activity.js'
+import { ActivityPage } from './Activity.js'
 import type { DshUiContext } from './dsh-face.js'
 import { InvestmentPage } from './Investment.js'
 import { NotificationsPage } from './Notifications.js'
@@ -63,18 +63,6 @@ export function apply(ctx: DshUiContext): void {
         StrategyPage,
       ),
     )
-    for (const kind of ['framework'] as const)
-      ctx.slots.inject('main', () =>
-        ctx.slots.register(
-          {
-            name: 'main',
-            key: `huohuo-${kind}`,
-            label: '我的框架',
-            inject: () => ({ kind }),
-          },
-          PlannedPage,
-        ),
-      )
     ctx.slots.inject('main', () =>
       ctx.slots.register(
         {
