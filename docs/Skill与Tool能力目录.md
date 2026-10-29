@@ -23,7 +23,7 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 
 | 名称 | 触发场景与入口 | 当前能力与限制 | 正文 |
 |---|---|---|---|
-| `huohuo-research-chat` | 聊天研究证券、公司、行业、主题、任务或证据 | 对象解析与真实确认、按需研究、单次任务管理；数据源以回执为准 | [研究聊天](../product/skills/chat/research-chat/SKILL.md) |
+| `huohuo-research-chat` | 聊天研究证券、公司、行业、主题、任务或证据 | 对象解析与真实确认、按需研究、单次任务管理；数据源以回执为准；回复含工具数据时末尾单列「数据来源」（来源、时间、evidence_id） | [研究聊天](../product/skills/chat/research-chat/SKILL.md) |
 | `huohuo-mandates` | 明确交代持续研究，或管理已有委托 | 创建、查询、修改、暂停、恢复、结束；联系备注不等于任意条件已编译执行 | [持续委托](../product/skills/chat/mandates/SKILL.md) |
 | `huohuo-investment-facts` | 查询或录入持仓、自选、成交和修订 | 读取 → 预览 → 原生确认 → 保存；沪深股票及场内基金，未知成本保留未知 | [投资事实](../product/skills/chat/investment-facts/SKILL.md) |
 | `huohuo-notifications` | 查询或调整联系偏好 | 脱敏读取、非密钥设置、清除渠道；密钥仍在安全表单填写 | [通知偏好](../product/skills/chat/notifications/SKILL.md) |

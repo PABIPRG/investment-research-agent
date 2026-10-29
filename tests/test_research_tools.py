@@ -23,7 +23,7 @@ class ResearchToolTests(unittest.TestCase):
  def tearDown(self):
   self.core.store.close();self.tmp.cleanup()
  def confirm(self, eid='SEC:CN:A:600519'):
-  snap=self.entities.resolve('alice','chat','贵州茅台')
+  snap=self.entities.resolve('alice','chat','贵州茅台'+('股票' if eid.startswith('SEC:') else '公司'))
   return self.entities.confirm('alice','chat',snap['snapshot_id'],snap['version'],{snap['mentions'][0]['mention_id']:eid},'native')['confirmations'][0]['confirmation_id']
  def test_catalog_complete_and_registry_semantics(self):
   entries=catalog();self.assertEqual(len(entries),67);self.assertEqual({x['name'] for x in entries},set(HANDLERS));self.assertEqual(validate_toolbox(),[])

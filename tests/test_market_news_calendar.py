@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from huohuo.market.calendar import CalendarUnavailable, SOURCE_URL, TradingCalendar, fetch_calendar
-from huohuo.market.news import fetch_news, item, safe_url
+from huohuo.market.news import fetch_news, item, safe_url, sina_stock
 from huohuo.market.technical import fetch_technical
 
 NOW = "2026-10-27T02:00:00+00:00"
@@ -42,6 +42,30 @@ class NewsTests(unittest.TestCase):
         self.assertFalse(result["complete"])
         self.assertEqual(result["source"], "sina")
         self.assertTrue(result["warnings"])
+
+    def test_directed_news_uses_sina_stock_when_eastmoney_search_breaks(self):
+        with patch("huohuo.market.news.directed", side_effect=ValueError("invalid directed news response")), \
+                patch("huohuo.market.news.sina_stock", return_value=[self.news()]) as stock:
+            result = fetch_news({"limit": 3, "code": "600879"})
+        stock.assert_called_once_with("600879", 3)
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["data"]["code"], "600879")
+        self.assertEqual(result["source"], "sina")
+        self.assertFalse(result["complete"])
+        self.assertTrue(any("eastmoney" in warning for warning in result["warnings"]))
+
+    def test_sina_stock_keeps_only_dated_a_share_items(self):
+        page = ('<div class="datelist"><ul>&nbsp;2026-10-29&nbsp;10:29&nbsp;&nbsp;'
+                "<a target='_blank' href='https://example.org/a'>航天电子获融资买入</a> <br>"
+                "&nbsp;&nbsp;&nbsp;&nbsp;2026-10-28&nbsp;08:01&nbsp;&nbsp;"
+                "<a target='_blank' href='https://example.org/b'>低轨卫星发射</a> <br></ul></div>")
+        with patch("huohuo.market.news.read", return_value=page):
+            rows = sina_stock("600879", 5)
+        self.assertEqual([row["title"] for row in rows], ["航天电子获融资买入", "低轨卫星发射"])
+        self.assertEqual(rows[0]["code"], "600879")
+        self.assertTrue(rows[0]["published_at"].startswith("2026-10-29"))
+        with self.assertRaises(ValueError):
+            sina_stock("920001", 5)
 
     def test_all_failed_differs_from_verified_empty(self):
         with patch("huohuo.market.news.sina", side_effect=TimeoutError), patch("huohuo.market.news.cls", side_effect=TimeoutError):

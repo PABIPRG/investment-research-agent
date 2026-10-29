@@ -33,3 +33,5 @@ contact_rule 支持条件联系、每日定时交付、定时条件检查、到�
 
 
 兼容旧报价与公司资料委托：quote_snapshot 在可靠交易日历确认的交易时段每15分钟发现变化，company_profile 每6小时检查；日历未知时不猜测交易日。contact_rule 支持用户明确说出的简短语义 claim（默认 notable_change），也支持 quote_snapshot 的 price/change/change_percent 单点阈值；后者数字由本 attempt 的有效来源证据核对。新调用使用 contact_rule；旧 contact_condition 仅由 API 兼容，不混用两套字段。基准失败不会自动追加模型调用；查询后经用户确认使用 retry_baseline。
+
+回复中引用来源快照、联系决定、基准或委托记录时，按 huohuo-research-chat 的「回复末尾的数据来源」格式，在回复末尾单列「数据来源」：来源快照写来源名称、数据时间与 evidence_id；委托记录写「本实例委托记录」及程序返回的版本或时间。模型推断不得写成来源事实，来源失败或未覆盖要照实说明。
