@@ -3,6 +3,9 @@ import { createPersonalizationBridge, personalizationPath } from './personalizat
 import { createDataSourceBridge, dataSourcePaths } from './data-sources/bridge.js'
 import { createStrategyBridge, strategyPaths } from './strategies/bridge.js'
 import { installCapabilityCatalog } from './capabilities/host.js'
+import { createDeliverableDownload, deliverableDownloadPath } from './deliverables/bridge.js'
+import '@deepseek-ai/dsh-session-query'
+import { SessionId, SessionSeq } from '@deepseek-ai/dsh-session'
 import type { Context } from '@deepseek-ai/cordis'
 import '@deepseek-ai/dsh-client-connection'
 import '@deepseek-ai/dsh-host-webserver'
@@ -16,9 +19,28 @@ import { createNotificationBridge, notificationPaths } from './notification-brid
 
 import { createSecurityBridge, securityPath } from './security-bridge.js'
 
-export const inject = ['connection']
+export const inject = ['connection', 'sessionQuery']
 /** Mount only owner-authenticated reads on DSH's existing transport. */
 export function apply(ctx: Context): void {
+  ctx.connection.fetch.register({
+    path: deliverableDownloadPath,
+    methods: ['GET'],
+    requestBody: 'buffered',
+    fetch: createDeliverableDownload(
+      process.env.HUOHUO_CHAT_API ?? '',
+      process.env.HUOHUO_USER_TOKEN ?? '',
+      async (sessionId, seq, index, signal) => {
+        const { target } = await ctx.sessionQuery.readEvent(
+          { sessionId: SessionId(sessionId), seq: SessionSeq(seq), before: 0, after: 0 },
+          signal,
+        )
+        if (target.type !== 'deliverables/presented') return undefined
+        const data = target.data as { files?: { path?: unknown }[] }
+        const path = data.files?.[index]?.path
+        return typeof path === 'string' ? path : undefined
+      },
+    ),
+  })
   ctx.connection.fetch.register({
     path: personalizationPath,
     methods: ['POST'],

@@ -1,0 +1,53 @@
+.root {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.root button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: var(--dsw-alias-radius-control);
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.root button:focus-visible {
+  outline: 2px solid var(--dsw-alias-border-l2);
+  outline-offset: 2px;
+}
+.root button:disabled {
+  cursor: wait;
+}
+.root span {
+  max-width: 18rem;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 0.8571rem;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .root button {
+    min-height: 44px;
+  }
+}
+
+/* 原生交付卡片的中性色按 DSH 主题标记切换；火火使用自己的系统主题映射。 */
+:global(html[data-huohuo-ui] [data-presented-file]) {
+  --deliverable-fill: var(--dsw-alias-bg-layer-1);
+  --deliverable-hover: var(--dsw-alias-interactive-bg-hover);
+  --dsw-alias-label-tertiary: var(--dsw-alias-label-secondary);
+}
+
+/* 首版卡片以下载为主动作；火火当前布局未展示 DSH 的右侧文件预览。 */
+:global(html[data-huohuo-ui] [data-presented-file] > button) {
+  display: none;
+}
+:global(html[data-huohuo-ui] [data-presented-description] > span:first-child) {
+  display: inline;
+}
+:global(html[data-huohuo-ui] [data-presented-description] > span:last-child:not(:first-child)) {
+  display: none;
+}

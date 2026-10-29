@@ -7,6 +7,8 @@ import { researchToolCatalog } from '../../tools/research-tools.generated.js'
 import type { Capability, CapabilityCatalog } from './model.js'
 
 const toolTitles: Record<string, string> = {
+  create_research_file: '生成可下载研究成果',
+  read_research_file: '核对并取回研究成果',
   record_personalized_interaction: '记录聊天阅读与带入分析',
   review_research_decision: '校准并保存结构化研究建议',
   read_research_reviews: '回查研究建议与画像校准',

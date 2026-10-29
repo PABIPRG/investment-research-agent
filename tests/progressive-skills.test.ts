@@ -12,5 +12,5 @@ test('聊天允许产品原生 Skill，拒绝外部 Skill 和执行工具', () =
     assert.ok(guard({ name: 'skill', arguments: { name } }))
   }
   assert.ok(guard({ name: 'skill', arguments: { name: 'huohuo-research-chat', path: '/tmp' } }))
-  for (const name of ['bash', 'write', 'web_fetch', 'subagent', 'run_code']) assert.ok(guard({ name, arguments: {} }))
+  for (const name of ['bash', 'write', 'web_fetch', 'subagent', 'run_code', 'present']) assert.ok(guard({ name, arguments: {} }))
 })
