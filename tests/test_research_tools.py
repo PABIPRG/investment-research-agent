@@ -26,7 +26,7 @@ class ResearchToolTests(unittest.TestCase):
   snap=self.entities.resolve('alice','chat','贵州茅台')
   return self.entities.confirm('alice','chat',snap['snapshot_id'],snap['version'],{snap['mentions'][0]['mention_id']:eid},'native')['confirmations'][0]['confirmation_id']
  def test_catalog_complete_and_registry_semantics(self):
-  entries=catalog();self.assertEqual(len(entries),66);self.assertEqual({x['name'] for x in entries},set(HANDLERS));self.assertEqual(validate_toolbox(),[])
+  entries=catalog();self.assertEqual(len(entries),67);self.assertEqual({x['name'] for x in entries},set(HANDLERS));self.assertEqual(validate_toolbox(),[])
   for entry in entries:
    self.assertEqual(entry['availability'],TOOL_REGISTRY[entry['name']].availability)
    self.assertNotIn('authorized',entry['parameters']['properties'])

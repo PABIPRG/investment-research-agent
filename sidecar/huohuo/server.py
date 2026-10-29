@@ -146,6 +146,7 @@ class Handler(BaseHTTPRequestHandler):
                     body=self.body()
                     if parts == ["investment","bind-collection"]: return self.reply(200,self.server.mandates.investment_binding.bind(principal,body))
                     if parts == ["investment","preview"]: return self.reply(200,inv.preview(principal,body))
+                    if parts == ["investment","risk-parse"]: return self.reply(200,inv.parse_risk(body))
                     if parts == ["investment","commit"]: return self.reply(200,inv.commit(principal,body))
                     if parts == ["investment","snapshot"]:
                         fields(body,("version",)); return self.reply(200,inv.snapshot(principal,body["version"]))
@@ -235,6 +236,8 @@ class Handler(BaseHTTPRequestHandler):
                         self.server.mandates.tick()
                         job=repo.claim(body["worker_id"])
                         if job:
+                            bound=self.server.mandates.store._connect().execute('SELECT mandate_id FROM execution_jobs WHERE execution_id=?',(job['execution_id'],)).fetchone()
+                            if bound and self.server.mandates.position_risk.bindings.for_mandate(bound[0]):job['position_rule']=True
                             row=self.server.mandates.store._connect().execute('SELECT * FROM investment_run_facts WHERE execution_id=?',(job['execution_id'],)).fetchone()
                             if row:job['investment_facts']={**self.server.investment.snapshot(row['principal'],row['version']),'collection':row['collection'],'mode':row['mode'],'members':json.loads(row['members'])}
                         return self.reply(200, job)
@@ -243,6 +246,10 @@ class Handler(BaseHTTPRequestHandler):
                         return self.reply(200, {"interrupted": repo.recover()})
                     if len(parts) == 4 and parts[1] == "attempts":
                         attempt, token = parts[2], self.headers.get("X-Attempt-Token", "")
+                        if parts[3]=='position-run':
+                            fields(body,())
+                            from .position_risk.execution import run
+                            return self.reply(200,run(self.server,attempt,token))
                         if parts[3] in ('strategy-run','strategy-result'):
                             with repo.connection() as db:
                                 _,stored=repo._attempt(db,attempt,token)

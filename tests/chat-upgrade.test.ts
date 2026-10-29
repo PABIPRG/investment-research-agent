@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto'
 import { installChat, validateChatUpgrade } from '../distribution/chat.js'
 import { packageRoot, type Instance } from '../distribution/instance.js'
 
-for (const baseline of ['chat-legacy.patch.yml', 'chat-query.patch.yml', 'chat-before-interactions.patch.yml', 'chat-before-skills.patch.yml', 'chat-before-api-key.patch.yml', 'chat-before-model-menu.patch.yml']) test(`${baseline} 升级先完整预检，再迁移受管文件并保留用户状态`, async () => {
+for (const baseline of ['chat-legacy.patch.yml', 'chat-query.patch.yml', 'chat-before-interactions.patch.yml', 'chat-before-skills.patch.yml', 'chat-before-api-key.patch.yml', 'chat-before-model-menu.patch.yml', 'startup-key-onboarding']) test(`${baseline} 升级先完整预检，再迁移受管文件并保留用户状态`, async () => {
   const temp = await mkdtemp(join(tmpdir(), 'huohuo-upgrade-'))
   const config = { dsh_home: join(temp, 'dsh') } as Instance
   const profile = join(config.dsh_home, 'profiles/huohuo-chat')
@@ -15,7 +15,9 @@ for (const baseline of ['chat-legacy.patch.yml', 'chat-query.patch.yml', 'chat-b
     dependencies: { '@huohuo/research-agent': 'file:../../../product.tgz', '@huohuo/chat-bundle': 'file:./chat-bundle', ...(baseline !== 'chat-legacy.patch.yml' ? { '@huohuo/chat-ui': 'file:./chat-ui' } : {}) },
     dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@huohuo/chat-bundle'] } },
   }, null, 2) + '\n'
-  const legacy = await readFile(join(packageRoot, 'product/bundle', baseline), 'utf8')
+  const legacy = baseline === 'startup-key-onboarding'
+    ? (await readFile(join(packageRoot, 'product/bundle/chat.patch.yml'), 'utf8')).replace('credentialOnboarding: false', 'credentialOnboarding: true')
+    : await readFile(join(packageRoot, 'product/bundle', baseline), 'utf8')
   const patch = await readFile(join(packageRoot, 'product/bundle/chat.patch.yml'), 'utf8')
   try {
     await mkdir(join(profile, 'chat-bundle'), { recursive: true })
@@ -56,10 +58,10 @@ for (const baseline of ['chat-legacy.patch.yml', 'chat-query.patch.yml', 'chat-b
   } finally { await rm(temp, { recursive: true, force: true }) }
 })
 
-test('人工冒烟保留 API 模型入口，去掉平台登录；回放仅在测试启动器显式替换', async () => {
+test('正常启动不弹密钥引导，保留模型设置和选择入口；回放只由测试启动器替换', async () => {
   const patch = await readFile(join(packageRoot, 'product/bundle/chat.patch.yml'), 'utf8')
   for (const id of ['ui-settings-account', 'account-controller', 'llm-deepseek-account', 'deepseek-account']) assert.ok(patch.includes(`- id: ${id}\n  disabled: true`), id)
-  assert.ok(patch.includes('credentialOnboarding: true'))
+  assert.ok(patch.includes('credentialOnboarding: false'))
   assert.ok(patch.includes('- id: ui-model-selection\n  disabled: false'))
   assert.ok(patch.includes('- id: ui-commands\n  disabled: false'))
   assert.ok(!patch.includes('controlled-chat-model'))

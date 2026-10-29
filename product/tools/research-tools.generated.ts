@@ -1564,6 +1564,47 @@ export const researchToolCatalog = [
   {
     "availability": "configured",
     "category": "研究",
+    "description": "研报正文读取：读取已确认公司研报列表中选定报告的1至5页正文，保留页码、文档校验和与截断；不接受任意URL，扫描件与失败保持不可用。 返回真实状态、来源、时间及证据编号。",
+    "name": "research_report_document_lookup",
+    "parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "confirmation_id": {
+          "description": "当前对话用户已选择的实体确认回执 ID；不能使用其他会话回执",
+          "maxLength": 200,
+          "minLength": 1,
+          "type": "string"
+        },
+        "page_count": {
+          "maximum": 5,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "report_id": {
+          "description": "研报列表返回的 report_id，不是 URL",
+          "maxLength": 26,
+          "minLength": 14,
+          "pattern": "^AP[0-9]{12,24}$",
+          "type": "string"
+        },
+        "start_page": {
+          "maximum": 400,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "confirmation_id",
+        "report_id"
+      ],
+      "type": "object"
+    },
+    "requires_authorization": false,
+    "title": "研报正文读取"
+  },
+  {
+    "availability": "configured",
+    "category": "研究",
     "description": "研报与一致预期：个股卖方研报清单、东财评级、机构与年度盈利预测（一致预期线索）；评级是卖方观点，不是事实。 返回真实状态、来源、时间及证据编号。",
     "name": "research_report_lookup",
     "parameters": {

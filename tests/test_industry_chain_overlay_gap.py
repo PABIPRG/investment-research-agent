@@ -10,7 +10,7 @@ class OverlayGapTest(unittest.TestCase):
     def test_company_outside_seed_is_queryable_after_confirmed_overlay(self):
         with tempfile.TemporaryDirectory() as directory:
             f = Fixture(directory)
-            f.install(); f.evidence()
+            f.install(); f.evidence(code='600009')
             value = overlay()
             value['companies'][0]['code'] = '600009'
             self.assertEqual(f.commit(f.preview('overlay', value))['status'], 'committed')
@@ -29,7 +29,7 @@ class OverlayGapTest(unittest.TestCase):
 
     def test_incremental_company_keeps_non_subject_status_in_entity_view(self):
         with tempfile.TemporaryDirectory() as directory:
-            f = Fixture(directory); f.install(); f.evidence()
+            f = Fixture(directory); f.install(); f.evidence(code='600009')
             value = overlay(); value['companies'][0]['code'] = '600009'
             f.commit(f.preview('overlay', value))
             self.assertFalse(f.service.query('p', '/graph/entity/600009')['is_subject'])

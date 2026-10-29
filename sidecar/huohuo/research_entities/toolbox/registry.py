@@ -12,10 +12,12 @@ from typing import Callable
 from ..registry.tools import TOOL_REGISTRY
 from .contracts import ToolCall
 from .handlers import bond, coverage, equity, evolution, fund_index, local, macro, market, service, valuation
+from .handlers import report_document
 
 Handler = Callable[[ToolCall], object]
 
 HANDLERS: dict[str, Handler] = {
+    'research_report_document_lookup':report_document.research_report_document_lookup,
     # 本地实体库 / 用户集合
     "security_lookup": local.security_lookup,
     "industry_lookup": local.industry_lookup,

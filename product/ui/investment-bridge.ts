@@ -40,6 +40,7 @@ export function createInvestmentBridge(address: string, token: string) {
         Array.isArray(input) ||
         ![
           'preview',
+          'risk-parse',
           'commit',
           'snapshot',
           'collection',

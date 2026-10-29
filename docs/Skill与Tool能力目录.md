@@ -32,16 +32,19 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 
 聊天 Skill 从 `product/skills/chat/` 加载，允许名单在 `product/chat/policy.ts`；guard 校验名称与参数，默认 home/cwd 扫描关闭。后台 Skill 由 `product/tools/index.ts` 注册。后台的名称保留了报价历史命名，具体范围以可信 operation 为准。
 
-## 3. 当前 Tool：聊天 95 个，后台另有 1 个
+## 3. 当前 Tool：聊天 107 个，后台另有 1 个
 
-聊天组成：62 个研究工具 + 1 个市场资料工具 + 7 个单次任务工具 + 7 个实体/委托工具 + 6 个投资事实/集合/偏好工具 + 4 个通知工具 + 1 个页面入口工具 + 2 个策略业务工具 + 1 个产业链管理工具 + 2 个旧数据迁入工具 + 2 个原生交互工具。统计的是允许暴露的名称，不是全部通过真实数据验收的数量。
+聊天组成：63 个资料研究工具、2 个结构化研究审查工具，其余为任务、实体/委托、投资事实/集合/偏好、持仓风险、个性化、通知、页面、策略、产业链、导入和原生交互。总数由注册源检查，不能当作全部通过真实数据验收的数量。
 
 | 分类 | 名称 | 用途与边界 |
 |---|---|---|
+| 结构化研究审查（2） | `review_research_decision`、`read_research_reviews` | 九视角研究与多空/风险审查方法接入 DSH；程序绑定当前已确认画像、事实版本、同会话主体证据并校准原建议。保留原始与有效建议和未知，不自动跟踪或交易 |
 | 单次研究任务（7） | `submit_quote_research`、`list_research`、`get_research`、`research_events`、`research_evidence`、`cancel_research`、`retry_research` | 提交、读取最近任务/详情/事件/证据、显式取消或重试；queued 不等于完成 |
 | 实体与委托（7） | `resolve_research_scope`、`search_securities`、`confirm_research_entities`、`create_mandate`、`list_mandates`、`get_mandate`、`manage_mandate` | 解析、候选搜索、保存真实选择、委托生命周期；确认对象不自动授予持续研究或通知许可 |
 | 投资事实/集合（5） | `read_investment_facts`、`preview_investment_change`、`commit_investment_change`、`read_investment_collection`、`bind_mandate_investment_collection` | 同一台账的查询、预览、真实确认保存与集合关联；版本冲突及提交未知不当成功 |
-| 风险偏好（1） | `assess_risk_preference` | 原生三题／八题问卷，程序计分、再次确认后保存到同一投资档案；读取及未知回执复用投资事实工具，不自动影响委托或仓位 |
+| 风险偏好（3） | `assess_risk_preference`、`parse_risk_preferences`、`preview_risk_adjustment` | 三题／八题、自然语言待核对答案、滑块调整和画像预算；程序计分并确认保存，原始推断与有效画像分别保留 |
+| 持仓风险（2） | `preview_position_risk_change`、`read_investment_risk` | 全局／单仓止盈止损、成本冻结、删除覆盖和重新布防；复用投资事实确认和正式委托执行，程序比较价格，不额外调用研究模型 |
+| 个性化（5） | `read_personalized_research`、`preview_personalization_change`、`commit_personalization_change`、`refresh_personalized_sources`、`record_personalized_interaction` | 同一实例卡片、策略匹配、本机反馈、开关／清除和偏好复盘；预览确认与回执核对，不修改风险偏好或联系授权 |
 | 旧数据迁入（2） | `read_legacy_imports`、`import_legacy_data` | 从设置上传文件后，读取候选/回执/只读档案；生成分类差异并经原生确认后原子导入，不继承旧授权或运行队列 |
 | 市场资料（1） | `query_market` | 行情、扫描、日线技术指标、新闻、盘前/盘后资料包；news/brief 可显式 include_slow 扩展全市场来源，逐源报告失败；只读结果留存证据，不自动创建监控 |
 | `manage_industry_chain` | 管理实例产业链资料与研报增量 | 状态只读；下载、刷新、删除与增量需原生确认；增量绑定本会话证据 |
@@ -53,9 +56,9 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 
 业务 Tool 装配见 `product/chat/tools.ts`，实体确认见 `product/chat/entity-tools.ts`，委托见 `product/chat/mandate-tools.ts`，投资事实见 `product/chat/investment-tools.ts`，通知见 `notification-tools.ts`，页面入口见 `navigation-tools.ts`；最终由 `product/chat/guard.ts` 限制可调用范围。
 
-### 62 个研究工具完整目录
+### 63 个研究工具完整目录
 
-下表依据 `product/tools/research-tools.generated.ts` 的当前 schema 整理。该文件保留 Python 契约生成的 66 项（原 48 项加主分支 18 项）；产品装配明确排除三个旧私有台账入口与旧事件监控设置入口，对话实际暴露 62 项研究工具，不手工修改生成文件。更细参数、实体类型、来源和处理器见第 6 节注册源。
+下表依据 `product/tools/research-tools.generated.ts` 的当前 schema 整理。该文件保留 Python 契约生成的 67 项（原48项、主分支18项及研报正文1项）；产品装配排除三个旧私有台账入口与旧事件监控设置入口，对话实际暴露63项资料研究工具。结构化研究审查另走正式研究台账入口，不手工修改生成文件。更细参数、实体类型、来源和处理器见第6节注册源。
 
 <!-- research-catalog:start -->
 | Tool | 注册用途与限制 | 当前执行边界 |
@@ -133,6 +136,7 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 | `overseas_quote_lookup` | 港美股行情：港股与美股历史日线与区间摘要，当地货币计价，不可与 A 股直接比较。 | 已注册；依赖实例/来源 |
 | `performance_forecast_lookup` | 业绩预告：按报告期列示 A 股业绩预告，含预告类型、变动幅度与原因；可按类型排序或按名称检索。 | 已注册；依赖实例/来源 |
 | `performance_express_lookup` | 业绩快报：按报告期列示营收、净利润与同比，可按名称或行业检索；是初步核算数。 | 已注册；依赖实例/来源 |
+| `research_report_document_lookup` | 研报正文读取：从已确认公司的列表选定报告，每次读取1至5页，保留正文页码、校验和与截断；不接受任意URL，扫描件保持不可用。 | 已注册；依赖公开来源 |
 | `research_report_lookup` | 研报与一致预期：个股卖方研报清单、评级、机构与年度盈利预测；评级是卖方观点。 | 已注册；依赖实例/来源 |
 | `sector_fund_flow_lookup` | 板块资金流排行：行业/概念/地域板块主力净流入排行，支持今日、5日、10日周期。 | 已注册；依赖实例/来源 |
 | `sector_ranking_lookup` | 板块排行：同花顺行业与概念板块当日涨幅、净流入、上涨家数与成交额排行，可按涨幅、跌幅等排序；不绑定具体板块实体。 | 已注册；依赖实例/来源 |

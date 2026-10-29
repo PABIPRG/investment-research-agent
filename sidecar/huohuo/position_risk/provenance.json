@@ -1,0 +1,12 @@
+{
+  "source": "backend/dsh-trading-core/adapter/position_risk.py",
+  "commit": "9c23b1fdb249d8192748196cb183709e8e2030f4",
+  "source_sha256": "5cfbd4d9b51efdba0ad9e74a646e6cf687a307308d05c1e3f7f25bf1bf2c1ca1",
+  "functions": [
+    "_parse_time",
+    "_time_status",
+    "_resolved_price",
+    "suggestion_for_profile"
+  ],
+  "changes": "只提取纯算法；当前存储、授权、执行与通知各由新版正式领域持有"
+}

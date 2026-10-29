@@ -90,6 +90,14 @@ export function InvestmentPreview({
         基于事实版本 {preview.fact_version}，确认保存后生效。
         {target.kind === 'holding' ? '校正不计作成交。' : ''}
       </small>
+      {!!preview.impact.position_risk_impact?.length && (
+        <section aria-label="持仓风险委托影响">
+          <strong>已确认风险约定的联动</strong>
+          {preview.impact.position_risk_impact.map((text, i) => (
+            <p key={i}>{text}</p>
+          ))}
+        </section>
+      )}
       {preview.impact.gaps?.map((gap, i) => (
         <p role="status" className={css.error} key={i}>
           {gap.detail}

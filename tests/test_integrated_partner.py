@@ -62,7 +62,7 @@ class IntegratedPartnerTests(unittest.TestCase):
                     before={x[0] for x in old._connect().execute('SELECT version FROM schema_migrations')};old.close()
                 upgraded=module.SqliteBusinessStore(dbpath)
                 after={x[0] for x in upgraded._connect().execute('SELECT version FROM schema_migrations')}
-                self.assertEqual(after-before,set(excluded)|{'009_notification_channels','010_strategies','011_strategy_run_subjects','012_strategy_schedule','014_industry_chain','015_source_heads','016_legacy_transfer','017_unified_strategy_work'})
+                self.assertEqual(after-before,set(excluded)|{'009_notification_channels','010_strategies','011_strategy_run_subjects','012_strategy_schedule','014_industry_chain','015_source_heads','016_legacy_transfer','017_unified_strategy_work','018_personalization','019_position_risk'})
                 self.assertEqual(upgraded._connect().execute('SELECT value FROM preserve_test').fetchone()[0],'keep-existing-instance')
                 self.assertTrue(list(Path(tmp).glob('*.before-*')))
                 upgraded.close()

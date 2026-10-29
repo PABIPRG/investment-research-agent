@@ -16,6 +16,7 @@ export function securityName(id: string, ...names: (string | undefined | null)[]
 export function mandateName(view: any): string {
   return securityName(
     view.revision.scope.entity_id,
+    view.display_name,
     view.revision.basis?.entity_confirmation?.label,
   )
 }

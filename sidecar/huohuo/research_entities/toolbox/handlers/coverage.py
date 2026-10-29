@@ -110,6 +110,8 @@ def research_report_lookup(call: ToolCall):
 
     institutions = sorted({str(item.get("机构")) for item in records if item.get("机构")})
     returned = records[: _limit(call, 50, maximum=200)]
+    from ...report_documents import report_id
+    returned=[{**r,'report_id':report_id(r.get('报告PDF链接'))} for r in returned]
     return ok(
         call,
         records=returned,

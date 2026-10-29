@@ -8,6 +8,25 @@ export function arrivalStatus(item: MandateView) {
       detail: '查看已保存的约定，核对缺少的信息。',
       action: '查看待补充内容',
     }
+  if (item.position_risk) {
+    const p = item.position_risk
+    return {
+      priority: p.reason === 'position_target_consumed' ? 1 : 4,
+      title:
+        p.reason === 'position_target_consumed'
+          ? '持仓风险目标已触发'
+          : p.reason
+            ? '持仓风险计划需要核对'
+            : '按已确认价格条件跟进',
+      detail:
+        p.reason === 'position_target_consumed'
+          ? '本代次不再重复触发；实际投递请回查联系记录，需要再次跟进时明确重新布防。'
+          : p.reason
+            ? '请查看计划状态、成本与有效期；当前不会取得新的发送资格。'
+            : `激活成本 ${p.basis_cost} 元，目标 ${p.resolved_price} 元。程序比较价格，不额外调用研究模型。`,
+      action: '查看风险计划与联系记录',
+    }
+  }
   if (item.executions[0]?.status === 'failed')
     return {
       priority: 1,

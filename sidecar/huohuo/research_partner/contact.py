@@ -162,6 +162,10 @@ class ContactDecisionService:
                 "",
                 None,
             )
+        position=getattr(self.store,'position_risk',None)
+        position_reason=position.reason(mandate.mandate_id) if position else None
+        if position_reason:
+            return (_Outcome('suppress',position_reason,'unknown','持仓风险计划当前无联系资格，须核对配置或明确重新布防'),'',None)
         try:
             policy = parse_contact_policy(
                 revision.contact_policy,

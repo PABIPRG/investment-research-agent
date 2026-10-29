@@ -62,9 +62,10 @@ class Sources:
         now=self.core.repo.clock()
         with self.store.transaction():
             db=self.store._connect()
-            candidates=db.execute("SELECT DISTINCT m.principal_id,r.scope_json,r.contact_policy_json FROM mandates m JOIN mandate_revisions r ON r.mandate_id=m.mandate_id AND r.revision=m.current_revision WHERE m.status='tracking'").fetchall()
+            candidates=db.execute("SELECT DISTINCT m.mandate_id,m.principal_id,r.scope_json,r.contact_policy_json FROM mandates m JOIN mandate_revisions r ON r.mandate_id=m.mandate_id AND r.revision=m.current_revision WHERE m.status='tracking'").fetchall()
             selected=None
             for row in candidates:
+                if self.core.position_risk.reason(row['mandate_id']):continue
                 if json.loads(row['contact_policy_json']).get('mode', 'condition') != 'condition': continue
                 sc=json.loads(row['scope_json'])
                 if sc.get('operation') not in LEGACY_OPERATIONS | MARKET_OPERATIONS:continue

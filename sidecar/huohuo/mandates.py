@@ -34,6 +34,8 @@ class Mandates:
         self.notifications=Notifications(self)
         self.investment=Investment(self.store)
         self.investment_binding=InvestmentBinding(self,self.investment)
+        from .position_risk.service import PositionRisk
+        self.position_risk=PositionRisk(self)
     def invalidate(self, mid):
         """所有委托类型共用取消代次和执行撤销。调用方必须持有业务事务。"""
         db = self.store._connect()
@@ -75,6 +77,17 @@ class Mandates:
         view['investment_collection']=self.investment_binding.get(principal,mid)
         view['fact_snapshots']=[dict(r) | {'members':json.loads(r['members'])} for r in db.execute('SELECT f.* FROM investment_run_facts f JOIN execution_jobs x USING(execution_id) WHERE f.principal=? AND x.mandate_id=?',(principal,mid))]
         view['generation']=row[0] if row else 0
+        position=self.position_risk.bindings.for_mandate(mid)
+        marker=view['revision']['basis'].get('position_risk')
+        if marker:
+            label=marker.get('name')
+            if not label:
+                version=view['revision']['basis'].get('fact_version')
+                if type(version) is int:
+                    saved=self.investment.snapshot(principal,version)
+                    label=next((h.get('display_name') or h.get('name') for h in saved['holdings'] if h['ticker']==marker['ticker']),None)
+            view['display_name']=label
+            view['position_risk']={**marker,'reason':self.position_risk.reason(mid) if position else 'position_plan_inactive'}
         view['executions']=[self.repo._view(r) for r in db.execute('SELECT e.* FROM executions e JOIN execution_jobs x ON e.id=x.execution_id WHERE x.mandate_id=? ORDER BY e.created_at DESC',(mid,))]
         view['evidence']=[ev for ex in view['executions'] for ev in self.repo.evidence(principal,ex['execution_id'])]
         view['results']=[dict(r) | {'structured_result':json.loads(r['structured_result_json']), 'stale':bool(r['stale'])} for r in db.execute('SELECT r.* FROM research_job_results r JOIN research_jobs j ON j.job_id=r.job_id WHERE j.mandate_id=? ORDER BY r.received_at DESC',(mid,))]
@@ -180,6 +193,7 @@ class Mandates:
         with self.store.transaction():
             from .research_partner.schedules import ScheduleService
             ScheduleService(self.store,calendar=self.service.calendar,now=lambda:datetime.fromtimestamp(self.repo.clock(),timezone.utc)).scan()
+            self.position_risk.refresh()
             self.investment_binding.publish()
             OutboxPublisher(self.store).publish()
             def baseline_key(event, mandate):
@@ -195,6 +209,16 @@ class Mandates:
             for row in rows:
                 if row['action'].startswith('strategy.'):
                     continue  # 有类型的策略任务由同一核心交接器创建执行。
+                position_reason=self.position_risk.reason(row['mandate_id'])
+                if position_reason:
+                    if position_reason=='position_config_scheduled':
+                        from .position_risk.configuration import document,selected
+                        _,facts,_=self.investment._load(row['principal_id'])
+                        binding=self.position_risk.bindings.for_mandate(row['mandate_id'])
+                        _,config=selected(document(facts),binding['ticker'])
+                        db.execute('UPDATE research_jobs SET next_run_at=? WHERE job_id=?',(config['effective_at'],row['job_id']))
+                    else:db.execute("UPDATE research_jobs SET status='cancelled' WHERE job_id=?",(row['job_id'],))
+                    continue
                 if row['mandate_status']!='tracking' or row['current_revision']!=row['mandate_revision']:
                     db.execute("UPDATE research_jobs SET status='cancelled' WHERE job_id=?",(row['job_id'],));continue
                 from .research_partner.baseline_policy import requires_comparison_baseline

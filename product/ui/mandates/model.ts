@@ -2,6 +2,13 @@ import type { ContactRule } from './ContactRuleEditor.js'
 import type { Evidence, Execution, ResearchResult } from '../model.js'
 export type Scope = { entity_id: string; exchange: string; operation: string; period?: string }
 export type MandateView = {
+  display_name?: string
+  position_risk?: {
+    kind: string
+    basis_cost: number
+    resolved_price: number
+    reason?: string | null
+  }
   mandate: { mandate_id: string; current_revision: number; status: string }
   generation: number
   revision: {

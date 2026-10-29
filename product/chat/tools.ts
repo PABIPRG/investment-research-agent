@@ -17,9 +17,12 @@ import { createNavigationTools, navigationToolNames } from './navigation-tools.j
 import { createMarketTools, marketToolNames } from './market-tools.js'
 import { createMandateTools, mandateToolNames } from './mandate-tools.js'
 import { createRiskTools, riskToolNames } from './risk-tools.js'
+import {createPersonalizationTools,personalizationToolNames} from './personalization-tools.js'
+import {createPositionRiskTools,positionRiskToolNames} from './position-risk-tools.js'
+import {createResearchReviewTools,researchReviewToolNames} from './research-review-tools.js'
 
 export const chatToolNames = ['submit_quote_research', 'list_research', 'get_research', 'research_events',
-  'research_evidence', 'cancel_research', 'retry_research', ...mandateToolNames, ...researchToolNames, ...investmentToolNames, ...riskToolNames, ...notificationToolNames, ...navigationToolNames, ...strategyToolNames, ...marketToolNames, ...industryChainToolNames, ...transferToolNames]
+  'research_evidence', 'cancel_research', 'retry_research', ...mandateToolNames, ...researchToolNames, ...researchReviewToolNames, ...investmentToolNames, ...riskToolNames, ...personalizationToolNames, ...positionRiskToolNames, ...notificationToolNames, ...navigationToolNames, ...strategyToolNames, ...marketToolNames, ...industryChainToolNames, ...transferToolNames]
 export const nativeChatToolNames = ['ask_user_question', 'skill']
 export const allowedChatToolNames = [...chatToolNames, ...nativeChatToolNames, entityToolName]
 export const inject = ['tools', 'skills', 'systemPrompt']
@@ -90,7 +93,7 @@ export function createChatTools(address: string, token: string, ask?: StrategyQu
           guidance: '后台连接中断。写操作可能已被接受；先查询最近任务核对，不要创建另一项重复研究。' }
       }
     },
-  })), ...createMandateTools(address, token, ask), ...createResearchTools(address, token), ...createInvestmentTools(address, token, ask), ...createRiskTools(address, token, ask), ...createNotificationTools(address, token, ask), ...createNavigationTools(address, token), ...createStrategyTools(address, token, ask), ...createMarketTools(address, token), ...createIndustryChainTools(address, token, ask), ...createTransferTools(address, token, ask)]
+  })), ...createMandateTools(address, token, ask), ...createResearchTools(address, token), ...createResearchReviewTools(address, token), ...createInvestmentTools(address, token, ask), ...createRiskTools(address, token, ask), ...createPersonalizationTools(address, token, ask), ...createPositionRiskTools(address, token), ...createNotificationTools(address, token, ask), ...createNavigationTools(address, token), ...createStrategyTools(address, token, ask), ...createMarketTools(address, token), ...createIndustryChainTools(address, token, ask), ...createTransferTools(address, token, ask)]
 }
 
 export async function apply(ctx: Context): Promise<void> {

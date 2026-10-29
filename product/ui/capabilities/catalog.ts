@@ -7,7 +7,18 @@ import { researchToolCatalog } from '../../tools/research-tools.generated.js'
 import type { Capability, CapabilityCatalog } from './model.js'
 
 const toolTitles: Record<string, string> = {
+  record_personalized_interaction: '记录聊天阅读与带入分析',
+  review_research_decision: '校准并保存结构化研究建议',
+  read_research_reviews: '回查研究建议与画像校准',
+  refresh_personalized_sources: '获取当前持仓与自选资讯',
+  read_personalized_research: '读取个性化研究与偏好复盘',
+  preview_personalization_change: '预览本机学习与反馈变更',
+  commit_personalization_change: '确认本机学习与反馈变更',
+  read_investment_risk: '读取组合风险与聚合预警',
+  preview_position_risk_change: '预览持仓止盈止损与重新布防',
   assess_risk_preference: '填写风险偏好问卷',
+  parse_risk_preferences: '从描述解析风险偏好答案',
+  preview_risk_adjustment: '预览风险偏好手动调整',
   read_legacy_imports: '查看旧数据与导入回执',
   import_legacy_data: '导入已上传的旧数据',
   manage_industry_chain: '管理产业链资料与研报增量',

@@ -26,6 +26,8 @@ async function chatFiles(config: Instance) {
   const skillsPrevious = await readFile(join(packageRoot, 'product/bundle/chat-before-skills.patch.yml'), 'utf8')
   const apiKeyPrevious = await readFile(join(packageRoot, 'product/bundle/chat-before-api-key.patch.yml'), 'utf8')
   const modelMenuPrevious = await readFile(join(packageRoot, 'product/bundle/chat-before-model-menu.patch.yml'), 'utf8')
+  // 上一版仅开启了启动密钥引导；接受该已知差异并迁移，保留用户 Profile 配置。
+  const startupPromptPrevious = patch.replace('credentialOnboarding: false', 'credentialOnboarding: true')
   const queryPatch = await readFile(join(packageRoot, 'product/bundle/chat-query.patch.yml'), 'utf8')
   const legacyManifest = JSON.parse(manifest)
   delete legacyManifest.dependencies['@huohuo/chat-ui']
@@ -34,19 +36,19 @@ async function chatFiles(config: Instance) {
   return { directory, patch, files: [
     { name: 'package.json', content: manifest, legacy: JSON.stringify(legacyManifest, null, 2) + '\n' },
     { name: 'chat-bundle/package.json', content: bundle, legacy: bundle },
-    { name: 'chat-bundle/cordis.patch.yml', content: patch, legacy: legacyPatch, previous: queryPatch, interactionsPrevious, skillsPrevious, apiKeyPrevious, modelMenuPrevious },
+    { name: 'chat-bundle/cordis.patch.yml', content: patch, legacy: legacyPatch, previous: queryPatch, interactionsPrevious, skillsPrevious, apiKeyPrevious, modelMenuPrevious, startupPromptPrevious },
   ] }
 }
 
 /** Check every product-owned file before touching either profile or the installed package. */
 export async function validateChatUpgrade(config: Instance): Promise<void> {
   const { directory, files } = await chatFiles(config)
-  for (const { name, content, legacy, previous, interactionsPrevious, skillsPrevious, apiKeyPrevious, modelMenuPrevious } of files) {
+  for (const { name, content, legacy, previous, interactionsPrevious, skillsPrevious, apiKeyPrevious, modelMenuPrevious, startupPromptPrevious } of files) {
     const path = join(directory, name)
     let current: string
     try { current = await readFile(path, 'utf8') }
     catch (error: any) { if (error.code === 'ENOENT') continue; throw error }
-    if (!sameConfig(name, current, content) && !sameConfig(name, current, legacy) && !(previous && sameConfig(name, current, previous)) && !(interactionsPrevious && sameConfig(name, current, interactionsPrevious)) && !(skillsPrevious && sameConfig(name, current, skillsPrevious)) && !(apiKeyPrevious && sameConfig(name, current, apiKeyPrevious)) && !(modelMenuPrevious && sameConfig(name, current, modelMenuPrevious))) throw new Error(`聊天 Profile 已有不同配置，不覆盖：${path}`)
+    if (!sameConfig(name, current, content) && !sameConfig(name, current, legacy) && !(previous && sameConfig(name, current, previous)) && !(interactionsPrevious && sameConfig(name, current, interactionsPrevious)) && !(skillsPrevious && sameConfig(name, current, skillsPrevious)) && !(apiKeyPrevious && sameConfig(name, current, apiKeyPrevious)) && !(modelMenuPrevious && sameConfig(name, current, modelMenuPrevious)) && !(startupPromptPrevious && sameConfig(name, current, startupPromptPrevious))) throw new Error(`聊天 Profile 已有不同配置，不覆盖：${path}`)
   }
 }
 
@@ -55,14 +57,14 @@ export async function installChat(config: Instance, refresh = false): Promise<vo
   const { directory, patch, files } = await chatFiles(config)
   const revision = createHash('sha256').update(patch).update(await readFile(join(packageRoot, 'ui/client.js'))).digest('hex')
   await mkdir(join(directory, 'chat-bundle'), { recursive: true, mode: 0o700 })
-  for (const { name, content, legacy, previous, interactionsPrevious, skillsPrevious, apiKeyPrevious, modelMenuPrevious } of files) {
+  for (const { name, content, legacy, previous, interactionsPrevious, skillsPrevious, apiKeyPrevious, modelMenuPrevious, startupPromptPrevious } of files) {
     const path = join(directory, name)
     try { await writeFile(path, content, { flag: 'wx', mode: 0o600 }) }
     catch (error: any) {
       if (error.code !== 'EEXIST') throw error
       const current = await readFile(path, 'utf8')
       if (!sameConfig(name, current, content)) {
-        if (!sameConfig(name, current, legacy) && !(previous && sameConfig(name, current, previous)) && !(interactionsPrevious && sameConfig(name, current, interactionsPrevious)) && !(skillsPrevious && sameConfig(name, current, skillsPrevious)) && !(apiKeyPrevious && sameConfig(name, current, apiKeyPrevious)) && !(modelMenuPrevious && sameConfig(name, current, modelMenuPrevious))) throw new Error(`聊天 Profile 已有不同配置，不覆盖：${path}`)
+        if (!sameConfig(name, current, legacy) && !(previous && sameConfig(name, current, previous)) && !(interactionsPrevious && sameConfig(name, current, interactionsPrevious)) && !(skillsPrevious && sameConfig(name, current, skillsPrevious)) && !(apiKeyPrevious && sameConfig(name, current, apiKeyPrevious)) && !(modelMenuPrevious && sameConfig(name, current, modelMenuPrevious)) && !(startupPromptPrevious && sameConfig(name, current, startupPromptPrevious))) throw new Error(`聊天 Profile 已有不同配置，不覆盖：${path}`)
         await writeFile(path + '.before-chat-shell', current, { mode: 0o600, flag: 'wx' }).catch((error: NodeJS.ErrnoException) => { if (error.code !== 'EEXIST') throw error })
         await writeFile(path, content, { mode: 0o600 })
       }

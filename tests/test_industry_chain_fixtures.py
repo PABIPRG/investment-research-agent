@@ -60,10 +60,10 @@ class Fixture:
     def commit(self, preview, principal='p', session='s'):
         return self.service.commit(principal, session, {key: preview[key] for key in ('preview_id', 'request_key')})
     def install(self): return self.commit(self.preview())
-    def evidence(self, identifier='ev1', session='s', status='ok'):
+    def evidence(self, identifier='ev1', session='s', status='ok',code='600001'):
         with self.repo.connection(True) as db:
-            db.execute('INSERT OR REPLACE INTO research_tool_calls VALUES(?,?,?,?,?)', (identifier, 'p', session, 'report_fetch', canonical({'status': status, 'source': 'https://example.invalid/report', 'records': [{'text': '报告披露的合成关系'}]})))
+            db.execute('INSERT OR REPLACE INTO research_tool_calls VALUES(?,?,?,?,?)', (identifier, 'p', session, 'research_report_document_lookup', canonical({'status': status, 'source': 'https://example.invalid/report', 'data': {'document_role':'report_body','security_code':code,'document_sha256':'synthetic-hash','pages':[{'page':1,'text':'报告披露的合成关系'}]}})))
 
 
 def overlay():
-    return {'companies': [{'code': '600001', 'source_evidence_ids': ['ev1'], 'materials': [{'name': '新增材料', 'suppliers': [{'id': 'other', 'name': '新供应商', 'type': 'inferred', 'share': None, 'confidence': .6, 'note': '资料尚不能确认交易占比'}]}], 'products': [], 'related': [], 'metrics': []}], 'inferred_links': []}
+    return {'companies': [{'code': '600001', 'source_evidence_ids': ['ev1'], 'source_locations':[{'evidence_id':'ev1','page':1,'quote':'报告披露的合成关系'}], 'materials': [{'name': '新增材料', 'suppliers': [{'id': 'other', 'name': '新供应商', 'type': 'inferred', 'share': None, 'confidence': .6, 'note': '资料尚不能确认交易占比'}]}], 'products': [], 'related': [], 'metrics': []}], 'inferred_links': []}

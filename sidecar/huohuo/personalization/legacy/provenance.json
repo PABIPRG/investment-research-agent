@@ -1,0 +1,48 @@
+[
+  {
+    "source": "backend/dsh-trading-core/adapter/personalize.py",
+    "commit": "9c23b1fdb249d8192748196cb183709e8e2030f4",
+    "source_sha256": "8e39195f89d501e359ace33af7334716c2e3a0df37ce3c7d16eaaeac813444ce",
+    "target": "personalize.py"
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/behavior_profile.py",
+    "commit": "9c23b1fdb249d8192748196cb183709e8e2030f4",
+    "source_sha256": "ba46d3eee5e086fb6d2c1b0df66f1ef3ac6126e3b1faab2e0f67e1c51d034575",
+    "target": "behavior_profile.py"
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/local_telemetry.py",
+    "commit": "9c23b1fdb249d8192748196cb183709e8e2030f4",
+    "source_sha256": "b2d55def0169bdc8d1ddf6bb00242c4597d349526d5d7969d56e19d52cae756a",
+    "target": "local_telemetry.py"
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/evolution.py",
+    "commit": "9c23b1fdb249d8192748196cb183709e8e2030f4",
+    "source_sha256": "0544ec6dea783bc1d09d8ad08aab8a5b6ae2bf436c0b14d697a1c7ff32e91f34",
+    "target": "evolution.py",
+    "functions": [
+      "_parse_ts",
+      "_shadow_series",
+      "_per_strategy_series",
+      "decision_outcome"
+    ],
+    "changes": "当前主体快照；无旧缓存/服务；UTC 时间规范；反馈不改变风险级别"
+  },
+  {
+    "source": "backend/dsh-trading-core/adapter/risk_engine.py",
+    "commit": "9c23b1fdb249d8192748196cb183709e8e2030f4",
+    "source_sha256": "1e0951beff9abf21ef3c1f985eebb65c79c4420143a1c17dd8b980f0ecf6b14e",
+    "target": "risk_engine.py",
+    "functions": [
+      "_feedback_counts",
+      "_severity",
+      "_excess_ratio",
+      "_compute_portfolio_risk",
+      "risk_alerts",
+      "_md5"
+    ],
+    "changes": "当前主体快照；无旧缓存/服务；UTC 时间规范；反馈不改变风险级别"
+  }
+]

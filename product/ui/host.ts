@@ -1,4 +1,5 @@
 import { createTransferBridge, transferPath } from './transfer-bridge.js'
+import { createPersonalizationBridge, personalizationPath } from './personalization/bridge.js'
 import { createDataSourceBridge, dataSourcePaths } from './data-sources/bridge.js'
 import { createStrategyBridge, strategyPaths } from './strategies/bridge.js'
 import { installCapabilityCatalog } from './capabilities/host.js'
@@ -18,6 +19,15 @@ import { createSecurityBridge, securityPath } from './security-bridge.js'
 export const inject = ['connection']
 /** Mount only owner-authenticated reads on DSH's existing transport. */
 export function apply(ctx: Context): void {
+  ctx.connection.fetch.register({
+    path: personalizationPath,
+    methods: ['POST'],
+    requestBody: 'buffered',
+    fetch: createPersonalizationBridge(
+      process.env.HUOHUO_CHAT_API ?? '',
+      process.env.HUOHUO_USER_TOKEN ?? '',
+    ),
+  })
   ctx.on('webserver/index-inject', (rows) => rows.push(...bootInjections()))
   installCapabilityCatalog(ctx)
   ctx.connection.fetch.register({
