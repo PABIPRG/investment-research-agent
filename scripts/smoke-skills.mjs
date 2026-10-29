@@ -12,15 +12,17 @@ import {resolvePython} from '../runtime/python.mjs'
 import {prepareMigrationStrategyProfile} from './migration-strategy-profile.mjs'
 const root=fileURLToPath(new URL('../',import.meta.url)),out=resolve(process.env.HUOHUO_SMOKE_OUT??join(root,'artifacts/skills-smoke'))
 const business=process.argv.includes('--business'),migration=process.argv.includes('--migration')
+const deliverables=process.argv.includes('--deliverables')
+if(deliverables&&!process.argv.includes('--serve'))throw Error('成果交付回放需要 --serve')
 if(migration&&!process.argv.includes('--serve'))throw Error('迁移组合验收需要 --serve')
-const chatBundleName=migration?'@huohuo/chat-bundle-migration':'@huohuo/chat-bundle'
+const chatBundleName=migration?'@huohuo/chat-bundle-migration':deliverables?'@huohuo/chat-bundle-deliverables':'@huohuo/chat-bundle'
 if(business&&!process.argv.includes('--serve'))throw Error('业务交互回放必须 --serve，由真实用户交互确认')
 const keep=process.argv.includes('--serve'),port=Number(process.env.HUOHUO_SMOKE_PORT??18810),webPort=Number(process.env.HUOHUO_SMOKE_WEB_PORT??18811)
 assert.notEqual(port,webPort)
 await mkdir(out,{recursive:true});await checkChatPort(port);await checkChatPort(webPort)
 const base=resolve(process.env.HUOHUO_SMOKE_TMP??join(out,'instances'));await mkdir(base,{recursive:true})
 const reuse=process.env.HUOHUO_SMOKE_REUSE==='1'
-if(reuse&&!migration)throw Error('仅独立迁移合成验收可复用测试实例')
+if(reuse&&!migration&&!deliverables)throw Error('仅独立迁移/成果合成验收可复用测试实例')
 const saved=reuse?JSON.parse(await readFile(join(out,'runtime.json'),'utf8')):null
 const instance=saved?resolve(saved.instance):await mkdtemp(join(base,'skills-'))
 assert.ok(instance.startsWith(base+'/skills-'),'不能复用非本脚本创建的验收目录')
@@ -44,7 +46,7 @@ await writeFile(join(bundle,'package.json'),JSON.stringify({name:chatBundleName,
 await copyFile(join(root,'product/bundle/chat.patch.yml'),join(bundle,'cordis.patch.yml'));await link(bundle,join(modules,chatBundleName))
 const disabled='- id: ui-settings-models\n  config:\n    credentialOnboarding: false\n- id: llm-deepseek\n  disabled: true\n- id: llm-deepseek-account\n  disabled: true\n- id: llm-pi-ai\n  disabled: true\n'
 await writeFile(join(workerProfile,'cordis.patch.yml'),disabled+`- insert:\n    - id: controlled-worker-model\n      name: '${join(root,'lib/tests/followup-model.js')}'\n`)
-await writeFile(join(chatProfile,'cordis.patch.yml'),disabled+`- id: agent-default-model\n  config:\n    provider: huohuo-skills-fixture\n    model: controlled\n- insert:\n    - id: controlled-chat-model\n      name: '${join(root,business?'lib/tests/business-model.js':'lib/tests/progressive-model.js')}'\n${keep?'':`    - id: controlled-audit\n      name: '${join(root,'lib/tests/progressive-runtime-audit.js')}'\n`}`)
+await writeFile(join(chatProfile,'cordis.patch.yml'),disabled+`- id: agent-default-model\n  config:\n    provider: huohuo-skills-fixture\n    model: controlled\n- insert:\n    - id: controlled-chat-model\n      name: '${join(root,deliverables?'lib/tests/deliverables-model.js':business?'lib/tests/business-model.js':'lib/tests/progressive-model.js')}'\n${keep?'':`    - id: controlled-audit\n      name: '${join(root,'lib/tests/progressive-runtime-audit.js')}'\n`}`)
 if(migration)await prepareMigrationStrategyProfile(root,config)
 const proof=join(instance,'proof.jsonl'),report=join(instance,'report.json')
 const env={PATH:process.env.PATH,HOME:join(instance,'home'),TMPDIR:join(instance,'tmp'),LANG:'en_US.UTF-8',DSH_TELEMETRY_DISABLED:'1',DSH_HOME:config.dsh_home,HUOHUO_SKILLS_PROOF:proof,HUOHUO_SKILLS_REPORT:report}
@@ -59,7 +61,7 @@ async function stop(p){if(!p||p.exitCode!==null||p.signalCode!==null)return;cons
 async function cleanup(){if(closing)return;closing=true;controller.abort();await worker?.catch(()=>{});await stop(web);await stop(api);await writeFile(join(out,'runtime-stopped.json'),JSON.stringify({stopped_at:new Date().toISOString(),ports:[port,webPort]}));await writeFile(join(out,'runtime.log'),webLog);await writeFile(join(out,'api.log'),apiLog)}
 const interrupted=()=>{void cleanup().then(()=>process.exit(130))};process.on('SIGTERM',interrupted);process.on('SIGINT',interrupted)
 try{
- api=spawn(config.python,[join(root,migration?'tests/migration_ui_server.py':'tests/night_research_server.py'),join(instance,'instance.json')],{cwd:root,env:{...env,PYTHONPATH:join(root,'sidecar'),PYTHONDONTWRITEBYTECODE:'1'},stdio:['pipe','pipe','pipe']})
+ api=spawn(config.python,[join(root,deliverables?'tests/deliverables-ui-server.py':migration?'tests/migration_ui_server.py':'tests/night_research_server.py'),join(instance,'instance.json')],{cwd:root,env:{...env,PYTHONPATH:join(root,'sidecar'),PYTHONDONTWRITEBYTECODE:'1'},stdio:['pipe','pipe','pipe']})
  api.stderr.on('data',d=>apiLog+=d)
  await new Promise((res,rej)=>{const t=setTimeout(()=>rej(Error('API startup timed out')),15000);api.stdout.once('data',()=>{clearTimeout(t);res()});api.once('exit',()=>{clearTimeout(t);rej(Error(apiLog))});api.once('error',rej)})
  if(keep)worker=workerLoop(config,controller.signal).catch(e=>{if(!controller.signal.aborted){workerError=e;controller.abort()}})

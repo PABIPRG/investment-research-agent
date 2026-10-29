@@ -10,11 +10,18 @@ import { NotificationsPage } from './Notifications.js'
 import { ResearchPage } from './research/ResearchPage.js'
 import { installShell } from './Shell.js'
 import { BrandMark, BrandName, QueryIcon, brandMetadata } from './shell/Brand.js'
+import { DownloadAction } from './deliverables/DownloadAction.js'
 declare const __HUOHUO_CSS__: string
 const panelId = 'huohuo-research'
 export const inject = ['slots', 'layout', 'uiWorkspace', 'sessions', 'inputTriggers', 'connection']
 export function apply(ctx: DshUiContext): void {
   try {
+    ctx.slots.inject('deliverables.file.actions', () =>
+      ctx.slots.register(
+        { name: 'deliverables.file.actions', id: 'huohuo-download', order: 1 },
+        DownloadAction,
+      ),
+    )
     installShell(ctx)
     installProductNavigation(ctx)
     ctx.slots.inject('settings.section', () =>

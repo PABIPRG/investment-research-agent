@@ -27,6 +27,7 @@ from .runtime_services import install as install_runtime, handle as runtime_http
 from .research_partner.market_sources import collect_market, MARKET_OPERATIONS
 from pydantic import ValidationError
 from .research_partner.errors import Conflict as CoreConflict, InvalidRequest, NotFound, Unauthorized
+from .deliverables.service import Deliverables
 
 
 def fields(body, required):
@@ -51,6 +52,7 @@ class Service(ThreadingHTTPServer):
             self.investment = Investment(self.mandates.store)
             self.strategies = Strategies(self.mandates.store)
             self.research_tools = ResearchToolBridge(self.repo, self.mandates.entities, strategies=self.strategies)
+            self.deliverables = Deliverables(config.get('workspace', str(Path(config['database']).parent / 'workspace')), self.research_tools.evidence)
             self.researcher = researcher
             self.strategies.recovery()
             install_runtime(self)
@@ -134,6 +136,37 @@ class Handler(BaseHTTPRequestHandler):
             parts = parsed.path.strip("/").split("/")
             config, repo = self.server.config, self.server.repo
             if runtime_http(self, parts): return
+            if parts[0] == 'deliverables':
+                self.authorized('user')
+                if parts == ['deliverables', 'create'] and self.command == 'POST':
+                    body = fields(self.body(max_size=1_010_000), ('session_id', 'call_id', 'spec'))
+                    return self.reply(200, self.server.deliverables.create(config['principal'], body['session_id'], body['call_id'], body['spec']))
+                if parts == ['deliverables', 'inspect'] and self.command == 'POST':
+                    body = self.body()
+                    if 'source_call_id' in body:
+                        fields(body, ('session_id', 'source_call_id'))
+                        return self.reply(200, self.server.deliverables.by_call(config['principal'], body['session_id'], body['source_call_id']))
+                    fields(body, ('session_id', 'id'))
+                    return self.reply(200, self.server.deliverables.inspect(config['principal'], body['session_id'], body['id']))
+                if parts == ['deliverables', 'download'] and self.command == 'POST':
+                    body = self.body()
+                    fields(body, ('id', 'part', 'session_id') if 'session_id' in body else ('id', 'part'))
+                    meta, raw = self.server.deliverables.download(config['principal'], body['id'], body['part'], body.get('session_id'))
+                    from urllib.parse import quote
+                    self.send_response(200)
+                    self.send_header('Content-Type', meta['media_type'])
+                    self.send_header('Content-Length', str(len(raw)))
+                    self.send_header('Content-Disposition', "attachment; filename*=UTF-8''" + quote(meta['filename'], safe=''))
+                    self.send_header('Cache-Control', 'no-store')
+                    self.send_header('X-Content-Type-Options', 'nosniff')
+                    self.send_header('X-Content-SHA256', meta['sha256'])
+                    self.end_headers()
+                    try:
+                        self.wfile.write(raw)
+                    except (BrokenPipeError, ConnectionResetError):
+                        pass
+                    return
+                raise Missing('endpoint not found')
             if parts[0] == "strategies":
                 self.authorized("user")
                 return strategy_http(self, parts)

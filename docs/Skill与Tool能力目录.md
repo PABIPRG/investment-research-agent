@@ -19,7 +19,7 @@
 
 Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；领域服务强制身份、权限、版本、幂等、持久化与副作用。不能只修改 Skill 来宣称获得写权限，也不通过通用 shell、任意文件或 HTTP 工具绕开领域接口。
 
-## 2. 当前 Skill：聊天 5 个，后台 1 个
+## 2. 当前 Skill：聊天 6 个，后台 1 个
 
 | 名称 | 触发场景与入口 | 当前能力与限制 | 正文 |
 |---|---|---|---|
@@ -28,11 +28,12 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 | `huohuo-investment-facts` | 查询或录入持仓、自选、成交和修订 | 读取 → 预览 → 原生确认 → 保存；沪深股票及场内基金，未知成本保留未知 | [投资事实](../product/skills/chat/investment-facts/SKILL.md) |
 | `huohuo-notifications` | 查询或调整联系偏好 | 脱敏读取、非密钥设置、清除渠道；密钥仍在安全表单填写 | [通知偏好](../product/skills/chat/notifications/SKILL.md) |
 | `huohuo-strategies` | 建立候选、回测、影子验证、进化预案与确认应用 | 同一侧车策略状态；按需运行、仅研究模拟，不代表真实交易或框架修订 | [策略方法](../product/skills/chat/strategies/SKILL.md) |
+| `huohuo-deliverables` | 用户要求导出或取回 CSV、JSON、Excel 研究成果 | 原始证据直接投影或明确标注模型整理；独立文件、来源说明、认证下载；有界且不执行代码/公式 | [成果交付](../product/skills/chat/deliverables/SKILL.md) |
 | `huohuo-bounded-quote` | 后台已接受的固定研究执行 | 根据可信 Scope 执行报价、公司资料或财务摘要；不能自行扩大范围 | [后台研究](../product/skills/bounded-quote/SKILL.md) |
 
 聊天 Skill 从 `product/skills/chat/` 加载，允许名单在 `product/chat/policy.ts`；guard 校验名称与参数，默认 home/cwd 扫描关闭。后台 Skill 由 `product/tools/index.ts` 注册。后台的名称保留了报价历史命名，具体范围以可信 operation 为准。
 
-## 3. 当前 Tool：聊天 107 个，后台另有 1 个
+## 3. 当前 Tool：聊天 109 个，后台另有 1 个
 
 聊天组成：63 个资料研究工具、2 个结构化研究审查工具，其余为任务、实体/委托、投资事实/集合/偏好、持仓风险、个性化、通知、页面、策略、产业链、导入和原生交互。总数由注册源检查，不能当作全部通过真实数据验收的数量。
 
@@ -52,6 +53,7 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 | 通知（4） | `read_notification_settings`、`list_notification_deliveries`、`update_notification_preferences`、`clear_notification_channel` | 脱敏查询及原生确认修改；不接收密钥或任意接收目标，不发送测试消息 |
 | 页面入口（1） | `open_product_view` | 返回对话、委托、投资、提醒、动态、策略的受控链接，可定位所属委托；设置返回原生菜单路径，当前平台没有公开打开 API |
 | 原生交互（2） | `ask_user_question`、`skill` | 问答与加载包内 Skill；Skill 加载不产生业务授权 |
+| 研究成果交付（2） | `create_research_file`、`read_research_file` | CSV、JSON、基础 XLSX；本会话证据投影或模型整理，配套来源说明；只生成受控副本并通过 DSH 卡片下载，不开放任意文件或公式；安装/真实模型验证状态见成果交付记录 |
 | 后台研究（另计 1） | `read_security_snapshot` | 只读取本次执行绑定的研究范围；不能理解为后台拥有聊天的全部工具 |
 
 业务 Tool 装配见 `product/chat/tools.ts`，实体确认见 `product/chat/entity-tools.ts`，委托见 `product/chat/mandate-tools.ts`，投资事实见 `product/chat/investment-tools.ts`，通知见 `notification-tools.ts`，页面入口见 `navigation-tools.ts`；最终由 `product/chat/guard.ts` 限制可调用范围。
