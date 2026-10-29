@@ -53,6 +53,7 @@ export function PersonalizationConfirm({
   }
   return (
     <DetailPanel
+      compact
       title="确认本机偏好变更"
       close={() => {
         if (!busy) close()

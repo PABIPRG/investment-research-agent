@@ -10,8 +10,8 @@ export async function runPositionAttempt(config:Instance,job:any,signal:AbortSig
   }})()
   try{
     if(signal.aborted)return 'uncertain'
-    try{observer?.({kind:'program.position-rule',observed_at:new Date().toISOString(),execution_id:job.execution_id,attempt_id:job.attempt_id})}catch{/* 观察失败不影响价格规则。 */}
-    await request(config,path+'/position-run',{},'worker',job.lease_token,AbortSignal.any([signal,stopped.signal]))
+    try{observer?.({kind:job.price_rule?'program.price-rule':'program.position-rule',observed_at:new Date().toISOString(),execution_id:job.execution_id,attempt_id:job.attempt_id})}catch{/* 观察失败不影响价格规则。 */}
+    await request(config,path+(job.price_rule?'/price-run':'/position-run'),{},'worker',job.lease_token,AbortSignal.any([signal,stopped.signal]))
     return 'completed'
   }catch{return 'uncertain'}finally{stopped.abort();await heartbeat}
 }

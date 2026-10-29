@@ -1,5 +1,6 @@
+import controls from './shared/Controls.module.css'
 import page from './shared/Page.module.css'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import business from './Business.module.css'
 import css from './Investment.module.css'
 import { HoldingsTable } from './investment/HoldingsTable.js'
@@ -24,11 +25,16 @@ const tabs = {
   protection: '持仓风险',
 }
 export function InvestmentPage({ visit }: { visit?: (mandate: string) => void }) {
+  const root = useRef<HTMLElement>(null)
+  const [viewRefresh, setViewRefresh] = useState(0)
   const { facts, loading, error, refresh } = useInvestment()
   const [tab, setTab] = useState<keyof typeof tabs>('holdings'),
     [query, setQuery] = useState(''),
     [edit, setEdit] = useState<EditTarget>(),
     [notice, setNotice] = useState('')
+  useEffect(() => {
+    root.current?.scrollTo({ top: 0 })
+  }, [tab])
   const [mandates, setMandates] = useState<MandateView[]>([]),
     [relationLoading, setRelationLoading] = useState(false),
     [relationError, setRelationError] = useState(false),
@@ -54,6 +60,7 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
   }, [relationRefresh, facts?.version])
   const reload = () => {
     refresh()
+    setViewRefresh((n) => n + 1)
     setRelationRefresh((n) => n + 1)
   }
   const common = facts ? { facts, query, edit: setEdit } : undefined
@@ -62,13 +69,24 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
     setEdit({ kind: tab === 'watchlist' ? 'watchlist' : tab === 'trades' ? 'trade' : 'holding' })
   }
   return (
-    <main className={`${page.surface} ${business.page} ${css.page}`}>
+    <main
+      ref={root}
+      className={`${page.surface} ${business.page} ${css.page} ${controls.controls}`}
+    >
       <header className={`${page.header} ${business.header}`}>
         <div>
           <h1>持仓与自选</h1>
           <p className={business.note}>
-            {facts ? `${date(facts.updated_at)} 更新 · 记录 v${facts.version}` : '正在读取投资记录'}{' '}
-            {tab !== 'risk' && '· 金额单位：元'}
+            {tab === 'personal'
+              ? '资讯、研究兴趣与学习偏好'
+              : tab === 'protection'
+                ? '持仓目标、组合风险与提醒依据'
+                : facts
+                  ? facts.updated_at
+                    ? `${date(facts.updated_at)} 更新 · 本地记录 v${facts.version}`
+                    : '尚无本地投资记录'
+                  : '正在读取投资记录'}{' '}
+            {['holdings', 'trades'].includes(tab) && '· 金额单位：元'}
           </p>
         </div>
         <div className={business.tools}>
@@ -94,7 +112,7 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
           {notice}
         </p>
       )}
-      <div className={business.tabs} aria-label="投资记录分类">
+      <div className={css.tabNav} aria-label="投资记录分类">
         {Object.entries(tabs).map(([key, label]) => (
           <button
             key={key}
@@ -102,14 +120,17 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
             onClick={() => {
               setTab(key as keyof typeof tabs)
               setQuery('')
+              setNotice('')
             }}
           >
             {label}
             {facts && (key === 'holdings' || key === 'watchlist') ? ` ${facts[key].length}` : ''}
           </button>
         ))}
-        {!['history', 'risk', 'personal', 'protection'].includes(tab) && (
-          <label className={css.search}>
+      </div>
+      {!['history', 'risk', 'personal', 'protection'].includes(tab) && (
+        <div className={css.filters}>
+          <label>
             搜索证券
             <input
               aria-label="搜索证券"
@@ -119,8 +140,8 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
             />
             {query && <button onClick={() => setQuery('')}>清除</button>}
           </label>
-        )}
-      </div>
+        </div>
+      )}
       {common && tab === 'holdings' && (
         <HoldingsTable
           {...common}
@@ -134,15 +155,28 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
       {common && tab === 'trades' && <TradesTable {...common} />}{' '}
       {common && tab === 'history' && <RevisionHistory {...common} />}
       {facts && tab === 'risk' && <RiskPreference facts={facts} />}
-      {tab === 'personal' && <PersonalizationPage />}
-      {facts && tab === 'protection' && <PositionRiskPlans facts={facts} visit={visit} />}
+      {tab === 'personal' && (
+        <PersonalizationPage
+          refreshKey={viewRefresh}
+          hasSecurities={!!facts && facts.holdings.length + facts.watchlist.length > 0}
+        />
+      )}
+      {facts && tab === 'protection' && (
+        <PositionRiskPlans facts={facts} visit={visit} refreshKey={viewRefresh} />
+      )}
       {edit && (
         <InvestmentEditor
           target={edit}
           close={() => setEdit(undefined)}
           saved={(version) => {
             setEdit(undefined)
-            setNotice(`已保存为记录 v${version}，可在修订历史回查。`)
+            const place =
+              edit?.kind === 'watchlist' || edit?.kind === 'remove'
+                ? '自选'
+                : edit?.kind === 'trade'
+                  ? '操作记录'
+                  : '修订历史'
+            setNotice(`已保存为记录 v${version}，可在${place}回查。`)
           }}
         />
       )}

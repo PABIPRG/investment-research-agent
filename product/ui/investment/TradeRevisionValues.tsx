@@ -1,3 +1,4 @@
+import ui from './Sections.module.css'
 import { money } from '../business-model.js'
 import { quantityUnit, date, fmt, type Trade } from './types.js'
 export function TradeRevisionValues({
@@ -18,7 +19,7 @@ export function TradeRevisionValues({
     ['发生时间', date(before.traded_at), date(after.traded_at)],
   ]
   return (
-    <dl>
+    <dl className={ui.facts}>
       {rows
         .filter(([, a, b]) => a !== b)
         .map(([name, a, b]) => (

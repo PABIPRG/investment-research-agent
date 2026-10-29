@@ -4,13 +4,13 @@ import form from '../Form.module.css'
 import { InvestmentContext } from '../InvestmentContext.js'
 import css from '../Query.module.css'
 import { mandateName } from '../business-model.js'
-import { arrivalStatus } from '../shell/arrival-model.js'
+import { arrivalStatus, canRetryBaseline } from '../shell/arrival-model.js'
 import { semanticCondition } from './ContactRuleEditor.js'
 import { AgreementForm } from './AgreementForm.js'
 import { MandateDecisions } from './MandateDecisions.js'
 import { ResearchHistory } from './ResearchHistory.js'
 import { MandateEvidence } from './MandateEvidence.js'
-import { statuses } from './model.js'
+import { statuses, sourceReason } from './model.js'
 import type { MandateController } from './useMandates.js'
 export function MandateDetail({ model }: { model: MandateController }) {
   const [confirm, setConfirm] = useState<'pause' | 'end'>()
@@ -82,14 +82,17 @@ export function MandateDetail({ model }: { model: MandateController }) {
           </p>
           <p>{state.detail}</p>
           <p className={css.note}>{current.monitoring.detail}</p>
-          {!current.baseline &&
-            current.mandate.status === 'tracking' &&
-            current.executions.some((e) => ['failed', 'interrupted'].includes(e.status)) &&
-            !current.executions.some((e) => ['running', 'queued'].includes(e.status)) && (
-              <button disabled={disabled} onClick={() => void command('retry_baseline')}>
-                重新建立研究基准
-              </button>
-            )}
+          {current.execution_mode === 'program_price' && (
+            <p className={css.note}>价格条件由程序执行，不额外调用研究模型。</p>
+          )}
+          {current.source_check && current.source_check.status !== 'ok' && (
+            <p className={css.note}>最近资料检查：{sourceReason(current.source_check.detail)}</p>
+          )}
+          {canRetryBaseline(current) && (
+            <button disabled={disabled} onClick={() => void command('retry_baseline')}>
+              重新建立研究基准
+            </button>
+          )}
         </section>
         <section className={css.section}>
           <h3>联系与研究约定</h3>

@@ -1,11 +1,11 @@
 import business from '../Business.module.css'
 import { useEffect, useState } from 'react'
 import { request, errorText } from '../shared/api.js'
-import { FieldGroup } from '../shared/FieldGroup.js'
+import { InvestmentSection as FieldGroup } from './InvestmentSection.js'
+import ui from './Sections.module.css'
 import { PersonalizationConfirm } from '../personalization/PersonalizationConfirm.js'
 import type { PersonalPreview } from '../personalization/model.js'
-import { fmt } from './types.js'
-import form from '../Form.module.css'
+import { date, fmt } from './types.js'
 type Report = {
   profile_is_explicit: boolean
   learning_enabled: boolean
@@ -49,8 +49,10 @@ const sources: Record<string, string> = {
 export function PortfolioRiskPanel({
   version,
   visit,
+  refreshKey = 0,
 }: {
   version: number
+  refreshKey?: number
   visit?: (mid: string) => void
 }) {
   const [data, setData] = useState<Report>(),
@@ -72,7 +74,7 @@ export function PortfolioRiskPanel({
         if (!abort.signal.aborted) setError(errorText(e))
       })
     return () => abort.abort()
-  }, [version, generation])
+  }, [version, generation, refreshKey])
   const feedback = async (id: string, sentiment: string) => {
     setBusy(true)
     setError('')
@@ -95,29 +97,35 @@ export function PortfolioRiskPanel({
     <>
       <FieldGroup
         title="组合风险与画像预算"
-        hint="继承旧版等权集中度与影子净值模型；不是账户实时风险估值。"
+        hint="按本地记录评估组合集中度与影子验证表现，不代表实时账户风险。"
+        actions={<button onClick={refresh}>刷新风险记录</button>}
       >
-        <button onClick={refresh}>刷新风险记录</button>
         {error && <p role="alert">{error}</p>}
         {data ? (
           <>
-            <p>{data.portfolio.note}</p>
             {data.portfolio.holdings_status === 'not_recorded' ? (
               <p>持仓尚未录入，不能据此判断空仓或风险达标。</p>
             ) : (
-              <dl>
-                <dt>持仓数 / 等权单仓占比</dt>
-                <dd>
-                  {fmt(data.portfolio.summary.n_positions)} /{' '}
-                  {percent(data.portfolio.summary.equal_weight)}
-                </dd>
-                <dt>等权集中度 HHI</dt>
-                <dd>{fmt(data.portfolio.summary.hhi)}</dd>
-                <dt>影子最大回撤 / 年化波动</dt>
-                <dd>
-                  {percent(data.portfolio.summary.shadow_max_drawdown)} /{' '}
-                  {percent(data.portfolio.summary.shadow_annualized_vol)}
-                </dd>
+              <dl className={ui.metrics}>
+                <div>
+                  <dt>本地持仓数量</dt>
+                  <dd>{fmt(data.portfolio.summary.n_positions)}</dd>
+                </div>
+                <div>
+                  <dt>等权单仓占比</dt>
+                  <dd>{percent(data.portfolio.summary.equal_weight)}</dd>
+                </div>
+                <div>
+                  <dt>等权集中度 HHI</dt>
+                  <dd>{fmt(data.portfolio.summary.hhi)}</dd>
+                </div>
+                <div>
+                  <dt>影子回撤 / 年化波动</dt>
+                  <dd>
+                    {percent(data.portfolio.summary.shadow_max_drawdown)} /{' '}
+                    {percent(data.portfolio.summary.shadow_annualized_vol)}
+                  </dd>
+                </div>
               </dl>
             )}
             <p>
@@ -127,7 +135,15 @@ export function PortfolioRiskPanel({
               {data.portfolio.risk_budget.hhi_max} · 波动预算{' '}
               {percent(data.portfolio.risk_budget.portfolio_vol_max)}
             </p>
-            {data.portfolio.summary.data_note && <p>{data.portfolio.summary.data_note}</p>}
+            {data.portfolio.summary.data_note && (
+              <p className={ui.muted}>{data.portfolio.summary.data_note}</p>
+            )}
+            <details className={ui.disclosure}>
+              <summary>计算口径与数据范围</summary>
+              <div>
+                <p>{data.portfolio.note}</p>
+              </div>
+            </details>
           </>
         ) : (
           <p role="status">正在读取组合风险…</p>
@@ -137,13 +153,24 @@ export function PortfolioRiskPanel({
         <FieldGroup title="聚合风险预警" hint={data.notice}>
           {data.alerts.degraded && <p>事件来源为已保存快照，未保证实时或全市场完整覆盖。</p>}
           {!data.learning_enabled && <p>本机学习暂停中；可在「为我关注」启用反馈与偏好复盘。</p>}
+          {!data.alerts.items.length && (
+            <p className={ui.empty}>当前没有已保存的风险预警。资料不足不代表风险已达标。</p>
+          )}
           {data.alerts.items.map((item) => (
-            <article key={item.id}>
+            <article key={item.id} className={ui.record}>
               <small>
-                {sources[item.source] || item.source} · {item.severity} · {item.ts}
+                {sources[item.source] || item.source} · {item.severity} ·{' '}
+                {Number.isNaN(new Date(item.ts).getTime()) ? '时间待核对' : date(item.ts)}
               </small>
               <h3>{item.title}</h3>
-              <p>{item.detail}</p>
+              {item.source === 'position_plan' ? (
+                <details>
+                  <summary>查看触发依据</summary>
+                  <p>{item.detail}</p>
+                </details>
+              ) : (
+                <p>{item.detail}</p>
+              )}
               <div className={business.tools}>
                 <button
                   disabled={busy || !data.learning_enabled}

@@ -3,9 +3,14 @@ import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { ToolCallId } from '@deepseek-ai/dsh-llm'
 
 export const entityToolName = 'confirm_research_entities'
+function confirmationSubjects(snapshot: any): any[] {
+  return Array.isArray(snapshot.discussion_subjects)
+    ? snapshot.discussion_subjects.map((s: any) => ({ ...s, question_id: s.subject_id }))
+    : snapshot.mentions.map((m: any) => ({ ...m, question_id: m.mention_id }))
+}
 export function confirmationQuestions(snapshot: any, reconfirm = false) {
-  return snapshot.mentions.filter((m: any) => m.candidates.length && (reconfirm || !m.confirmation)).map((m: any) => ({
-    id: m.mention_id, header: '确认对象', question: `“${m.raw_text}”指的是哪一个对象？这里只确认讨论对象，不创建持续委托。`,
+  return confirmationSubjects(snapshot).filter((m: any) => m.candidates.length && (reconfirm || !m.confirmation)).map((m: any) => ({
+    id: m.question_id, header: '确认对象', question: m.merge_reason === 'name_code_conflict' ? `“${m.raw_text}”中的名称与代码对应不同对象，请确认本次要讨论哪一个。` : m.primary_entity_id ? `确认本次讨论对象：${candidateLabel(m.candidates[0])}。这里只确认讨论对象，不创建持续委托。` : `“${m.raw_text}”指的是哪一个对象？这里只确认讨论对象，不创建持续委托。`,
     options: [...m.candidates.map((c: any) => ({ label: candidateLabel(c), description: c.entity_type_code === 'ENTITY_01_01' ? '证券身份；可用于受控沪深 A 股研究。' : c.entity_type_code === 'ENTITY_02_01' ? '上市公司身份；与股票分开记录。' : '确认此对象身份后，可按已接通的工具查询；不创建持续委托。' })), { label: '重新说明对象', description: '不确认本项，继续补充名称或代码。' }],
   }))
 }
@@ -16,19 +21,19 @@ function candidateLabel(c: any): string {
 export function choicesFromAnswer(snapshot: any, answer: any): Record<string,string> {
   const choices: Record<string,string> = {}
   if (!Array.isArray(answer?.answers)) return choices
-  for (const m of snapshot.mentions) {
-    const entries = answer.answers.filter((a: any) => a.id === m.mention_id)
+  for (const m of confirmationSubjects(snapshot)) {
+    const entries = answer.answers.filter((a: any) => a.id === m.question_id)
     if (entries.length !== 1) continue
     const a = entries[0]
     if (a.custom || !Array.isArray(a.selected) || a.selected.length !== 1) continue
     const matches = m.candidates.filter((c: any) => candidateLabel(c) === a.selected[0])
-    if (matches.length === 1) choices[m.mention_id] = matches[0].entity_id
+    if (matches.length === 1) choices[m.question_id] = matches[0].entity_id
   }
   return choices
 }
 export function createEntityConfirmationTool(address: string, token: string, ask: (questions: unknown[], exec: ToolRunContext) => Promise<any>): ToolDefinition {
   return {
-    name: entityToolName, description: '对 resolve_research_scope 返回的快照发起原生选项确认。程序生成候选问题并保存真实用户回答，不能由模型填写确认结果。多对象逐项选择。自由输入或跳过不确认；本工具不创建委托。',
+    name: entityToolName, description: '对 resolve_research_scope 返回的快照发起原生选项确认。程序按独立讨论对象生成问题，同一实体的名称、代码和别名只确认一次；保存真实用户回答，不能由模型填写确认结果。自由输入或跳过不确认；本工具不创建委托。',
     parameters: { type: 'object', properties: { snapshot_id: { type: 'string' }, version: { type: 'string' }, reconfirm: {type:'boolean',description:'用户要求改选时设为 true，重新展示所有候选。'} }, required: ['snapshot_id','version'], additionalProperties: false },
     output: { schema: { type: 'object', additionalProperties: true }, render: (_a,v) => [{ type:'text',text:JSON.stringify(v) }] },
     // 用户确认不可由超时替代。
@@ -45,12 +50,13 @@ export function createEntityConfirmationTool(address: string, token: string, ask
       }
       const snapshot = await request('/entities/snapshot',body)
       const questions = confirmationQuestions(snapshot,args.reconfirm === true)
-      const existing = snapshot.mentions.filter((m:any)=>m.confirmation && args.reconfirm !== true).map((m:any)=>m.confirmation)
+      const existing = [...new Map(confirmationSubjects(snapshot).filter((m:any)=>m.confirmation && args.reconfirm !== true).map((m:any)=>[m.confirmation.confirmation_id,m.confirmation])).values()]
       if (!questions.length) return existing.length ? { confirmations:existing,mandate_created:false,guidance:'复用本对话仍有效的对象确认；未创建委托。' } : { confirmed:false,guidance:'没有可确认候选，请补充完整名称或代码。' }
       const answer = await ask(questions,exec)
       const choices = choicesFromAnswer(snapshot,answer)
       if (!Object.keys(choices).length) return { confirmed:false,guidance:'未确认任何对象；请根据补充内容重新解析。' }
-      const saved=await request('/entities/confirm',{ ...body,choices,source_call:`${exec.callId}:entities` });return {...saved,confirmations:[...existing,...saved.confirmations]}
+      const saved=await request('/entities/confirm',{ ...body,choices,source_call:`${exec.callId}:entities` })
+      return {...saved,confirmations:[...existing.filter((c:any)=>!saved.confirmations.some((s:any)=>s.entity_id===c.entity_id)),...saved.confirmations]}
     },
   }
 }

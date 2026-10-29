@@ -1,3 +1,15 @@
+.questions :global([data-content-phase='active'] [data-composer-seat]:has([data-question-key])) {
+  background: transparent;
+}
+.questions :global([data-huohuo-question-submit])::after {
+  content: '（↵）';
+}
+.questions :global([data-question-key] .Mbwy4a_footerActions > button:last-child) {
+  background: var(--hh-accent);
+  border-color: var(--hh-accent);
+  color: var(--hh-on-accent);
+  font-weight: 600;
+}
 .questions :global([data-question-key] > section) {
   background: var(--hh-surface);
   color: var(--hh-ink);

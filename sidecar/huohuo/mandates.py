@@ -95,6 +95,10 @@ class Mandates:
         view['baseline_revision']=baseline['mandate_revision'] if baseline else None
         view['baseline']=(json.loads(baseline[0]) or None) if baseline else None
         view['contact_rule_description']=readable_rule(view['revision']['basis'].get('contact_rule') or policy_rule(view['revision']['contact_policy']))
+        from .research_partner.baseline_policy import requires_comparison_baseline
+        from .research_partner.price_execution import eligible
+        view['requires_comparison_baseline']=requires_comparison_baseline(view['revision']['contact_policy'])
+        view['execution_mode']='program_price' if eligible(view['revision']) else 'research'
         operation=view['revision']['scope'].get('operation')
         from .research_partner.market_sources import MARKET_OPERATIONS
         supported=operation in {'financial_summary','company_profile','quote_snapshot'} or operation in MARKET_OPERATIONS

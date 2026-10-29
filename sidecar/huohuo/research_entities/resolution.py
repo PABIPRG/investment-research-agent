@@ -7,8 +7,9 @@ from .retriever import CandidateRetriever
 from .disambiguator import Context, Disambiguator
 from .models import EntityInstance, EntityCandidate, EntityMention
 from .ports import IndexTerm
-from .normalizer import normalize_text, normalize_name
+from .normalizer import normalize_text, normalize_name, qualified_security_code
 from .scope_builder import ScopeBuilder
+from .subjects import discussion_subjects
 from .registry.intents import classify_intents, preferred_entity_types
 from ..contracts import text, Invalid
 
@@ -18,7 +19,8 @@ def directory(query='', mention_texts=None):
     keywords=mention_texts or [query[:100] or '600519']
     rows={};sources=[];status='ok';expires=None
     for keyword in keywords:
-        probe=security_search.search(keyword)
+        qualified=qualified_security_code(keyword)
+        probe=security_search.search(qualified[0] if qualified else keyword)
         with security_search._lock:
             cached=list(security_search._catalog or [])
             loaded=security_search._loaded_at
@@ -73,7 +75,25 @@ def resolve(query, catalog=None, prior=(), mention_texts=None):
     mentions.sort(key=lambda m:m.start_offset)
     intents=classify_intents(query);context=Context([i.intent_code for i in intents],preferred_entity_types(intents),set())
     retriever=CandidateRetriever(repo);disambiguator=Disambiguator(repo)
-    mentions=[disambiguator.resolve(m,retriever.retrieve(m),context) for m in mentions]
+    resolved=[]
+    for m in mentions:
+        local=context
+        # 同一句显式区分公司和股票时，按提及后的类型词保留两个身份。
+        suffix=query[m.end_offset:m.end_offset+2]
+        if suffix in ('股票','证券'):
+            local=Context(['QUOTE_CHECK'],['ENTITY_01_01'],context.portfolio_members)
+        elif suffix=='公司':
+            local=Context([],['ENTITY_02_01'],context.portfolio_members)
+        resolved.append(disambiguator.resolve(m,retriever.retrieve(m),local))
+    mentions=resolved
+    # 单纯换名称/代码继续讨论时沿用本会话身份；明确公司/股票或新任务意图仍重新消歧。
+    if all(i.intent_code=='GENERAL_RESEARCH' for i in intents) and not any(word in query for word in ('公司','股票','证券')):
+        known={c['entity_id'] for c in prior}
+        for m in mentions:
+            matches=known & set(m.candidate_entity_ids)
+            if (m.resolution_reason or '').startswith('company_security_pair:') and len(matches)==1:
+                m.resolved_entity_id=next(iter(matches))
+                m.resolution_reason='company_security_pair:conversation_confirmation'
     mentions=[m.model_copy(update={'candidates':[],'candidate_entity_ids':[],'resolved_entity_id':None,'resolution_status':'unresolved','resolution_reason':'候选过多，请提供更完整名称'}) if len(m.candidates)>8 else m for m in mentions]
     # 代词只引用本会话有效的结构化确认；多个对象始终保持歧义。
     unique={c['entity_id']:c for c in prior}
@@ -83,7 +103,7 @@ def resolve(query, catalog=None, prior=(), mention_texts=None):
         if not candidates:continue
         mentions.append(EntityMention(mention_id='REF_'+str(match.start()),raw_text=match.group(),start_offset=match.start(),end_offset=match.end(),candidate_entity_ids=list(unique),candidates=candidates,resolution_status='resolved' if len(candidates)==1 else 'ambiguous',resolved_entity_id=next(iter(unique)) if len(candidates)==1 else None,confidence=1,resolution_reason='conversation_confirmation'))
     result=ScopeBuilder().build(request_id=str(uuid.uuid4()),raw_query=query,intents=intents,mentions=mentions,collections=[],tools=[],tool_warnings=[]).model_dump(mode='json')
-    result.update(mentions=[m.model_dump(mode='json') for m in mentions],provider_status=catalog['status'],source=catalog['source'],source_expires_at=catalog.get('expires_at'),requires_confirmation=True)
+    result.update(mentions=[m.model_dump(mode='json') for m in mentions],discussion_subjects=[s.model_dump(mode='json') for s in discussion_subjects(mentions,query)],confirmation_protocol='discussion_subjects_v1',provider_status=catalog['status'],source=catalog['source'],source_expires_at=catalog.get('expires_at'),requires_confirmation=True)
     result['candidates']=[c.model_dump(mode='json') for m in mentions for c in m.candidates]
     details={}
     for candidate in result['candidates']:

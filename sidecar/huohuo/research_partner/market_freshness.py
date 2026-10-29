@@ -18,10 +18,11 @@ def fresh_for_contact(document, scope, now, calendar=None):
         return age(document.get('data_as_of'),900) and age(document.get('observed_at'),900) and data.get('currency')=='CNY' and data.get('price_unit')=='CNY/share'
     if operation == 'market_brief':
         return age(document.get('observed_at'),300) and calendar is not None and validate_brief_basis(raw, scope['period'], calendar, now=at)['status']=='ok'
-    if raw.get('complete') is not True or raw.get('stale') is not False or raw.get('cache')=='stale': return False
     if operation == 'market_quote':
+        from .market_sources import quote_price_usable
         rows = data.get('items', [])
-        return len(rows)==1 and rows[0].get('time_known') is True and age(rows[0].get('as_of'),180) and all(rows[0].get('units',{}).get(k)==v for k,v in UNITS.items() if k in ('price','pct_change','volume_ratio','turnover','amount_yi'))
+        return quote_price_usable(raw, scope) and data == raw.get('data') and age(rows[0].get('as_of'),180)
+    if raw.get('complete') is not True or raw.get('stale') is not False or raw.get('cache')=='stale': return False
     if operation == 'market_technical':
         try:
             through = datetime.strptime(data['through'], '%Y-%m-%d').date()

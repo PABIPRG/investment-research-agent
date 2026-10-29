@@ -27,7 +27,9 @@ export function resultFromActivity(events: any[]): unknown {
     return { status: 'failed', error: '研究活动未完整结束：' + (end?.data?.reason?.kind ?? 'missing_terminal_event') }
   }
   const response = assistant.data.message.content.filter((block: any) => block.type === 'text').map((block: any) => block.text).join('')
-  try { return JSON.parse(response) } catch { return { status: 'failed', error: '模型输出不符合研究结果 JSON 契约' } }
+  // 仅接受整段为一个JSON代码块；不从混杂文字中搜索或修补JSON。
+  const fenced = /^\s*```(?:json)?[\t ]*\r?\n([\s\S]*?)\r?\n```\s*$/.exec(response)
+  try { return JSON.parse(fenced ? fenced[1] : response) } catch { return { status: 'failed', error: '模型输出不符合研究结果 JSON 契约' } }
 }
 
 // 仅映射已核对的 finish 事务提交前校验；未知错误不等于结果未提交。
@@ -74,7 +76,7 @@ export async function finishAttempt(config: Instance, job: any, result: unknown,
 }
 
 export async function runAttempt(config: Instance, job: any, signal: AbortSignal, observer?: RuntimeObserver): Promise<'completed' | 'uncertain'> {
-  if(job.position_rule===true)return runPositionAttempt(config,job,signal,observer)
+  if(job.position_rule===true || job.price_rule===true)return runPositionAttempt(config,job,signal,observer)
   const emit = (kind: string, data: Record<string, unknown> = {}) => {
     // 观察消费者故障不能改变任务执行或结果提交。
     try { observer?.({ ...data, kind, observed_at: new Date().toISOString(), execution_id: job.execution_id, attempt_id: job.attempt_id }) } catch { /* 观察为可选。 */ }

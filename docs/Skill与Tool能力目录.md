@@ -41,7 +41,7 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 | 结构化研究审查（2） | `review_research_decision`、`read_research_reviews` | 九视角研究与多空/风险审查方法接入 DSH；程序绑定当前已确认画像、事实版本、同会话主体证据并校准原建议。保留原始与有效建议和未知，不自动跟踪或交易 |
 | 单次研究任务（7） | `submit_quote_research`、`list_research`、`get_research`、`research_events`、`research_evidence`、`cancel_research`、`retry_research` | 提交、读取最近任务/详情/事件/证据、显式取消或重试；queued 不等于完成 |
 | 实体与委托（7） | `resolve_research_scope`、`search_securities`、`confirm_research_entities`、`create_mandate`、`list_mandates`、`get_mandate`、`manage_mandate` | 解析、候选搜索、保存真实选择、委托生命周期；确认对象不自动授予持续研究或通知许可 |
-| 投资事实/集合（5） | `read_investment_facts`、`preview_investment_change`、`commit_investment_change`、`read_investment_collection`、`bind_mandate_investment_collection` | 同一台账的查询、预览、真实确认保存与集合关联；版本冲突及提交未知不当成功 |
+| 投资事实/集合（5） | `read_investment_facts`、`preview_investment_change`、`commit_investment_change`、`read_investment_collection`、`bind_mandate_investment_collection` | 同一台账的查询、预览、真实确认保存与集合关联；read_investment_facts(include_account=true)与首页共用账户行情投影，含来源时间/空值/缺口；版本冲突及提交未知不当成功 |
 | 风险偏好（3） | `assess_risk_preference`、`parse_risk_preferences`、`preview_risk_adjustment` | 三题／八题、自然语言待核对答案、滑块调整和画像预算；程序计分并确认保存，原始推断与有效画像分别保留 |
 | 持仓风险（2） | `preview_position_risk_change`、`read_investment_risk` | 全局／单仓止盈止损、成本冻结、删除覆盖和重新布防；复用投资事实确认和正式委托执行，程序比较价格，不额外调用研究模型 |
 | 个性化（5） | `read_personalized_research`、`preview_personalization_change`、`commit_personalization_change`、`refresh_personalized_sources`、`record_personalized_interaction` | 同一实例卡片、策略匹配、本机反馈、开关／清除和偏好复盘；预览确认与回执核对，不修改风险偏好或联系授权 |
@@ -246,3 +246,18 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 成交名称由页面已选对象或聊天中明确的名称进入 `preview_investment_change`，在服务端预览与原生确认后随持仓、成交保存。外层投资事实适配名称元数据，原资金计算、成交请求指纹和数值快照不增加名称字段。旧代码录入保持兼容，不能用同一成交编号修改名称。
 
 `read_investment_facts` 与页面共享 `display_name`／`name_source` 投影。已记录名称优先；旧缺名股票可由现有 `security-search` 精确查询暖目录缓存，随后重新读取同一事实视图。目录信息只补展示，不写事实、快照、审计、outbox，不增加事实版本。过期、其他代码、占位文字和纯代码不能成为有效名称；目录不可用时保留待补充。名称读取不等待目录联网锁。查询只发送公开证券代码，不发送持仓数量、成本或账户数据。
+
+### 账户行情读模型（2026-10-29）
+
+首页账户与read_investment_facts(include_account=true)复用Investment只读账户投影、MarketData现有来源及缓存；不新增Tool、账户状态或独立调度器。固定GET /investment/account由DSH已认证桥转发；只向来源发送本地持仓/当日成交涉及的公开证券代码，不发送数量、成本、主体或交易明细。账户显式investment行情范围支持instrument识别的沪深股票与场内基金；默认研究市场查询仍为A股。最多20只，缺失/未知单位/时间/报价不会作为0参与合计。空本地记录显示0并注明尚未录入；不是券商空仓确认。旧报价金额带时间标为参考；日盈亏核对昨收、当日成交/费用及数量更正，无法对齐时保留未知；未录入分红税费不在口径内。
+
+### 确定性价格提醒（2026-10-29）
+
+`create_mandate` / `revise_mandate` 仍是聊天接入，页面和聊天共用正式联系规则及同一委托状态。market_quote 范围中已确认的纯价格数值条件（以及只含它们的 all/any）由程序在原 research_jobs → execution/attempt → evidence → contact_decisions → notification 链执行，不额外调用模型；语义条件、其他指标和研究仍使用既有 DSH Skill。价格和时间可核验而量比/换手率缺失时，价格可判断，其他指标保持未知。过期、错误身份、错误单位、撤销代次和失效租约不获得发送资格。
+
+`/worker/attempts/:id/price-run` 是有 worker 身份和 attempt 能力约束的内部执行入口，不是新增聊天Tool，也不接受客户端自定规则/对象。状态投影提供 execution_mode 和 requires_comparison_baseline；纯价格委托不要求比较基准。结果解析兼容整段单个JSON代码块，仍经过正式结构、执行和证据校验，不自动重试或重放历史失败。
+
+
+### 实体提及归并（2026-10-29）
+
+`resolve_research_scope` 继续持有解析入口，侧车按相同的已解析标准实体 ID 生成 `discussion_subjects`，原始 `mentions` 保留。`confirm_research_entities` 按讨论对象提问、保存单份回执；Scope 同步去重。同名、同代码或候选重叠不能直接合并；公司与证券仍是有关联的不同实体，不扩大回执 operations。新快照使用 `discussion_subjects_v1`，旧快照继续兼容原提及协议，不改写历史回执。无新增 Tool/Skill。

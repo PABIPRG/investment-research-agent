@@ -19,6 +19,7 @@ import { useCompanionDock } from './useCompanionDock.js'
 import { useQuiet } from './useQuiet.js'
 import { beginWelcomeTransition } from './welcome-transition.js'
 import { conversationActivity } from './companion-feedback.js'
+import { useQuestionShortcut } from './useQuestionShortcut.js'
 const View = createContext<'chat' | 'trajectory'>('chat')
 function NativeViews(props: ChatRuntime) {
   const view = useContext(View)
@@ -68,6 +69,7 @@ export function Conversation(props: ChatRuntime & Actions) {
   const [activity, setActivity] = useState<MandateView[]>([]),
     [loadError, setLoadError] = useState(false)
   const root = useRef<HTMLDivElement>(null)
+  useQuestionShortcut(root)
   const { failed } = useConversationFeedback(
     root,
     props.sessionId,
@@ -186,7 +188,7 @@ export function Conversation(props: ChatRuntime & Actions) {
             )}
           </div>
         </div>
-        {history && <History {...props} fromWelcome={blank} close={() => setHistory(false)} />}
+        {history && <History {...props} close={() => setHistory(false)} />}
       </section>
     </View.Provider>
   )

@@ -9,6 +9,7 @@ import {
   isHistoryTransition,
 } from './history-transition.js'
 import { finishWelcomeTransition, welcomeTransition } from './welcome-transition.js'
+import { historyFlight } from './history-flight.js'
 interface DockState {
   sessionId?: string
   blank: boolean
@@ -34,40 +35,15 @@ export function useCompanionDock(root: RefObject<HTMLDivElement>, state: DockSta
       !alreadyTransitioned(sessionId)
     )
       beginHistoryTransition(sessionId)
-    let historyWaiting = isHistoryTransition(sessionId) && !quiet && view === 'chat'
     if (isHistoryTransition(sessionId) && (quiet || view !== 'chat'))
       finishHistoryTransition(sessionId)
-    if (historyWaiting) {
-      const body = el.querySelector<HTMLElement>('[data-huohuo-chat-body]')
-      const origin = departure.current
-      if (body && origin && leavingWelcome) {
-        const rect = body.getBoundingClientRect()
-        for (const [key, value] of Object.entries({
-          left: origin.left - rect.left,
-          top: origin.top - rect.top,
-          width: origin.width,
-          height: origin.height,
-        }))
-          body.style.setProperty(`--hh-departure-${key}`, `${value}px`)
-      }
-      el.dataset.historyTransition = 'waiting'
-    }
-    let historyFrame = 0
-    let historyTimer = 0
+    const history = historyFlight(el, sessionId, departure.current)
     let welcomeFrame = 0
     let welcomeTimer = 0
     let returning = Boolean(blank && welcomeTransition() && !quiet && view === 'chat')
     if (returning) el.dataset.welcomeTransition = 'waiting'
     if (!blank && previous.current?.stage === 'welcome') finishWelcomeTransition()
     if (blank && (quiet || view !== 'chat')) finishWelcomeTransition()
-    const historyDeadline = historyWaiting
-      ? window.setTimeout(() => {
-          historyWaiting = false
-          finishHistoryTransition(sessionId)
-          delete el.dataset.historyTransition
-          el.dataset.companionPositioned = 'false'
-        }, 8000)
-      : 0
     const stage = blank ? 'welcome' : pending ? 'question' : 'response'
     const travel = Boolean(
       previous.current &&
@@ -77,15 +53,7 @@ export function useCompanionDock(root: RefObject<HTMLDivElement>, state: DockSta
     previous.current = { sessionId, stage }
     el.dataset.companionPositioned = 'false'
     el.dataset.companionTravel = String(Boolean(travel))
-    const turnFrame =
-      travel &&
-      !historyWaiting &&
-      !leavingWelcome &&
-      el.dataset.historyTransition !== 'moving' &&
-      !quiet &&
-      view === 'chat'
-        ? requestAnimationFrame(() => el.dispatchEvent(new Event('huohuo-companion-travel')))
-        : 0
+    // Reply/question changes only move the dock; welcome transitions handle their own turn.
     const travelTimer = setTimeout(() => {
       el.dataset.companionTravel = 'false'
     }, 520)
@@ -100,17 +68,12 @@ export function useCompanionDock(root: RefObject<HTMLDivElement>, state: DockSta
       if (!body || quiet || view !== 'chat') return
       const bodyRect = body.getBoundingClientRect()
       const arrival = el.querySelector<HTMLElement>('[data-huohuo-arrival]')
-      if (historyWaiting && (blank || !openState || openState === 'loading')) {
+      if (history.waiting && (blank || !openState || openState === 'loading')) {
         el.dataset.companionPositioned = 'true'
         return
       }
-      if (historyWaiting && openState === 'error') {
-        historyWaiting = false
-        finishHistoryTransition(sessionId)
-        clearTimeout(historyDeadline)
-        delete el.dataset.historyTransition
-      }
-      if (blank && arrival && !historyWaiting) {
+      if (history.waiting && openState === 'error') history.finish()
+      if (blank && arrival && !history.waiting) {
         resize.observe(arrival)
         const account = body.querySelector<HTMLElement>('[aria-label="我的账户"]')
         if (account) {
@@ -182,7 +145,7 @@ export function useCompanionDock(root: RefObject<HTMLDivElement>, state: DockSta
       const target = question ?? rows.find((node) => node.dataset.chatNodeKey === anchor?.key)
       if (!target) {
         el.dataset.companionPositioned =
-          historyWaiting || el.dataset.companionTarget ? 'true' : 'false'
+          history.active || el.dataset.companionTarget ? 'true' : 'false'
         return
       }
       const rect = (question?.querySelector('section') ?? target).getBoundingClientRect()
@@ -210,26 +173,13 @@ export function useCompanionDock(root: RefObject<HTMLDivElement>, state: DockSta
                 ? undefined
                 : composer.getBoundingClientRect().top - bodyRect.top,
           })
-      followReply(anchor?.turn, !pending && !historyWaiting && !el.dataset.historyTransition)
+      followReply(anchor?.turn, !pending && !history.active)
       set(body, '--hh-dock-left', point.left)
       set(body, '--hh-dock-top', point.top)
       el.dataset.companionTarget = question ? 'question' : anchor?.key
       el.dataset.companionPositioned = 'true'
       const model = el.querySelector<HTMLElement>('[data-companion-model]')?.dataset.companionModel
-      if (historyWaiting && !historyFrame && (model === 'ready' || model === 'failed')) {
-        historyFrame = requestAnimationFrame(() => {
-          historyFrame = requestAnimationFrame(() => {
-            historyWaiting = false
-            clearTimeout(historyDeadline)
-            finishHistoryTransition(sessionId)
-            el.dataset.historyTransition = 'moving'
-            el.dispatchEvent(new Event('huohuo-companion-travel'))
-            historyTimer = window.setTimeout(() => {
-              delete el.dataset.historyTransition
-            }, 620)
-          })
-        })
-      }
+      history.move(question ? 'question' : 'response', model)
     }
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update)
@@ -248,14 +198,10 @@ export function useCompanionDock(root: RefObject<HTMLDivElement>, state: DockSta
     update()
     return () => {
       cancelAnimationFrame(frame)
-      cancelAnimationFrame(turnFrame)
-      cancelAnimationFrame(historyFrame)
       cancelAnimationFrame(welcomeFrame)
-      clearTimeout(historyTimer)
+      history.stop()
       clearTimeout(welcomeTimer)
       if (el.dataset.welcomeTransition === 'moving') delete el.dataset.welcomeTransition
-      clearTimeout(historyDeadline)
-      if (el.dataset.historyTransition === 'moving') delete el.dataset.historyTransition
       clearTimeout(travelTimer)
       observer.disconnect()
       resize.disconnect()

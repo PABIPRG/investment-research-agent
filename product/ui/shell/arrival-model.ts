@@ -1,5 +1,14 @@
 import type { MandateView } from '../mandates/model.js'
 import { sourceReason } from '../mandates/model.js'
+export function canRetryBaseline(item: MandateView) {
+  return (
+    item.requires_comparison_baseline !== false &&
+    !item.baseline &&
+    item.mandate.status === 'tracking' &&
+    item.executions.some((e) => ['failed', 'interrupted'].includes(e.status)) &&
+    !item.executions.some((e) => ['running', 'queued'].includes(e.status))
+  )
+}
 export function arrivalStatus(item: MandateView) {
   if (item.mandate.status === 'pending_requirements')
     return {
@@ -31,7 +40,11 @@ export function arrivalStatus(item: MandateView) {
     return {
       priority: 1,
       title: '这次研究没有完成',
-      detail: '已有记录已保留，可以查看失败原因；没有自动追加研究。',
+      detail:
+        (item.executions[0].result?.error || '本次执行没有完成，请展开研究记录核对原因。') +
+        (item.executions.some((e) => e.status === 'succeeded')
+          ? ' 之前成功的结果与证据仍保留。'
+          : ' 已有记录与证据仍保留。'),
       action: '查看研究情况',
     }
   if (item.source_check && item.source_check.status !== 'ok')
@@ -41,6 +54,25 @@ export function arrivalStatus(item: MandateView) {
       detail: sourceReason(item.source_check.detail),
       action: '查看资料缺口',
     }
+  if (item.execution_mode === 'program_price') {
+    const condition = item.decisions?.[0]?.condition_result
+    return {
+      priority: condition === 'met' ? 1 : 4,
+      title:
+        condition === 'unmet'
+          ? '尚未到价，继续按约检查'
+          : condition === 'met'
+            ? '价格条件已满足'
+            : '价格条件等待核对',
+      detail:
+        condition === 'unmet'
+          ? '最近一次有效报价未满足价格条件；后续由程序继续比较，不需要建立研究基准。'
+          : condition === 'met'
+            ? '程序已按来源报价核对条件，提醒是否送达请查看联系记录。'
+            : '有效报价到达后由程序核对条件；资料缺失或过期时保持未知，不视为未到价。',
+      action: '查看价格依据与联系记录',
+    }
+  }
   if (item.decisions?.[0]?.condition_result === 'unknown')
     return {
       priority: 3,
