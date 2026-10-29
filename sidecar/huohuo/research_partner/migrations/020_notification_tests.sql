@@ -1,0 +1,2 @@
+CREATE TABLE notification_tests (test_id TEXT PRIMARY KEY, principal TEXT NOT NULL, session TEXT NOT NULL, request_key TEXT NOT NULL, fingerprint TEXT NOT NULL, channel TEXT NOT NULL, config_revision INTEGER NOT NULL, channel_revision INTEGER NOT NULL, target_summary TEXT NOT NULL, status TEXT NOT NULL, detail TEXT NOT NULL, created_at REAL NOT NULL, updated_at REAL NOT NULL, expires_at REAL NOT NULL, UNIQUE(principal,session,request_key));
+CREATE INDEX notification_tests_owner_time ON notification_tests(principal,created_at DESC);

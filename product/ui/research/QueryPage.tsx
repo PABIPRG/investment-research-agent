@@ -80,7 +80,7 @@ export function QueryPage({ goChat, switcher }: { goChat: () => void; switcher: 
             </tr>
           </thead>
           <tbody>
-            {!list.loading && !list.error && !rows.length && (
+            {list.data && !list.error && !rows.length && (
               <tr>
                 <td colSpan={5} className={business.empty}>
                   {filter === 'all' ? '还没有一次性研究记录。' : '当前筛选条件下没有研究记录。'}
@@ -122,7 +122,7 @@ export function QueryPage({ goChat, switcher }: { goChat: () => void; switcher: 
       )}
       {selected && (
         <DetailPanel title="一次性研究详情" close={back}>
-          <Detail key={selected} id={selected} refresh={refresh} back={back} names={names} />
+          <Detail key={selected} id={selected} refresh={refresh} names={names} />
         </DetailPanel>
       )}
     </main>

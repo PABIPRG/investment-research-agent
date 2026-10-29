@@ -39,7 +39,7 @@ class Strategies:
         if not record:raise Missing('策略不存在')
         return record
     def read(self,principal,sid=None,request_key=None):
-        with self.store.transaction(),runtime(self.clock):
+        with self.store.read_snapshot(),runtime(self.clock):
             docs=Documents(self.store,principal)
             records=[self.owned(docs,sid)] if sid is not None else list(docs.all('strategies').values())
             if request_key is not None:text(request_key,'请求标识',200)

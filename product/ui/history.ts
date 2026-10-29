@@ -1,3 +1,4 @@
+import type { ConversationProjection } from './activity/conversation-types.js'
 export interface ChatSummary {
   id: string
   title?: string
@@ -13,6 +14,7 @@ export interface ChatList {
   ids: string[]
   byId: Record<string, ChatSummary>
   phase: 'pending' | 'ready'
+  projectionsBySession?: Record<string, ConversationProjection>
 }
 /** Navigation is a projection of DSH-owned data, never a second conversation store. */
 export function historyRows(

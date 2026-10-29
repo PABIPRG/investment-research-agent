@@ -27,7 +27,9 @@ export function useMandates() {
         return undefined
       }
     }),
-    [refresh, setRefresh] = useState(0)
+    [refresh, setRefresh] = useState(0),
+    [loaded, setLoaded] = useState(false),
+    [trigger, setTrigger] = useState('all')
   const [loading, setLoading] = useState(true),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
@@ -55,6 +57,7 @@ export function useMandates() {
       .then((data) => {
         if (!controller.signal.aborted) {
           setItems(data.items)
+          setLoaded(true)
           setLoading(false)
         }
       })
@@ -155,6 +158,9 @@ export function useMandates() {
   }
   return {
     items,
+    loaded,
+    trigger,
+    setTrigger,
     selected,
     setSelected,
     refresh,

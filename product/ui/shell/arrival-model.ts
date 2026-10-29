@@ -1,3 +1,4 @@
+import { nextTrigger } from '../mandates/triggers.js'
 import type { MandateView } from '../mandates/model.js'
 import { sourceReason } from '../mandates/model.js'
 export function canRetryBaseline(item: MandateView) {
@@ -80,6 +81,31 @@ export function arrivalStatus(item: MandateView) {
       detail: '目前证据不足以判断变化；不需要你立即操作。',
       action: '查看依据与缺口',
     }
+  const mode = item.revision?.contact_policy?.mode
+  if (mode && ['due_reminder', 'scheduled_delivery', 'periodic_check'].includes(mode)) {
+    const pending = item.executions[0]?.status
+    if (pending === 'running' || pending === 'queued')
+      return {
+        priority: 4,
+        title: pending === 'running' ? '正在按约处理这项委托' : '已排队，等待按约处理',
+        detail:
+          pending === 'running'
+            ? '后台已领取任务，完成后可查看结果与联系记录。'
+            : '任务已保存，等待后台领取；还没有开始执行。',
+        action: '查看执行进展',
+      }
+    return {
+      priority: 4,
+      title:
+        mode === 'due_reminder'
+          ? '等待下一次约定提醒'
+          : mode === 'scheduled_delivery'
+            ? '已安排定时资料'
+            : '等待下一次定时检查',
+      detail: nextTrigger(item),
+      action: '查看跟进安排',
+    }
+  }
   if (!item.baseline)
     return {
       priority: 4,

@@ -1,0 +1,51 @@
+.root {
+  border-block: 1px solid var(--hh-line);
+  padding: 18px 0;
+  margin: 0 0 24px;
+}
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.heading h2 {
+  margin: 0;
+  font-size: 1.0714rem;
+}
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hh-line);
+}
+.item > div {
+  min-width: 0;
+}
+.item strong {
+  overflow-wrap: anywhere;
+}
+.item p {
+  overflow-wrap: anywhere;
+  margin: 6px 0 0;
+  font-size: 0.9286rem;
+  line-height: 1.6;
+}
+.item button {
+  flex: none;
+}
+.state {
+  margin-left: 12px;
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+}
+@media (max-width: 600px) {
+  .item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}

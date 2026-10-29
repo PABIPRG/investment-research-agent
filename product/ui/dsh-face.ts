@@ -64,7 +64,7 @@ export interface DshUiContext {
       options?: { agentPreset: string; prompt?: string; clearPreviousDraft?: boolean },
     ): void
   }
-  sessions: { refresh(): Promise<void> }
+  sessions: { refresh(): Promise<void>; refreshProjections(id: string): Promise<void> }
   connection: {
     state: { getSnapshot(): unknown; subscribe(fn: () => void): () => void }
     reconnect(): void

@@ -60,8 +60,24 @@ export function apply(ctx: DshUiContext): void {
     }
     ctx.slots.inject('main', () =>
       ctx.slots.register(
-        { name: 'main', key: 'huohuo-activity', label: '动态', inject: () => ({ visit }) },
-        ActivityPage,
+        {
+          name: 'main',
+          key: 'huohuo-activity',
+          label: '动态',
+          inject: () => ({
+            visit,
+            connectionState: ctx.connection.state,
+            openConversation: (id: string) => {
+              ctx.layout.selectPanel(null)
+              ctx.uiWorkspace.openSession(id)
+            },
+            refreshConversations: async (ids: string[]) => {
+              await ctx.sessions.refresh()
+              await Promise.all(ids.map((id) => ctx.sessions.refreshProjections(id)))
+            },
+          }),
+        },
+        ActivityPage as any,
       ),
     )
     ctx.slots.inject('main', () =>

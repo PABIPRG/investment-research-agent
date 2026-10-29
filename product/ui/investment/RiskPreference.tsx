@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toleranceLabel } from './risk-adjustment-model.js'
 import { date, type Facts } from './types.js'
 import { RiskEditor } from './RiskQuestionnaireEditor.js'
 import { RiskAdjustment } from './RiskAdjustment.js'
@@ -81,7 +82,7 @@ export function RiskPreference({ facts }: { facts: Facts }) {
                 </dl>
                 {r.manual_adjust && (
                   <p>
-                    风险承受度 {r.manual_adjust.risk_tolerance}，期限{' '}
+                    接受波动的意愿：{toleranceLabel(r.manual_adjust.risk_tolerance)}；资金期限{' '}
                     {r.manual_adjust.horizon_years} 年；原问卷分数保留。
                   </p>
                 )}

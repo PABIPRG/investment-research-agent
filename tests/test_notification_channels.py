@@ -73,6 +73,29 @@ class ChannelTests(unittest.TestCase):
             n.tick();n.tick();self.assertEqual(post.call_count,1)
         rows=n.list('alice');self.assertNotIn('synthetic-key-only',json.dumps(rows))
         self.assertEqual(next(r for r in rows['items'] if r['channel']=='wecom')['status'],'unknown')
+    def test_disabled_master_blocks_external_transport_without_changing_mandate(self):
+        m,q=self.queue_external();n=self.core.notifications
+        n.save('alice',self.settings(1)|{'enabled':False,'external':{}})
+        with patch('huohuo.notifications.push.wecom.requests.post') as post:
+            n.tick();n.tick();post.assert_not_called()
+        result=next(r for r in n.list('alice')['items'] if r['channel']=='wecom')
+        self.assertEqual(result['status'],'cancelled')
+        self.assertEqual(self.core.get('alice',m['mandate']['mandate_id'])['mandate']['status'],'tracking')
+
+    def test_external_quiet_hours_defer_then_send_once_without_new_research(self):
+        _,q=self.queue_external();n=self.core.notifications
+        n.save('alice',self.settings(1)|{'external':{},'quiet_hours':{'start':'00:00','end':'00:00'}})
+        with patch('huohuo.notifications.push.wecom.requests.post') as post:
+            post.return_value.json.return_value={'errcode':0};post.return_value.status_code=200
+            n.tick();post.assert_not_called()
+            self.assertEqual(next(r for r in n.list('alice')['items'] if r['channel']=='wecom')['status'],'deferred')
+            n.save('alice',self.settings(2)|{'external':{}})
+            self.core.store._connect().execute('UPDATE notification_queue SET eligible_at=0')
+            before=self.core.store._connect().execute('SELECT COUNT(*) FROM research_jobs').fetchone()[0]
+            n.tick();n.tick();self.assertEqual(post.call_count,1)
+            self.assertEqual(self.core.store._connect().execute('SELECT COUNT(*) FROM research_jobs').fetchone()[0],before)
+        self.assertEqual(next(r for r in n.list('alice')['items'] if r['channel']=='wecom')['status'],'accepted')
+
     def test_reused_serverchan_and_email_transports(self):
         from huohuo.notifications.channels import build_adapter
         with patch('huohuo.notifications.push.serverchan.requests.post') as post:

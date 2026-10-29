@@ -1,3 +1,4 @@
+import { matchesTrigger, nextTrigger, mandateHooks } from './triggers.js'
 import { mandateName } from '../business-model.js'
 import business from '../Business.module.css'
 import { channelLabels } from '../notifications/model.js'
@@ -5,13 +6,15 @@ import { sourceReason, statuses } from './model.js'
 import type { MandateController } from './useMandates.js'
 export function MandateTable({ model }: { model: MandateController }) {
   const { items, filter, loading, error, setSelected } = model
-  const rows = items.filter((x) => filter === 'all' || x.mandate.status === filter)
+  const rows = items.filter(
+    (x) => (filter === 'all' || x.mandate.status === filter) && matchesTrigger(x, model.trigger),
+  )
   return (
     <div className={business.tableWrap}>
       <table className={business.table}>
         <thead>
           <tr>
-            {['对象 / 目标', '当前状态', '已完成 / 缺口', '下一次触发', '联系约定', '操作'].map(
+            {['对象 / 目标', '当前状态', '已完成 / 缺口', '下一次跟进', '联系约定', '操作'].map(
               (label) => (
                 <th key={label}>{label}</th>
               ),
@@ -19,10 +22,12 @@ export function MandateTable({ model }: { model: MandateController }) {
           </tr>
         </thead>
         <tbody>
-          {!loading && !error && !rows.length && (
+          {(!loading || model.loaded) && !error && !rows.length && (
             <tr>
               <td colSpan={6} className={business.empty}>
-                {items.length ? '当前筛选没有委托，请切换“全部”。' : '尚无已确认的持续研究委托。'}
+                {items.length
+                  ? '当前筛选没有委托，请调整状态或跟进方式。'
+                  : '尚无已确认的持续研究委托。'}
               </td>
             </tr>
           )}
@@ -57,13 +62,12 @@ export function MandateTable({ model }: { model: MandateController }) {
                 </small>
               </td>
               <td>
-                {x.mandate.status === 'paused'
-                  ? '恢复委托后再跟进'
-                  : x.mandate.status === 'ended'
-                    ? '已结束'
-                    : x.monitoring?.enabled
-                      ? x.monitoring.detail.split('；')[0]
-                      : '持续资料发现尚未接入'}
+                {nextTrigger(x)}
+                <small>
+                  {mandateHooks(x)
+                    .map((h) => h.label)
+                    .join('、')}
+                </small>
               </td>
               <td>
                 {x.revision.basis.contact_note || '未补充约定'}

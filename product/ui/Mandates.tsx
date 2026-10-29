@@ -1,6 +1,8 @@
 import page from './shared/Page.module.css'
 import business from './Business.module.css'
 import { MandateDetail } from './mandates/MandateDetail.js'
+import { ReadStatus } from './shared/ReadStatus.js'
+import { TriggerFilter } from './mandates/TriggerFilter.js'
 import { MandateTable } from './mandates/MandateTable.js'
 import { useMandates } from './mandates/useMandates.js'
 import type { ReactNode } from 'react'
@@ -31,7 +33,7 @@ export function MandatesPage({ switcher }: { goChat: () => void; switcher: React
           {error} {items.length ? '当前内容可能过期。' : ''}
         </p>
       )}
-      {loading && <p role="status">{items.length ? '正在刷新，保留上次内容…' : '正在读取委托…'}</p>}
+      <ReadStatus loading={loading} hasData={model.loaded} label="正在读取委托…" />
       <div className={business.tabs}>
         {Object.entries({ all: '全部', tracking: '跟进中', paused: '已暂停', ended: '已结束' }).map(
           ([value, label]) => (
@@ -41,6 +43,7 @@ export function MandatesPage({ switcher }: { goChat: () => void; switcher: React
           ),
         )}
       </div>
+      <TriggerFilter model={model} />
       <MandateTable model={model} />
       {model.current && <MandateDetail key={model.current.mandate.mandate_id} model={model} />}
     </main>

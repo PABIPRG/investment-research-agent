@@ -33,7 +33,7 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 
 聊天 Skill 从 `product/skills/chat/` 加载，允许名单在 `product/chat/policy.ts`；guard 校验名称与参数，默认 home/cwd 扫描关闭。后台 Skill 由 `product/tools/index.ts` 注册。后台的名称保留了报价历史命名，具体范围以可信 operation 为准。
 
-## 3. 当前 Tool：聊天 109 个，后台另有 1 个
+## 3. 当前 Tool：聊天 112 个，后台另有 1 个
 
 聊天组成：63 个资料研究工具、2 个结构化研究审查工具，其余为任务、实体/委托、投资事实/集合/偏好、持仓风险、个性化、通知、页面、策略、产业链、导入和原生交互。总数由注册源检查，不能当作全部通过真实数据验收的数量。
 
@@ -50,7 +50,7 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 | 市场资料（1） | `query_market` | 行情、扫描、日线技术指标、新闻、盘前/盘后资料包；news/brief 可显式 include_slow 扩展全市场来源，逐源报告失败；只读结果留存证据，不自动创建监控 |
 | `manage_industry_chain` | 管理实例产业链资料与研报增量 | 状态只读；下载、刷新、删除与增量需原生确认；增量绑定本会话证据 |
 | 策略业务（2） | `read_strategy_records`、`manage_strategy` | 保存、回测、影子、预案和确认应用；原生确认、版本及幂等由程序验证 |
-| 通知（4） | `read_notification_settings`、`list_notification_deliveries`、`update_notification_preferences`、`clear_notification_channel` | 脱敏查询及原生确认修改；不接收密钥或任意接收目标，不发送测试消息 |
+| 通知（7） | `read_notification_settings`、`list_notification_deliveries`、`update_notification_preferences`、`clear_notification_channel`、`prepare_notification_test`、`send_notification_test`、`read_notification_tests` | 脱敏查询及原生确认修改；显式确认后向已配置渠道发送单条测试并保存回执，测试忽略静默但保留总开关/渠道/版本校验，不接收密钥或任意接收目标 |
 | 页面入口（1） | `open_product_view` | 返回对话、委托、投资、提醒、动态、策略的受控链接，可定位所属委托；设置返回原生菜单路径，当前平台没有公开打开 API |
 | 原生交互（2） | `ask_user_question`、`skill` | 问答与加载包内 Skill；Skill 加载不产生业务授权 |
 | 研究成果交付（2） | `create_research_file`、`read_research_file` | CSV、JSON、基础 XLSX；本会话证据投影或模型整理，配套来源说明；只生成受控副本并通过 DSH 卡片下载，不开放任意文件或公式；安装/真实模型验证状态见成果交付记录 |
@@ -263,3 +263,19 @@ Skill 负责方法、澄清和解释；Tool 提供受控查询与业务命令；
 ### 实体提及归并（2026-10-29）
 
 `resolve_research_scope` 继续持有解析入口，侧车按相同的已解析标准实体 ID 生成 `discussion_subjects`，原始 `mentions` 保留。`confirm_research_entities` 按讨论对象提问、保存单份回执；Scope 同步去重。同名、同代码或候选重叠不能直接合并；公司与证券仍是有关联的不同实体，不扩大回执 operations。新快照使用 `discussion_subjects_v1`，旧快照继续兼容原提及协议，不改写历史回执。无新增 Tool/Skill。
+
+## 2026-10-29 委托确认与刷新补充
+
+委托对象确认与最终保存授权继续分开。Agent复用本会话仍有效的对象回执，定义已清楚时直接调用create_mandate，不在工具原生保存确认之前重复询问“是否保存”。同一会话/调用身份的并发重入只执行一次，成功回执或提交未知不会自动重问重发；不同目标、时间、阈值、渠道或调用身份不能据此绕过确认。Skill修正了新建规则固定notable_change及所有委托必须比较基准的过时描述。
+
+页面的跟进方式筛选与中文条件说明只组合已有委托dependencies/schedules投影，无业务写入，聊天仍可用list_mandates/get_mandate读取同源定义。动态新增“火火在跟进什么”，复用同一委托执行记录、跟进安排与来源状态，按30秒刷新；不创建任务，不把等待安排解释为正在执行或服务在线，对话与子任务另复用DSH会话列表、父目录和运行/确认状态；不把普通fork视为子任务，不新增分派权限。当前火火工具允许名单仍禁止subagent，展示已有记录不代表开放分派能力。通知新增两项拦截传输的自动测试，本轮后续已接入页面与聊天的单条测试提醒（见下节）。完整边界及本地UAT见[委托刷新与提醒测试](设计基线/V1.4-委托刷新与提醒测试.md)。
+
+### 单条测试提醒（2026-10-29，用户确认忽略静默）
+
+| 页面动作 | 领域服务 | 聊天入口 | 边界 |
+|---|---|---|---|
+| 核对渠道与目标 | Notifications.tests.prepare；POST /notifications/tests/prepare | prepare_notification_test | 持久准备回执，5分钟有效；不发送，不接受凭据/新目标 |
+| 确认发送单条固定测试消息 | Notifications.tests.send；POST /notifications/tests/send | send_notification_test，原生确认 | UI与聊天同服务；只忽略静默，仍校验总开关、启用渠道、配置版本；同一请求只发一次 |
+| 核对最近20条测试回执 | Notifications.tests.list/inspect | read_notification_tests | 与正式联系分开；in_flight/unknown不自动重发，accepted不等于送达或已读 |
+
+新增020_notification_tests为独立测试回执表，不制造委托/研究/联系决定。既有实例升级沿用迁移备份；回退保留表与回执，不重放未知发送。真实外发仍须用户针对渠道与目标明确确认，自动测试使用拦截传输。

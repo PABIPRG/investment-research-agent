@@ -113,7 +113,11 @@ export function apply(ctx: Context): void {
   for (const path of notificationPaths)
     ctx.connection.fetch.register({
       path,
-      methods: path.endsWith('-config') ? ['GET', 'POST'] : ['GET'],
+      methods: path.endsWith('-config')
+        ? ['GET', 'POST']
+        : path.endsWith('-command')
+          ? ['POST']
+          : ['GET'],
       requestBody: 'buffered',
       fetch: notifications,
     })

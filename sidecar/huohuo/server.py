@@ -218,6 +218,17 @@ class Handler(BaseHTTPRequestHandler):
                     if self.command=="GET":return self.reply(200,service.config(config["principal"]))
                     if self.command=="POST":return self.reply(200,service.save(config["principal"],self.body()))
                 if parts==["notifications"] and self.command=="GET":return self.reply(200,service.list(config["principal"]))
+                if parts==["notifications","tests"] and self.command=="GET":return self.reply(200,service.tests.list(config["principal"]))
+                if len(parts)==3 and parts[:2]==["notifications","tests"] and self.command=="POST":
+                    action=parts[2];body=self.body()
+                    if action in {"prepare","send","inspect","cancel"}:
+                        if not isinstance(body,dict) or 'session_id' not in body:raise Invalid('缺少会话绑定')
+                        session=body.pop('session_id')
+                        if action in {'inspect','cancel'}:
+                            fields(body,('test_id',))
+                            result=getattr(service.tests,action)(config['principal'],session,body['test_id'])
+                        else:result=getattr(service.tests,action)(config['principal'],session,body)
+                        return self.reply(200,result)
             elif parts[0] == "mandates":
                 self.authorized("user")
                 core, principal = self.server.mandates, config["principal"]

@@ -7,7 +7,7 @@ import {
 } from './model.js'
 const key = 'huohuo.activity-seen.v1'
 const listeners = new Set<() => void>()
-let snapshot = { items: [] as ActivityRecord[], count: 0, loading: true, error: '' }
+let snapshot = { items: [] as ActivityRecord[], count: 0, loaded: false, loading: true, error: '' }
 let seen: SeenActivity = {}
 let pending: Promise<void> | undefined
 let timer: ReturnType<typeof setInterval> | undefined
@@ -33,7 +33,7 @@ export function refreshActivity(): Promise<void> {
       if (!response.ok) throw Error('动态暂时无法读取，请重试。')
       const data = await response.json()
       if (!Array.isArray(data.items)) throw Error('动态记录格式暂不可用。')
-      snapshot = { ...snapshot, items: data.items, error: '' }
+      snapshot = { ...snapshot, items: data.items, loaded: true, error: '' }
     })
     .catch((error) => {
       snapshot = { ...snapshot, error: error.message }

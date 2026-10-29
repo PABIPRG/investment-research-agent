@@ -1,4 +1,5 @@
 import controls from './shared/Controls.module.css'
+import { ReadStatus } from './shared/ReadStatus.js'
 import page from './shared/Page.module.css'
 import { useEffect, useRef, useState } from 'react'
 import business from './Business.module.css'
@@ -100,7 +101,7 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
           )}
         </div>
       </header>
-      {loading && <p role="status">{facts ? '正在刷新，保留上次记录…' : '正在读取…'}</p>}
+      <ReadStatus loading={loading} hasData={facts !== undefined} />
       {error && (
         <p role="alert">
           {error} {facts ? '当前内容可能过期。' : ''}
