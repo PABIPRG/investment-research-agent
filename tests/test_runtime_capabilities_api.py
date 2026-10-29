@@ -46,7 +46,7 @@ class RuntimeCapabilitiesApiTests(unittest.TestCase):
     def test_calendar_outage_does_not_block_discovery_and_claim(self):
         self.service.calendar.refresh=lambda: (_ for _ in ()).throw(RuntimeError('calendar down'))
         self.assertEqual(self.call('/worker/discover',{},'worker'),(200,{'checked':False,'calendar':'unavailable'}))
-        self.assertEqual(self.call('/worker/claim',{'worker_id':'fixture'},'worker'),(200,None))
+        self.assertEqual(self.call('/worker/claim',{'worker_id':'fixture','admission_policy':'hook-model-gate-v1'},'worker'),(200,None))
 
     def test_research_tool_reuses_instance_chain_and_keeps_session_evidence(self):
         core=self.service.mandates

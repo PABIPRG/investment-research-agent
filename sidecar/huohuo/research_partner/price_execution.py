@@ -3,6 +3,7 @@ import json
 import math
 from ..contracts import Invalid
 from .market_sources import collect_market
+from .market_freshness import fresh_for_contact
 
 
 def eligible(revision):
@@ -44,13 +45,26 @@ def run(server, attempt, token, loader=None):
     job = repo.active(attempt, token)
     if not binding(core, job['execution_id'], server.config['principal']):
         raise Invalid('本次执行不是已确认的纯价格条件委托')
+    from .model_admission import admit
+    decision = admit(server, attempt, token, 'prepare')
+    if decision['mode'] != 'program':
+        raise Invalid(decision['detail'])
     document = core.bound_source(job['execution_id'])
     if document is None:
-        document = loader(job['scope']) if loader else collect_market(job['scope'], server.market, server.calendar)
-    evidence = repo.save_evidence(attempt, token, document)
-    repo.runtime_receipt(attempt, token, {'session_id': 'program:price-condition-v1', 'message_id': 'calculation:'+attempt})
-    if document.get('status') != 'ok':
+        try:
+            document = loader(job['scope']) if loader else collect_market(job['scope'], server.market, server.calendar)
+        except Exception:
+            return repo.finish(attempt, token, {'status': 'failed', 'error': '价格条件来源失败；未回退到模型研究。'})
+    if (not isinstance(document, dict) or document.get('scope') != job['scope']
+            or document.get('status') != 'ok'
+            or not fresh_for_contact(document, job['scope'], repo.clock(), server.calendar)):
         return repo.finish(attempt, token, {'status': 'failed', 'error': '价格条件暂不能核对：所需报价缺失、已过期或来源无法核验；保留未知，不视为未到价。'})
+    evidence = repo.save_evidence(attempt, token, document)
+    # 保留既有价格执行器，但采集后同样核验暂停、改约及来源替代。
+    decision = admit(server, attempt, token, 'prepare')
+    if decision['mode'] != 'program':
+        raise Invalid(decision['detail'])
+    repo.runtime_receipt(attempt, token, {'session_id': 'program:price-condition-v1', 'message_id': 'calculation:'+attempt})
     row = document['values']['items'][0]
     # 条件结果与发送资格仍由receive_results/ContactDecisionService按正式规则计算。
     return repo.finish(attempt, token, {'status': 'succeeded', 'execution_id': job['execution_id'], 'scope': job['scope'],

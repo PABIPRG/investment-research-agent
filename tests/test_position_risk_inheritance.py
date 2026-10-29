@@ -12,7 +12,7 @@ class PositionRiskInheritanceTest(unittest.TestCase):
         from zoneinfo import ZoneInfo
         from huohuo.market.service import MarketData
         from huohuo.market.contracts import envelope,UNITS
-        from huohuo.position_risk.execution import run
+        from huohuo.research_partner.model_admission import run_program as run
         self.t=datetime(2026,10,28,11,0,tzinfo=ZoneInfo('Asia/Shanghai')).timestamp()
         self.repo.clock=lambda:self.t
         self.price=12

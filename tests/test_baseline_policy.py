@@ -65,9 +65,10 @@ class BaselineRecoveryIntegrationTests(unittest.TestCase):
                                         'confirmation_id': self.cid, 'contact_rule': rule})
         self.core.tick()
         baseline = self.repo.claim('baseline-fixture')
-        self.assertIsNotNone(baseline)
-        self.repo.finish(baseline['attempt_id'], baseline['lease_token'],
-                         {'status': 'failed', 'error': 'outside_brief_window：首次资料不在约定时段或暂缺'})
+        # 新的纯日程不再创建无必要的初始研究；需要基准的规则仍验证失败恢复。
+        if baseline is not None:
+            self.repo.finish(baseline['attempt_id'], baseline['lease_token'],
+                             {'status': 'failed', 'error': 'outside_brief_window：首次资料不在约定时段或暂缺'})
         self.core.tick()
         mid = view['mandate']['mandate_id']
         self.assertFalse(self.core.get('alice', mid)['baseline'])
