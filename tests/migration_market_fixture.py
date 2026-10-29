@@ -17,6 +17,8 @@ class MigrationMarket:
     def query(self, request):
         now = datetime.now(timezone.utc).isoformat()
         control = json.loads(self.control_file.read_text()) if self.control_file.exists() else {'price': 90}
+        if request.get('asset_scope')=='investment' and control.get('account_unavailable'):
+            return envelope('明确合成行情失败',{},status='unavailable',complete=False,warnings=['合成失败：行情不可用'])
         if request['operation'] == 'news':
             news = control.get('news', self.news_default)
             return envelope('明确合成新闻', {'items': [{'id': news['id'], 'title': '合成材料需求变化',

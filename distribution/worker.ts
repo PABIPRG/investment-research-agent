@@ -7,7 +7,10 @@ import { type Instance, InstanceApiError, profileName, request } from './instanc
 import { activityObservation, type RuntimeObserver } from './observation.js'
 import { strategyLoop } from './strategy-worker.js'
 import { boundedManifest } from '../product/tools/bounded-operations.js'
-import {runPositionAttempt} from './position-worker.js'
+import { admissionPolicy, modelAdmission, rejectModel } from './model-admission.js'
+import { runPositionAttempt } from './position-worker.js'
+
+export type RuntimeFactory = (options: ConstructorParameters<typeof HarnessClient>[0]) => HarnessClient
 
 export function runtimeEnvironment(config: Instance): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {}
@@ -27,7 +30,9 @@ export function resultFromActivity(events: any[]): unknown {
     return { status: 'failed', error: '研究活动未完整结束：' + (end?.data?.reason?.kind ?? 'missing_terminal_event') }
   }
   const response = assistant.data.message.content.filter((block: any) => block.type === 'text').map((block: any) => block.text).join('')
-  try { return JSON.parse(response) } catch { return { status: 'failed', error: '模型输出不符合研究结果 JSON 契约' } }
+  // 仅接受整段为一个JSON代码块；不从混杂文字中搜索或修补JSON。
+  const fenced = /^\s*```(?:json)?[\t ]*\r?\n([\s\S]*?)\r?\n```\s*$/.exec(response)
+  try { return JSON.parse(fenced ? fenced[1] : response) } catch { return { status: 'failed', error: '模型输出不符合研究结果 JSON 契约' } }
 }
 
 // 仅映射已核对的 finish 事务提交前校验；未知错误不等于结果未提交。
@@ -73,8 +78,18 @@ export async function finishAttempt(config: Instance, job: any, result: unknown,
   }
 }
 
-export async function runAttempt(config: Instance, job: any, signal: AbortSignal, observer?: RuntimeObserver): Promise<'completed' | 'uncertain'> {
-  if(job.position_rule===true)return runPositionAttempt(config,job,signal,observer)
+export async function runAttempt(config: Instance, job: any, signal: AbortSignal, observer?: RuntimeObserver,
+  createClient: RuntimeFactory = options => new HarnessClient(options)): Promise<'completed' | 'uncertain'> {
+  if (signal.aborted) return 'uncertain'
+  const admission = await modelAdmission(config, job, 'prepare')
+  if (admission.mode === 'program') {
+    return runPositionAttempt(config, job, signal, observer, { path: 'program-run',
+      observation: admission.reason === 'position_rule' ? 'program.position-rule' : job.price_rule ? 'program.price-rule' : 'program.numeric-condition' })
+  }
+  if (admission.mode !== 'model') {
+    await rejectModel(config, job, admission)
+    return 'completed'
+  }
   const emit = (kind: string, data: Record<string, unknown> = {}) => {
     // 观察消费者故障不能改变任务执行或结果提交。
     try { observer?.({ ...data, kind, observed_at: new Date().toISOString(), execution_id: job.execution_id, attempt_id: job.attempt_id }) } catch { /* 观察为可选。 */ }
@@ -83,7 +98,7 @@ export async function runAttempt(config: Instance, job: any, signal: AbortSignal
   const runDir = join(dirname(config.database), 'runs', job.attempt_id)
   await mkdir(runDir, { recursive: true, mode: 0o700 })
   const ackPath = join(runDir, 'assembly.json')
-  const client = new HarnessClient({ profile: profileName, dshHome: config.dsh_home, processCwd: config.workspace,
+  const client = createClient({ profile: profileName, dshHome: config.dsh_home, processCwd: config.workspace,
     initializeTimeoutMs: 30_000, requestTimeoutMs: 30_000,
     env: { ...runtimeEnvironment(config), HUOHUO_TOOL_API: `http://127.0.0.1:${config.port}`,
       HUOHUO_ATTEMPT_ID: job.attempt_id, HUOHUO_ATTEMPT_TOKEN: job.lease_token,
@@ -116,6 +131,12 @@ export async function runAttempt(config: Instance, job: any, signal: AbortSignal
         || JSON.stringify(ack.tools) !== '["read_security_snapshot"]' || !ack.skill_sha256
         || ack.runtime?.profile?.name !== profileName) throw new Error('required bundle not loaded')
     emit('runtime.initialized', { runtime: ack.runtime, server: initialized.serverInfo, tools: ack.tools, skill_sha256: ack.skill_sha256 })
+    const submission = await modelAdmission(config, job, 'submit')
+    if (submission.mode !== 'model') {
+      await rejectModel(config, job, submission)
+      return 'completed'
+    }
+    if (signal.aborted || stopped.signal.aborted) return 'uncertain'
     submitting = true
     const messageId = await client.prompt(sessionId, [{ type: 'text', text: job.question + (job.investment_facts ? '\n本次只读投资事实快照（不扩大已确认研究证券范围）：' + JSON.stringify(job.investment_facts) : '') }])
     enqueued = true
@@ -178,7 +199,7 @@ export async function workerLoop(config: Instance, signal: AbortSignal, observer
       await request(config, '/worker/recover', {}, 'worker', undefined, stop.signal)
       try { await request(config, '/worker/discover', {}, 'worker', undefined, stop.signal) }
       catch { if (stop.signal.aborted) break /* 来源失败不会阻塞已有研究领取。 */ }
-      const job = await request(config, '/worker/claim', { worker_id: workerId }, 'worker', undefined, stop.signal)
+      const job = await request(config, '/worker/claim', { worker_id: workerId, admission_policy: admissionPolicy }, 'worker', undefined, stop.signal)
       if (job) await runAttempt(config, job, stop.signal, observer)
       else await delay(500, undefined, { signal: stop.signal }).catch(() => {})
       } catch {

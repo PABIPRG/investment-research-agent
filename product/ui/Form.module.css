@@ -216,3 +216,11 @@
   flex-direction: column;
   gap: 16px;
 }
+
+.grid > .group + .group {
+  border-top: 0;
+  padding-top: 0;
+}
+.grid > label {
+  justify-content: space-between;
+}

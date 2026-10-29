@@ -21,6 +21,7 @@ from .models import (
     ScopeEntity,
 )
 from .registry.intents import INTENT_REGISTRY
+from .subjects import discussion_subjects
 
 _SUBJECT_TYPES = {"ENTITY_01_01", "ENTITY_02_01"}
 _THEME_TYPES = {
@@ -107,7 +108,12 @@ class ScopeBuilder:
 
         subject_order = 0
         comparison = "COMPANY_COMPARISON" in intent_codes
-        for mention in entity_mentions:
+        by_mention = {m.mention_id: m for m in entity_mentions}
+        subjects = discussion_subjects(entity_mentions, raw_query)
+        for subject in subjects:
+            mention = by_mention[subject.mention_ids[0]]
+            if subject.merge_reason == "name_code_conflict":
+                mention = mention.model_copy(update={"resolved_entity_id": None, "resolution_status": "ambiguous", "candidates": subject.candidates})
             role = self._role_for(mention, subject_order, comparison)
             if role in ("primary_subject", "comparison_target"):
                 subject_order += 1
@@ -139,6 +145,8 @@ class ScopeBuilder:
             scope_entities.append(
                 ScopeEntity(
                     mention_id=mention.mention_id,
+                    subject_id=subject.subject_id,
+                    mention_ids=subject.mention_ids,
                     entity_id=entity_id,
                     entity_type_code=type_code,
                     raw_text=mention.raw_text,
@@ -160,11 +168,7 @@ class ScopeBuilder:
         if any(source and "universe_json" in source for source in sources.values()):
             warnings.append("部分实体来自未核验的本地证券名称表，标准名称与关系尚未核验。")
 
-        blockers = [
-            item
-            for item in entity_mentions
-            if item.resolution_status != "resolved"
-        ]
+        blockers = [item for item in subjects if item.resolution_status != "resolved"]
         unauthorized_collections = [
             item
             for item in dynamic_mentions

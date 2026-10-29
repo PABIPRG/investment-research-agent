@@ -15,7 +15,7 @@ export function businessApi(address: string, token: string) {
   if(base.protocol!=='http:'||base.hostname!=='127.0.0.1'||!base.port||base.pathname!=='/'||base.username||base.password||base.search||base.hash||!token)throw new Error('业务 API 配置无效')
   return async(path:string,exec:ToolRunContext,body?:unknown):Promise<any>=>{
     try {
-      const r=await fetch(new URL(path,base),{method:body===undefined?'GET':'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),redirect:'error',signal:AbortSignal.any([exec.signal,AbortSignal.timeout(15000)])})
+      const r=await fetch(new URL(path,base),{method:body===undefined?'GET':'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),redirect:'error',signal:AbortSignal.any([exec.signal,AbortSignal.timeout(path==='/investment/account'?25000:15000)])})
       const data=await r.json() as any
       if(!r.ok)throw Object.assign(new Error(data.detail||'业务操作失败'),{http_status:r.status})
       return data

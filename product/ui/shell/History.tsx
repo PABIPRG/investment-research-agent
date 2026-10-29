@@ -3,10 +3,8 @@ import type { ChatRuntime } from '../dsh-face.js'
 import { historyRows } from '../history.js'
 import css from './History.module.css'
 import type { Actions } from './types.js'
-import { beginHistoryTransition } from './history-transition.js'
-export function History(
-  props: ChatRuntime & Actions & { close: () => void; fromWelcome: boolean },
-) {
+import { beginHistoryTransition, captureCompanionOrigin } from './history-transition.js'
+export function History(props: ChatRuntime & Actions & { close: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null),
     list = props.useSessions((s) => s),
     workspaces = props.useWorkspaces((s) => s),
@@ -55,7 +53,14 @@ export function History(
                 <button
                   aria-current={selected === row.id ? 'page' : undefined}
                   onClick={() => {
-                    if (props.fromWelcome && row.id !== selected) beginHistoryTransition(row.id)
+                    if (row.id !== selected)
+                      beginHistoryTransition(
+                        row.id,
+                        captureCompanionOrigin(
+                          dialog.current?.closest<HTMLElement>('[data-huohuo-conversation]') ??
+                            null,
+                        ),
+                      )
                     props.openHistory(row.id)
                     props.close()
                   }}

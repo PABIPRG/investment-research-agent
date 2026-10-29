@@ -173,6 +173,7 @@ class Handler(BaseHTTPRequestHandler):
             elif parts[0] == "investment":
                 self.authorized("user")
                 inv, principal = self.server.investment, config["principal"]
+                if self.command == "GET" and parts == ["investment","account"]: return self.reply(200,inv.account(principal,self.server.market))
                 if self.command == "GET" and parts == ["investment"]: return self.reply(200, inv.read(principal))
                 if self.command == "GET" and len(parts)==3 and parts[1]=="previews": return self.reply(200,inv.inspect_preview(principal,parts[2]))
                 if self.command == "POST":
@@ -244,7 +245,7 @@ class Handler(BaseHTTPRequestHandler):
                     body = self.body()
                     if parts == ["executions"]:
                         fields(body, ("request_key", "scope", "question"))
-                        return self.reply(201, repo.create(principal, body["request_key"], body["scope"], body["question"]))
+                        return self.reply(201, repo.request_research(principal, body["request_key"], body["scope"], body["question"]))
                     if len(parts) == 3 and parts[2] in ("cancel", "retry"):
                         fields(body, ("request_key", "expected_revision"))
                         return self.reply(200, repo.command(principal, parts[1], parts[2], body["request_key"], body["expected_revision"]))
@@ -261,7 +262,10 @@ class Handler(BaseHTTPRequestHandler):
                             calendar_state = 'unavailable'
                         return self.reply(200,dict(self.server.mandates.sources.discover(), calendar=calendar_state))
                     if parts == ["worker", "claim"]:
-                        fields(body, ("worker_id","lane") if 'lane' in body else ("worker_id",))
+                        from .research_partner.model_admission import POLICY
+                        fields(body, ("worker_id", "admission_policy", "lane") if 'lane' in body else ("worker_id", "admission_policy"))
+                        if body['admission_policy'] != POLICY:
+                            raise Invalid('worker 模型准入协议不兼容；请成组更新 worker 与侧车')
                         lane=body.get('lane','research')
                         if lane == 'strategy':
                             return self.reply(200,self.server.strategies.tasks.claim(config['principal'],body['worker_id']))
@@ -271,6 +275,9 @@ class Handler(BaseHTTPRequestHandler):
                         if job:
                             bound=self.server.mandates.store._connect().execute('SELECT mandate_id FROM execution_jobs WHERE execution_id=?',(job['execution_id'],)).fetchone()
                             if bound and self.server.mandates.position_risk.bindings.for_mandate(bound[0]):job['position_rule']=True
+                            elif bound:
+                                from .research_partner.price_execution import binding
+                                if binding(self.server.mandates,job['execution_id'],config['principal']):job['price_rule']=True
                             row=self.server.mandates.store._connect().execute('SELECT * FROM investment_run_facts WHERE execution_id=?',(job['execution_id'],)).fetchone()
                             if row:job['investment_facts']={**self.server.investment.snapshot(row['principal'],row['version']),'collection':row['collection'],'mode':row['mode'],'members':json.loads(row['members'])}
                         return self.reply(200, job)
@@ -279,9 +286,21 @@ class Handler(BaseHTTPRequestHandler):
                         return self.reply(200, {"interrupted": repo.recover()})
                     if len(parts) == 4 and parts[1] == "attempts":
                         attempt, token = parts[2], self.headers.get("X-Attempt-Token", "")
+                        if parts[3] == 'model-admission':
+                            fields(body, ('phase',))
+                            from .research_partner.model_admission import admit
+                            return self.reply(200, admit(self.server, attempt, token, body['phase']))
+                        if parts[3] == 'program-run':
+                            fields(body, ())
+                            from .research_partner.model_admission import run_program
+                            return self.reply(200, run_program(self.server, attempt, token))
                         if parts[3]=='position-run':
                             fields(body,())
                             from .position_risk.execution import run
+                            return self.reply(200,run(self.server,attempt,token))
+                        if parts[3]=='price-run':
+                            fields(body,())
+                            from .research_partner.price_execution import run
                             return self.reply(200,run(self.server,attempt,token))
                         if parts[3] in ('strategy-run','strategy-result'):
                             with repo.connection() as db:

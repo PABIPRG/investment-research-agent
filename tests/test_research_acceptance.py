@@ -20,7 +20,7 @@ class ResearchAcceptanceTests(unittest.TestCase):
         self.core = Mandates(self.repo, 'night-test')
         self.core.entities.directory = lambda: {'status': 'ok', 'rows': [
             {'code': '600519', 'name': '贵州茅台'}], 'source': {'provider': 'fixture'}}
-        snap = self.core.entities.resolve('alice', 'chat', '600519')
+        snap = self.core.entities.resolve('alice', 'chat', '600519股票')
         cid = self.core.entities.confirm('alice', 'chat', snap['snapshot_id'], snap['version'],
               {snap['mentions'][0]['mention_id']: SCOPE['entity_id']}, 'fixture')['confirmations'][0]['confirmation_id']
         self.mandate = self.core.create('alice', {'session_id': 'chat', 'confirmation_id': cid,

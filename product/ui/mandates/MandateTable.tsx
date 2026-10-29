@@ -41,7 +41,13 @@ export function MandateTable({ model }: { model: MandateController }) {
                 </small>
               </td>
               <td>
-                {x.baseline ? '已留存研究基准' : '尚无有效基准'}
+                {x.execution_mode === 'program_price'
+                  ? '价格条件由程序核对'
+                  : x.requires_comparison_baseline === false
+                    ? '无需比较基准'
+                    : x.baseline
+                      ? '已留存研究基准'
+                      : '尚无有效基准'}
                 <small>
                   {x.source_check?.status && x.source_check.status !== 'ok'
                     ? sourceReason(x.source_check.detail)

@@ -11,6 +11,8 @@ export type MandateView = {
   }
   mandate: { mandate_id: string; current_revision: number; status: string }
   generation: number
+  requires_comparison_baseline?: boolean
+  execution_mode?: 'program_price' | 'research'
   revision: {
     goal: string
     scope: Scope
@@ -58,6 +60,10 @@ const sourceReasons: Record<string, string> = {
   requested_metric_ambiguous: '来源对同一指标返回多条记录，口径尚不能确定',
   provider_schema_invalid: '来源返回的资料格式无法核验',
   no_source_records: '来源未返回记录',
+  market_source_stale_or_partial: '行情已过期或所需字段缺失，暂不能判断条件',
+  market_quote_price_time_or_subject_unavailable:
+    '报价价格、单位、证券身份或来源时间无法核验，暂不能判断到价',
+  market_source_unavailable: '行情来源暂不可用，系统会按约继续检查',
 }
 export function sourceReason(reason: string): string {
   return sourceReasons[reason] || reason

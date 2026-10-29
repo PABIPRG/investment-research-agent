@@ -400,7 +400,14 @@ class ContactDecisionService:
         if policy.notify_on == "level":
             return candidate
         if policy.notify_on == "first_entry":
-            if episodes > 1:
+            # 第一次进入期间的后续报价也不能重复创建联系意图。
+            # sustain_pending不算已联系；静默时段的待投递意图则已占资格。
+            previous = self.store.find_recent_contact_decision(
+                mandate.mandate_id, since=mandate.created_at, condition_key=key)
+            quiet = self.store.find_recent_contact_decision(
+                mandate.mandate_id, since=mandate.created_at, condition_key=key,
+                kinds=("defer",), reason_codes=("quiet_hours",))
+            if episodes > 1 or previous is not None or quiet is not None:
                 return _Outcome(
                     "suppress",
                     "not_first_entry",

@@ -7,7 +7,7 @@ INDICES = {"000001": "1.000001", "399001": "0.399001", "399006": "0.399006", "00
 
 
 def secid(code):
-    return ("1." if code.startswith("6") else "0.") + code
+    return ("1." if code.startswith(("5", "6")) else "0.") + code
 
 
 def parse_eastmoney(row, *, index=False):
@@ -43,7 +43,7 @@ def eastmoney(codes, *, indices=False):
 
 
 def sina(codes, *, indices=False):
-    symbols = [("sh" if (INDICES[c][0] == "1" if indices else c.startswith("6")) else "sz") + c for c in codes]
+    symbols = [("sh" if (INDICES[c][0] == "1" if indices else c.startswith(("5", "6"))) else "sz") + c for c in codes]
     raw = read("https://hq.sinajs.cn/list=" + ",".join(symbols), encoding="gbk", referer="https://finance.sina.com.cn")
     out = []
     for line in raw.splitlines():
@@ -98,7 +98,7 @@ def fetch_quotes(codes, *, indices=False):
     if not indices:
         complete = complete and all(all(r.get(field) is not None for field in UNITS) for r in rows)
     if rows and not complete:
-        warnings.append("报价存在字段或来源时间缺口；相关条件保持未知")
+        warnings.append("报价存在字段或来源时间缺口；仅使用身份、时间及单位均可核验的字段")
     source = "+".join(sorted({r["source"] for r in rows})) or "eastmoney+sina"
     return envelope(source, {"items": rows, "requested_codes": codes, "missing_codes": missing},
                     as_of=latest_time(r["as_of"] for r in rows), complete=complete,

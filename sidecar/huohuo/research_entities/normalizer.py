@@ -50,6 +50,12 @@ def is_six_digit_code(text: str) -> bool:
     return bool(re.fullmatch(r"\d{6}", normalize_text(text)))
 
 
+def qualified_security_code(text: str) -> tuple[str, str] | None:
+    """只拆分明确的交易所后缀；交易所是否匹配仍由实体目录校验。"""
+    match = re.fullmatch(r"(\d{6})\.(SH|SZ|BJ)", normalize_text(text), re.IGNORECASE)
+    return (match[1], match[2].upper()) if match else None
+
+
 def infer_exchange(code: str) -> str | None:
     """按代码前缀推断交易所：SH / SZ / BJ，无法判断时返回 None。"""
 

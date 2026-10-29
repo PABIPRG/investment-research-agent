@@ -53,6 +53,11 @@ class Investment:
         value=self._view(version,document,updated)
         if getattr(self.store,'position_risk',None):value['position_risk']=self.store.position_risk.view(principal,document)
         return value
+    def account(self,principal,market):
+        from .valuation import account_view
+        # 复制同一版本事实后再查询行情，不在外部请求期间占用业务事务。
+        with self.store.transaction():facts=self.read(principal)
+        return account_view(facts,market)
     def parse_risk(self,body):return parse_risk(body)
     def _risk_effects(self,principal,before,after,result):
         position=getattr(self.store,'position_risk',None)

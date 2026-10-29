@@ -354,27 +354,40 @@ def company_governance_lookup(call: ToolCall):
 
 def capital_flow_lookup(call: ToolCall):
     code, _name, _entity = resolve_target(call, "ENTITY_01_01")
-    if not code:
-        return empty(call, reason="缺少证券代码。", source="akshare.stock_fund_flow_individual")
-    frame = call.ctx.call_akshare(
-        "stock_fund_flow_individual", symbol="即时", timeout=90
-    )
-    if frame is None or not len(frame) or "股票代码" not in frame.columns:
-        return empty(call, reason="同花顺资金流快照为空。", source="akshare.stock_fund_flow_individual")
-    found = frame[frame["股票代码"].astype(str).str.zfill(6) == code]
-    if not len(found):
+    exchange = exchange_prefix(code or "")
+    if not code or exchange not in ("sh", "sz"):
         return empty(
             call,
-            reason=f"资金流快照中没有 {code}。",
-            source="akshare.stock_fund_flow_individual",
+            reason=f"个股资金流当前只覆盖沪深 A 股，不支持代码 {code}。",
+            source="akshare.stock_individual_fund_flow",
         )
-    records = records_from_frame(found, latest_first=False, limit=1)
+    # 原先的同花顺“即时”快照要翻 100 多页，单次调用超过 90 秒；改用东财按代码取近 20 个交易日。
+    try:
+        frame = call.ctx.call_akshare(
+            "stock_individual_fund_flow", stock=code, market=exchange, timeout=30
+        )
+    except ToolUnavailable as exc:
+        return unavailable(
+            call,
+            f"个股资金流数据不可用：{exc}",
+            source="akshare.stock_individual_fund_flow",
+        )
+    records = records_from_frame(frame, limit=20)
+    if not records:
+        return empty(
+            call,
+            reason=f"{code} 没有返回资金流记录。",
+            source="akshare.stock_individual_fund_flow",
+        )
     return ok(
         call,
         records=records,
-        data={"code": code, "snapshot": True},
-        source="akshare.stock_fund_flow_individual",
-        warnings=["同花顺“即时”资金流是单日快照，不含历史序列。"],
+        data={"code": code, "days": len(records)},
+        source="akshare.stock_individual_fund_flow",
+        warnings=[
+            "东方财富按交易日统计的个股资金流，金额单位为元；主力=超大单+大单。",
+            "最新一条通常为上一交易日收盘数据，盘中不保证当日实时；分类按单笔成交金额推算，不等同真实资金性质。",
+        ],
     )
 
 
@@ -486,20 +499,40 @@ def event_timeline_lookup(call: ToolCall):
         except ToolUnavailable as exc:
             warnings.append(f"盯盘服务不可用，改用公开新闻：{exc}")
 
-        frame = call.ctx.call_akshare("stock_news_em", symbol=code)
-        records = records_from_frame(frame, limit=limit)
+        # stock_news_em 依赖的东财搜索接口已改返回社交账号结果；改用同日新闻源。
+        from ....market.news import fetch_news
+
+        payload = fetch_news({"code": code, "limit": max(5, limit)})
+        records = [
+            {
+                "标题": news.get("title"),
+                "内容": news.get("content"),
+                "发布时间": news.get("published_at"),
+                "链接": news.get("url"),
+                "来源": news.get("source"),
+            }
+            for news in (payload.get("data") or {}).get("items") or []
+            if news.get("title")
+        ]
+        warnings.extend(payload.get("warnings") or [])
         if records:
             return ok(
                 call,
-                records=records,
-                data={"code": code, "fallback": "akshare.stock_news_em"},
-                source="akshare.stock_news_em",
+                records=records[:limit],
+                data={"code": code, "fallback": "public-news"},
+                source=payload.get("source") or "public-news",
                 warnings=warnings,
+            )
+        if payload.get("status") == "unavailable":
+            return unavailable(
+                call,
+                "公开新闻源暂不可用，未能检索近期事件。",
+                source=payload.get("source") or "public-news",
             )
         return empty(
             call,
             reason=f"没有检索到 {code} 的近期事件/新闻。",
-            source="market-watch + akshare.stock_news_em",
+            source="market-watch + public-news",
         )
 
     try:

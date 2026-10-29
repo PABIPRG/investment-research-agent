@@ -46,12 +46,12 @@ class RuntimeCapabilitiesApiTests(unittest.TestCase):
     def test_calendar_outage_does_not_block_discovery_and_claim(self):
         self.service.calendar.refresh=lambda: (_ for _ in ()).throw(RuntimeError('calendar down'))
         self.assertEqual(self.call('/worker/discover',{},'worker'),(200,{'checked':False,'calendar':'unavailable'}))
-        self.assertEqual(self.call('/worker/claim',{'worker_id':'fixture'},'worker'),(200,None))
+        self.assertEqual(self.call('/worker/claim',{'worker_id':'fixture','admission_policy':'hook-model-gate-v1'},'worker'),(200,None))
 
     def test_research_tool_reuses_instance_chain_and_keeps_session_evidence(self):
         core=self.service.mandates
         core.entities.directory=lambda:{'status':'ok','rows':[{'code':'600001','name':'核心甲'}], 'source':{'provider':'synthetic'}}
-        resolved=core.entities.resolve('alice','chat','600001')
+        resolved=core.entities.resolve('alice','chat','600001股票')
         confirmation=core.entities.confirm('alice','chat',resolved['snapshot_id'],resolved['version'],
             {resolved['mentions'][0]['mention_id']:'SEC:CN:A:600001'},'selected')['confirmations'][0]['confirmation_id']
         body={'session_id':'chat','call_id':'before','tool_id':'industry_chain_lookup','arguments':{'confirmation_id':confirmation}}

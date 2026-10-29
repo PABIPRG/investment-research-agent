@@ -15,7 +15,7 @@ const business=process.argv.includes('--business'),migration=process.argv.includ
 const deliverables=process.argv.includes('--deliverables')
 if(deliverables&&!process.argv.includes('--serve'))throw Error('成果交付回放需要 --serve')
 if(migration&&!process.argv.includes('--serve'))throw Error('迁移组合验收需要 --serve')
-const chatBundleName=migration?'@huohuo/chat-bundle-migration':'@huohuo/chat-bundle'
+const chatBundleName=migration?'@huohuo/chat-bundle-migration':deliverables?'@huohuo/chat-bundle-deliverables':'@huohuo/chat-bundle'
 if(business&&!process.argv.includes('--serve'))throw Error('业务交互回放必须 --serve，由真实用户交互确认')
 const keep=process.argv.includes('--serve'),port=Number(process.env.HUOHUO_SMOKE_PORT??18810),webPort=Number(process.env.HUOHUO_SMOKE_WEB_PORT??18811)
 assert.notEqual(port,webPort)

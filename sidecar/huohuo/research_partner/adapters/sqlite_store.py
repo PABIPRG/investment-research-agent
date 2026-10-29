@@ -1731,6 +1731,7 @@ class SqliteBusinessStore:
         since: datetime,
         condition_key: str | None = None,
         kinds: Sequence[str] = ("send", "aggregate"),
+        reason_codes: Sequence[str] | None = None,
     ) -> ContactDecision | None:
         if not kinds:
             return None
@@ -1743,6 +1744,11 @@ class SqliteBusinessStore:
         if condition_key is not None:
             sql += " AND condition_key = ?"
             params.append(condition_key)
+        if reason_codes is not None:
+            if not reason_codes:
+                return None
+            sql += " AND reason_code IN (" + ", ".join("?" for _ in reason_codes) + ")"
+            params.extend(reason_codes)
         sql += " ORDER BY created_at DESC, decision_id DESC LIMIT 1"
         row = self._connect().execute(sql, params).fetchone()
         return None if row is None else self._decision_from_row(row)

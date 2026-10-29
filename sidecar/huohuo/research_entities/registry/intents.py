@@ -192,7 +192,7 @@ INTENT_REGISTRY: dict[str, IntentDefinition] = {
     "QUOTE_CHECK": IntentDefinition(
         "QUOTE_CHECK", "行情查看",
         "查看当前或历史行情、价格位置。",
-        keywords=(("股价", 0.8), ("行情", 0.8), ("现价", 0.7), ("涨跌", 0.6),
+        keywords=(("股价", 0.8), ("行情", 0.8), ("报价", 0.8), ("现价", 0.7), ("涨跌", 0.6),
                   ("位置", 0.4), ("K线", 0.7), ("港股", 0.7), ("美股", 0.7),
                   ("分时", 0.6), ("分钟", 0.5)),
         preferred_entity_types=("ENTITY_01_01", "ENTITY_01_03"),

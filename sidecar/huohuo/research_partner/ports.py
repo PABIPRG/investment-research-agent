@@ -286,6 +286,7 @@ class ContactRepository(Protocol):
         since: datetime,
         condition_key: str | None = None,
         kinds: Sequence[str] = ("send", "aggregate"),
+        reason_codes: Sequence[str] | None = None,
     ) -> ContactDecision | None: ...
 
     def save_contact_record(self, record: ContactRecord) -> None: ...

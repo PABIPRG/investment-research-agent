@@ -191,7 +191,7 @@ export async function request(config: Instance, path: string, body?: unknown, ro
     method: body === undefined ? 'GET' : 'POST',
     headers: { Authorization: `Bearer ${config[`${role}_token`]}`, 'Content-Type': 'application/json',
       ...(attemptToken ? { 'X-Attempt-Token': attemptToken } : {}) },
-    body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout((path === '/worker/strategies/tick' || path.endsWith('/strategy-run')) ? 115_000 : (path === '/worker/discover'||path.endsWith('/position-run')) ? 60_000 : 15_000)]),
+    body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout((path === '/worker/strategies/tick' || path.endsWith('/strategy-run')) ? 115_000 : (path === '/worker/discover'||path.endsWith('/position-run')||path.endsWith('/price-run')||path.endsWith('/program-run')) ? 60_000 : 15_000)]),
   })
   const result = await response.json() as any
   if (!response.ok) throw new InstanceApiError(response.status,
