@@ -1,10 +1,12 @@
 """固定公开来源的有限读取；TLS 校验不降级，不接受调用方 URL。"""
 import json
+import time
+
 import requests
 
 HOSTS = {"push2.eastmoney.com", "push2his.eastmoney.com", "hq.sinajs.cn",
          "vip.stock.finance.sina.com.cn", "zhibo.sina.com.cn", "www.cls.cn",
-         "search-api-web.eastmoney.com", "quotes.sina.cn", "finance.sina.com.cn",
+         "np-listapi.eastmoney.com", "quotes.sina.cn", "finance.sina.com.cn",
          "api-one.wallstcn.com", "www.ithome.com", "news.google.com"}
 
 
@@ -16,17 +18,26 @@ def read(url, params=None, *, encoding="utf-8", referer=None, timeout=(3, 5)):
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json,text/plain,*/*"}
     if referer:
         headers["Referer"] = referer
-    with requests.get(url, params=params, headers=headers, timeout=timeout, stream=True, allow_redirects=False) as response:
-        response.raise_for_status()
-        if response.status_code != 200:
-            raise ValueError("unexpected source status")
-        chunks, length = [], 0
-        for chunk in response.iter_content(64 * 1024):
-            length += len(chunk)
-            if length > 2_000_000:
-                raise ValueError("market source response exceeds bound")
-            chunks.append(chunk)
-        return b"".join(chunks).decode(encoding, errors="replace")
+    # 只重试建连失败（含 ConnectTimeout）；读超时重试通常仍会超时，还会顶到上层硬截止。
+    transient = (requests.ConnectionError,)
+    for attempt in (0, 1):
+        try:
+            with requests.get(url, params=params, headers=headers, timeout=timeout, stream=True, allow_redirects=False) as response:
+                response.raise_for_status()
+                if response.status_code != 200:
+                    raise ValueError("unexpected source status")
+                chunks, length = [], 0
+                for chunk in response.iter_content(64 * 1024):
+                    length += len(chunk)
+                    if length > 2_000_000:
+                        raise ValueError("market source response exceeds bound")
+                    chunks.append(chunk)
+                return b"".join(chunks).decode(encoding, errors="replace")
+        except transient:
+            # 这些公开站点偶发握手/读超时；只重试一次，仍失败就按来源不可用上报。
+            if attempt:
+                raise
+            time.sleep(0.25)
 
 
 def read_json(url, params=None, **kwargs):
