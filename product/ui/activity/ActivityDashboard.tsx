@@ -8,6 +8,7 @@ import {
   splitChanges,
   splitConversations,
 } from './dashboard-model.js'
+import { groupChanges, visibleChanges } from './group-changes.js'
 import { AttentionSection } from './AttentionSection.js'
 import { FollowupProgress } from './FollowupProgress.js'
 import { ChangeList } from './ChangeList.js'
@@ -25,7 +26,9 @@ const filters = { all: '全部', research: '研究结果', reminder: '提醒' } 
 export function ActivityDashboard(props: ActivityProps) {
   const [refresh, setRefresh] = useState(0),
     [filter, setFilter] = useState<keyof typeof filters>('all'),
-    [historyOpen, setHistoryOpen] = useState(false)
+    [historyOpen, setHistoryOpen] = useState(false),
+    [recentLimit, setRecentLimit] = useState(5),
+    [historyLimit, setHistoryLimit] = useState(5)
   const notifications = useActivity(),
     mandates = useActivityMandates(),
     conversations = useConversationProgress(props, refresh)
@@ -35,6 +38,10 @@ export function ActivityDashboard(props: ActivityProps) {
   )
   const groups = splitConversations(conversations.rows)
   const visible = changes.recent.filter((r) => filter === 'all' || r.kind === filter)
+  const recentGroups = groupChanges(visible),
+    historyGroups = groupChanges(changes.history),
+    shownRecent = visibleChanges(recentGroups, recentLimit),
+    shownHistory = visibleChanges(historyGroups, historyLimit)
   const known =
     mandates.at > 0 &&
     !mandates.error &&
@@ -43,8 +50,8 @@ export function ActivityDashboard(props: ActivityProps) {
     conversations.complete &&
     !conversations.error
   const loading = (mandates.loading && !mandates.at) || !conversations.ready
-  const shownRecords = [...visible, ...(historyOpen ? changes.history : [])].flatMap(
-    (r) => r.records,
+  const shownRecords = [...shownRecent, ...(historyOpen ? shownHistory : [])].flatMap((group) =>
+    group.rows.flatMap((r) => r.records),
   )
   const shownKey = JSON.stringify(shownRecords)
   useEffect(() => {
@@ -125,7 +132,10 @@ export function ActivityDashboard(props: ActivityProps) {
                   <button
                     key={key}
                     aria-pressed={filter === key}
-                    onClick={() => setFilter(key as keyof typeof filters)}
+                    onClick={() => {
+                      setFilter(key as keyof typeof filters)
+                      setRecentLimit(5)
+                    }}
                   >
                     {label}
                   </button>
@@ -157,7 +167,12 @@ export function ActivityDashboard(props: ActivityProps) {
                 当前委托记录尚未读全，仅展示已读取范围，不能据此判断全部待办或变化。
               </p>
             )}
-            <ChangeList rows={visible} visit={props.visit} />
+            <ChangeList groups={shownRecent} visit={props.visit} />
+            {recentGroups.length > recentLimit && (
+              <button onClick={() => setRecentLimit((n) => n + 5)}>
+                查看更多变化（还有 {recentGroups.length - recentLimit} 项）
+              </button>
+            )}
             {!visible.length &&
               notifications.loaded &&
               !!mandates.at &&
@@ -199,7 +214,12 @@ export function ActivityDashboard(props: ActivityProps) {
             历史记录<small>较早变化与未运行的对话</small>
           </summary>
           <div className={css.historyContent}>
-            <ChangeList rows={changes.history} visit={props.visit} />
+            <ChangeList groups={shownHistory} visit={props.visit} />
+            {historyGroups.length > historyLimit && (
+              <button onClick={() => setHistoryLimit((n) => n + 5)}>
+                查看更多历史（还有 {historyGroups.length - historyLimit} 项）
+              </button>
+            )}
             {groups.history.map((row) => (
               <ConversationItem key={row.id} row={row} open={props.openConversation} />
             ))}
