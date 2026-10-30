@@ -1,3 +1,6 @@
+.questions:has(:global([data-question-key])) {
+  container-type: size;
+}
 .questions :global([data-content-phase='active'] [data-composer-seat]:has([data-question-key])) {
   background: transparent;
 }
@@ -11,11 +14,27 @@
   font-weight: 600;
 }
 .questions :global([data-question-key] > section) {
+  max-height: min(60dvh, 520px, calc(100cqh - var(--hh-question-space, 6px) - 24px));
   background: var(--hh-surface);
   color: var(--hh-ink);
   border: 1px solid var(--hh-line);
   border-radius: 16px;
   box-shadow: 0 8px 28px color-mix(in srgb, var(--hh-ink) 8%, transparent);
+}
+/* Reserve space for choices and actions; long prompts scroll inside the heading. */
+.questions :global([data-question-key] > section:not(.Mbwy4a_cardMinimized)) {
+  display: grid;
+  grid-template-rows: minmax(0, auto) minmax(112px, 1fr) auto;
+}
+.questions :global([data-question-key] .Mbwy4a_headingBlock) {
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.questions :global([data-question-key] .Mbwy4a_headingBlock:focus-visible) {
+  outline: 2px solid var(--hh-accent);
+  outline-offset: -2px;
 }
 .questions :global([data-question-key] h2) {
   white-space: pre-line;
@@ -26,6 +45,9 @@
 }
 .questions :global([data-question-key] .Mbwy4a_header) {
   padding: 18px 16px 6px 20px;
+  min-height: 0;
+  max-height: min(30dvh, 260px);
+  overflow: hidden;
 }
 .questions :global([data-question-key] .Mbwy4a_eyebrow),
 .questions :global([data-question-key] .Mbwy4a_progress) {
@@ -107,7 +129,11 @@
     padding: 6px 8px 10px;
   }
   .questions :global([data-question-key] > section) {
-    max-height: min(calc(100dvh - 240px), 520px);
+    max-height: min(
+      calc(100dvh - 240px),
+      520px,
+      calc(100cqh - var(--hh-question-space, 6px) - 24px)
+    );
   }
   .questions :global([data-question-key] .Mbwy4a_header) {
     padding: 14px 12px 4px;
@@ -122,5 +148,11 @@
   }
   .questions :global([data-question-key] .Mbwy4a_footerActions) {
     margin-left: auto;
+  }
+}
+
+@container (max-height: 400px) {
+  .questions :global([data-question-key]) {
+    --hh-question-space: 6px;
   }
 }

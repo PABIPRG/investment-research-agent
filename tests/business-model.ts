@@ -37,6 +37,7 @@ export function apply(ctx:Context){
     assert.ok(start>=0,'请输入回放 B01/B02/B03/B04/B05/B06')
     const input=options.messages[start].content.filter(b=>b.type==='text').map(b=>b.text).join(''),id=/回放 (B\d+)/.exec(input)![1]
     const seq:Record<string,string[]>={
+     B17:['ask_user_question'],
      B16:['ask_user_question'],
      B15:['huohuo-investment-facts','read_personalized_research','record_personalized_interaction','read_personalized_research'],
      B14:['huohuo-research-chat','resolve_research_scope','confirm_research_entities','query_market','review_research_decision','read_research_reviews'],
@@ -70,6 +71,14 @@ export function apply(ctx:Context){
        {label:'公司公开披露',description:'依据公开公告和定期报告核对经营变化，保留来源与报告期。'},
        {label:'历史研究记录',description:'对照此前研究中的支持证据、反证与待补材料，本次不修改任何真实记录。'}]}
      ]}
+     if(action==='ask_user_question'&&id==='B17')args={timeout:-1,questions:[{
+      id:'business-confirm',header:'保存前确认',
+      question:'保存这项持续委托？（明确合成验收，不会创建委托）\n'+
+       '目标：每个交易日北京时间09:00为平安银行产出一份盘前研究整理。\n'+
+       Array.from({length:18},(_,i)=>`${i+1}、核对经营、财务、行情和新闻资料；缺数据写“未获取”，保留单位、报告期、时间与来源，不补造结论。`).join('\n')+
+       '\n全文结束：仅验证长文本确认卡片，零业务写入。',
+      options:[{label:'确认执行',description:'合成选项，只返回回答，不创建委托。'},{label:'取消',description:'不保存任何业务内容。'}]
+     }]}
      if(action==='assess_risk_preference')args={tier:id==='B11'?'full':'quick'}
      if(action==='preview_investment_change')args={command:'holding',payload:{ticker:id==='B02'?'159740':'513130',name:id==='B02'?'合成恒生科技ETF乙':'合成恒生科技ETF甲',quantity:id==='B02'?200:1000,cost_price:null,effective_at:'2026-01-01T00:00:00+08:00',reason:'用户提供的期初快照，合成验收'}}
      if(action==='commit_investment_change')args={preview_id:result('preview_investment_change').data.preview_id}
@@ -90,6 +99,7 @@ export function apply(ctx:Context){
     }else{
      const commit=result('commit_investment_change')||result('update_notification_preferences')||result('bind_mandate_investment_collection')||result('manage_mandate')||result('create_mandate')
      text=`${id} 合成回放完成。`+(id==='B10'||id==='B11'?'已核对风险偏好工具与投资档案回执。':commit?.saved===false?'你取消了本次操作，未保存。':commit?.ok?'业务服务已返回保存回执。':commit?'操作未完成，请核对工具错误。':id==='B08'?'入口已准备，请点击打开。':'已读取脱敏配置及真实投递列表。')
+     if(id==='B17')text='B17 长文本验收完成：'+JSON.stringify(result('ask_user_question'))
      if(id==='B16')text='B16 问答样式验收完成：原生单选、多选和自由填写正常返回；没有创建委托、提醒或交易。'
      const nav=result('open_product_view');if(nav?.navigation_required)text+=nav.guidance;if(nav?.url)text+=` [${nav.label}](${nav.url})`
      if(id==='B14'){
