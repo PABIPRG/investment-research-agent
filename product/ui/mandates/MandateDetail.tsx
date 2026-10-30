@@ -109,9 +109,9 @@ export function MandateDetail({ model }: { model: MandateController }) {
           )}
           {feedback && <p role="status">{feedback}</p>}
         </section>
-        <details className={css.section}>
+        <details className={css.section} open={!!model.returnExecution}>
           <summary>研究记录 · {current.executions.length} 次</summary>
-          <ResearchHistory current={current} />
+          <ResearchHistory current={current} returnExecution={model.returnExecution} />
         </details>
         <details className={css.section} open={!!model.returnDecision}>
           <summary>复核与提醒记录 · {current.decisions?.length || 0} 条</summary>

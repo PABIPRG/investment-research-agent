@@ -1,0 +1,191 @@
+.attention {
+  background: var(--hh-paper);
+  border: 0;
+  border-left: 3px solid var(--hh-accent);
+  border-radius: 0;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.attentionLabel {
+  color: var(--hh-accent);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.attentionLabel span {
+  border-radius: 4px;
+  padding: 1px 6px;
+  background: var(--hh-soft);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+.attentionRow,
+.otherAttention {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px 30px;
+}
+.attentionRow > div,
+.otherAttention > div {
+  min-width: 0;
+}
+.attentionRow h3 {
+  margin: 0 0 6px;
+  font-size: 1.1429rem;
+  line-height: 1.5;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.attentionRow p,
+.otherAttention p {
+  margin: 0;
+  font-size: 0.91rem;
+  line-height: 1.7;
+  color: var(--hh-muted);
+  overflow-wrap: anywhere;
+  max-width: 70ch;
+}
+.attention button.primary {
+  color: var(--hh-on-accent);
+  background: var(--hh-accent);
+  border-color: var(--hh-accent);
+  padding: 7px 14px;
+  min-height: var(--hh-control-height);
+  flex: none;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.attention button.primary:hover:not(:disabled) {
+  background: var(--hh-accent);
+  opacity: 0.9;
+}
+.attention button.secondary {
+  flex: none;
+  color: var(--hh-accent);
+}
+.otherAttention {
+  border-top: 1px solid var(--hh-line);
+  padding-top: 14px;
+  margin-top: 16px;
+}
+.otherAttention h3 {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0 0 5px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.quiet {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 20px;
+  border: 1px solid var(--hh-line);
+  border-radius: 0;
+  margin-bottom: 24px;
+  background: var(--hh-surface);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.quiet small {
+  margin-left: auto;
+}
+.quietMark {
+  color: var(--hh-accent);
+}
+
+@media (max-width: 1100px) {
+  .attention {
+    padding: 20px;
+  }
+  .attentionRow h3 {
+    font-size: 1.1429rem;
+    line-height: 1.5;
+  }
+}
+@media (max-width: 800px) {
+  .quiet small {
+    display: none;
+  }
+}
+@media (max-width: 500px) {
+  .attention {
+    padding: 18px;
+    margin-bottom: 21px;
+  }
+  .attentionRow,
+  .otherAttention {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .attentionRow h3 {
+    font-size: 1.1429rem;
+    line-height: 1.5;
+  }
+  .attentionRow p {
+    font-size: 0.86rem;
+    line-height: 1.7;
+  }
+  .quiet {
+    padding: 13px 15px;
+  }
+}
+.quiet small {
+  color: var(--hh-muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  margin-left: auto;
+}
+.warning {
+  color: var(--hh-warning);
+  background: var(--hh-warning-bg);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.86rem;
+  line-height: 1.7;
+}
+.more {
+  margin-top: 15px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.more summary {
+  cursor: pointer;
+  color: var(--hh-accent);
+}
+
+.source {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.77rem;
+  line-height: 1.6;
+  color: var(--hh-muted);
+  overflow-wrap: anywhere;
+}
+.attention button.secondary {
+  display: inline-flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.source {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.attentionRow h3,
+.otherAttention h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  max-height: 3em;
+}

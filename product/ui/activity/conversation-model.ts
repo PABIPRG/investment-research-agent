@@ -66,8 +66,10 @@ export function conversationProgress(
     )
     .sort(
       (a, b) =>
+        Number(needsUser(statuses.get(b.id))) - Number(needsUser(statuses.get(a.id))) ||
         Number((statuses.get(b.id)?.running ?? b.running) === true) -
-          Number((statuses.get(a.id)?.running ?? a.running) === true) || b.updatedAt - a.updatedAt,
+          Number((statuses.get(a.id)?.running ?? a.running) === true) ||
+        b.updatedAt - a.updatedAt,
     )
   let complete = options.connected && roots.length <= 20
   const visited = new Set<string>(),

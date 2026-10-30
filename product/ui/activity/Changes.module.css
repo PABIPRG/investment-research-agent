@@ -1,0 +1,130 @@
+.list {
+  padding: 0;
+}
+.event {
+  padding: 23px 0 21px;
+  border-bottom: 1px solid var(--hh-line);
+  overflow-wrap: anywhere;
+}
+.event:last-child {
+  border-bottom: 0;
+}
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--hh-muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.meta time {
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+.event h3 {
+  font-size: 1.06rem;
+  line-height: 1.6;
+  font-weight: 600;
+  margin: 0;
+  max-width: 45ch;
+}
+.event[data-featured] h3 {
+  font-size: 1.1429rem;
+  line-height: 1.6;
+}
+.summary {
+  margin: 7px 0 0;
+  color: var(--hh-muted);
+  font-size: 0.9rem;
+  line-height: 1.75;
+  max-width: 65ch;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 13px;
+}
+.tags > span {
+  padding: 3px 9px;
+  border-radius: 5px;
+  background: var(--hh-paper);
+  color: var(--hh-muted);
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+.tags > .warning {
+  color: var(--hh-warning);
+  background: var(--hh-warning-bg);
+}
+.receipts {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--hh-muted);
+}
+.event footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 15px;
+}
+.event footer > span {
+  color: var(--hh-muted);
+  font-size: 0.77rem;
+  line-height: 1.6;
+  min-width: 0;
+}
+.event footer button {
+  border: 0;
+  background: transparent;
+  padding: 3px 0;
+  color: var(--hh-accent);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+}
+@media (max-width: 500px) {
+  .list {
+    padding: 0;
+  }
+  .event[data-featured] h3 {
+    font-size: 1.1429rem;
+    line-height: 1.6;
+  }
+  .event h3 {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  .summary {
+    font-size: 0.86rem;
+    line-height: 1.75;
+  }
+  .event footer {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .meta {
+    align-items: flex-start;
+  }
+}
+
+.event footer > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}

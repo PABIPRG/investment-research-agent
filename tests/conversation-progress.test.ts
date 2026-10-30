@@ -41,3 +41,10 @@ test('目录读取失败标记不完整；循环与重复条目不无限展开�
  assert.deepEqual(result.rows.map(r=>r.id).sort(),['c','root'])
  assert.equal(derive(list([row('root')],{root:{state:'error',values:{}}})).complete,false)
 })
+
+test('待回答的旧对话优先进入有界目录，不能被最近的空闲历史挤掉',()=>{
+ const roots=Array.from({length:25},(_,i)=>row(String(i),{updatedAt:100-i}))
+ const result=derive(list(roots),new Map([['24',{running:false,pendingInteraction:{kind:'question'}}]]))
+ assert.equal(result.rows[0].id,'24');assert.equal(result.rows[0].state,'waiting_user')
+ assert.equal(result.complete,false)
+})

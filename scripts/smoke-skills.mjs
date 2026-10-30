@@ -13,6 +13,8 @@ import {prepareMigrationStrategyProfile} from './migration-strategy-profile.mjs'
 const root=fileURLToPath(new URL('../',import.meta.url)),out=resolve(process.env.HUOHUO_SMOKE_OUT??join(root,'artifacts/skills-smoke'))
 const business=process.argv.includes('--business'),migration=process.argv.includes('--migration')
 const deliverables=process.argv.includes('--deliverables')
+const activity=process.argv.includes('--activity')
+if(activity&&!process.argv.includes('--serve'))throw Error('动态页验收需要 --serve')
 if(deliverables&&!process.argv.includes('--serve'))throw Error('成果交付回放需要 --serve')
 if(migration&&!process.argv.includes('--serve'))throw Error('迁移组合验收需要 --serve')
 const chatBundleName=migration?'@huohuo/chat-bundle-migration':deliverables?'@huohuo/chat-bundle-deliverables':'@huohuo/chat-bundle'
@@ -61,10 +63,10 @@ async function stop(p){if(!p||p.exitCode!==null||p.signalCode!==null)return;cons
 async function cleanup(){if(closing)return;closing=true;controller.abort();await worker?.catch(()=>{});await stop(web);await stop(api);await writeFile(join(out,'runtime-stopped.json'),JSON.stringify({stopped_at:new Date().toISOString(),ports:[port,webPort]}));await writeFile(join(out,'runtime.log'),webLog);await writeFile(join(out,'api.log'),apiLog)}
 const interrupted=()=>{void cleanup().then(()=>process.exit(130))};process.on('SIGTERM',interrupted);process.on('SIGINT',interrupted)
 try{
- api=spawn(config.python,[join(root,deliverables?'tests/deliverables-ui-server.py':migration?'tests/migration_ui_server.py':'tests/night_research_server.py'),join(instance,'instance.json')],{cwd:root,env:{...env,PYTHONPATH:join(root,'sidecar'),PYTHONDONTWRITEBYTECODE:'1'},stdio:['pipe','pipe','pipe']})
+ api=spawn(config.python,[join(root,activity?'tests/activity_ui_server.py':deliverables?'tests/deliverables-ui-server.py':migration?'tests/migration_ui_server.py':'tests/night_research_server.py'),join(instance,'instance.json')],{cwd:root,env:{...env,PYTHONPATH:join(root,'sidecar'),PYTHONDONTWRITEBYTECODE:'1'},stdio:['pipe','pipe','pipe']})
  api.stderr.on('data',d=>apiLog+=d)
  await new Promise((res,rej)=>{const t=setTimeout(()=>rej(Error('API startup timed out')),15000);api.stdout.once('data',()=>{clearTimeout(t);res()});api.once('exit',()=>{clearTimeout(t);rej(Error(apiLog))});api.once('error',rej)})
- if(keep)worker=workerLoop(config,controller.signal).catch(e=>{if(!controller.signal.aborted){workerError=e;controller.abort()}})
+ if(keep&&!activity)worker=workerLoop(config,controller.signal).catch(e=>{if(!controller.signal.aborted){workerError=e;controller.abort()}})
  let launchUrl
  web=spawn(process.execPath,[join(modules,'@deepseek-ai/dsh/lib/bin.js'),'--profile','huohuo-chat','--host','127.0.0.1','--port',String(webPort),'--no-open'],{cwd:config.workspace,env:{...env,HUOHUO_CHAT_API:`http://127.0.0.1:${port}`,HUOHUO_USER_TOKEN:config.user_token,HUOHUO_CHAT_WEB_ORIGIN:`http://127.0.0.1:${webPort}`},stdio:['ignore','pipe','pipe']})
  for(const stream of [web.stdout,web.stderr])stream.on('data',d=>{const raw=String(d);launchUrl??=raw.match(/http:\/\/127\.0\.0\.1:\d+\/\?token=[^\s\u001b]+/)?.[0];webLog+=raw.replace(/\?token=[^\s\u001b]+/g,'?token=[redacted]')})

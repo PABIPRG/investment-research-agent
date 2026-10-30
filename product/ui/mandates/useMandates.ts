@@ -97,14 +97,23 @@ export function useMandates() {
       return undefined
     }
   })()
+  const returnExecution = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('huohuo-return') || '{}').execution as
+        | string
+        | undefined
+    } catch {
+      return undefined
+    }
+  })()
   const current = items.find((x) => x.mandate.mandate_id === selected)
   useEffect(() => {
-    if (current && returnDecision) {
-      const el = document.getElementById(returnDecision)
+    if (current && (returnDecision || returnExecution)) {
+      const el = document.getElementById(returnDecision || `execution-${returnExecution}`)
       el?.scrollIntoView({ block: 'center' })
       el?.focus()
     }
-  }, [current, returnDecision])
+  }, [current, returnDecision, returnExecution])
   useEffect(() => {
     setEditing(false)
     setFeedback('')
@@ -192,6 +201,7 @@ export function useMandates() {
     heading,
     current,
     returnDecision,
+    returnExecution,
     command,
   }
 }
