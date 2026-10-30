@@ -128,3 +128,24 @@
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
+
+.groupDetails {
+  margin-top: 14px;
+  color: var(--hh-accent);
+  font-size: 0.8571rem;
+}
+.groupDetails > summary {
+  cursor: pointer;
+}
+.groupRows {
+  margin-top: 10px;
+  border-left: 2px solid var(--hh-line);
+  padding-left: 16px;
+}
+.groupEntry {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hh-line);
+}
+.groupEntry h3 {
+  font-size: 1rem;
+}

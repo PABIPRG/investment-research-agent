@@ -15,6 +15,8 @@ export type Change = {
   mandateId: string
   decisionId: string
   executionId?: string
+  revision?: number
+  outcome?: 'succeeded' | 'failed' | 'interrupted'
   records: ActivityRecord[]
   evidenceCount?: number
   warning?: string
@@ -46,7 +48,12 @@ export function dashboardEvents(
         id: `execution:${execution.execution_id}`,
         kind: 'research',
         name,
-        source: item.revision.goal,
+        source:
+          execution.mandate_revision === item.mandate.current_revision
+            ? item.revision.goal
+            : Number.isInteger(execution.mandate_revision)
+              ? `约定版本 v${execution.mandate_revision}`
+              : '约定版本待核对',
         title: `${name}：${succeeded ? '研究结果已保存' : execution.status === 'interrupted' ? '本次研究已中断' : '本次研究未完成'}`,
         summary:
           execution.result?.summary ||
@@ -56,6 +63,12 @@ export function dashboardEvents(
         mandateId: item.mandate.mandate_id,
         decisionId: '',
         executionId: execution.execution_id,
+        revision: execution.mandate_revision,
+        outcome: succeeded
+          ? 'succeeded'
+          : execution.status === 'interrupted'
+            ? 'interrupted'
+            : 'failed',
         records: [],
         evidenceCount: execution.result?.evidence_ids?.length,
         warning: failed

@@ -44,3 +44,113 @@ test('没有匹配委托仍保留提醒和回访标识，不补造研究摘要',
  assert.equal(row.mandateId,'m');assert.equal(row.decisionId,'d')
  assert.match(row.name,/暂未读取/);assert.equal(row.summary,'已保存变化依据')
 })
+
+import { groupChanges, visibleChanges } from '../product/ui/activity/group-changes.js'
+test('研究按委托和执行版本归组，不合并不同委托、不同版本或提醒', () => {
+  const event = dashboardEvents(
+    [
+      item({
+        executions: [
+          {
+            execution_id: 'a',
+            status: 'succeeded',
+            revision: 3,
+            mandate_revision: 1,
+            updated_at: now - 1,
+            result: { summary: '结果' },
+          } as any,
+          {
+            execution_id: 'b',
+            status: 'failed',
+            revision: 3,
+            mandate_revision: 1,
+            updated_at: now - 2,
+            result: { error: '失败' },
+          } as any,
+          {
+            execution_id: 'c',
+            status: 'succeeded',
+            revision: 5,
+            mandate_revision: 2,
+            updated_at: now - 3,
+            result: { summary: '新版' },
+          } as any,
+        ],
+      }),
+      item({
+        mandate: { mandate_id: 'm2', status: 'tracking', current_revision: 1 },
+        executions: [
+          {
+            execution_id: 'd',
+            status: 'failed',
+            revision: 3,
+            mandate_revision: 1,
+            updated_at: now - 4,
+            result: { error: '另一委托' },
+          } as any,
+        ],
+      }),
+    ],
+    [notice],
+  )
+  const groups = groupChanges(event)
+  assert.equal(groups.length, 4)
+  const combined = groups.find((g) => g.latest.executionId === 'a')!
+  assert.deepEqual(
+    combined.rows.map((r) => r.executionId),
+    ['a', 'b'],
+  )
+  assert.equal(combined.incomplete, 1)
+  assert.equal(combined.latest.outcome, 'succeeded')
+  assert.equal(groups.find((g) => g.latest.executionId === 'c')!.latest.source, '约定版本 v2')
+  assert.equal(groups.find((g) => g.latest.kind === 'reminder')!.rows.length, 1)
+})
+test('筛选后限制展示，隐藏的提醒不应被当成已查看', () => {
+  const base = dashboardEvents([], [notice])[0]
+  const groups = groupChanges(
+    Array.from({ length: 8 }, (_, i) => ({
+      ...base,
+      id: String(i),
+      decisionId: String(i),
+      at: now - i,
+      records: [{ ...notice, decision_id: String(i) }],
+    })),
+  )
+  const shown = visibleChanges(groups, 5)
+  assert.equal(shown.length, 5)
+  assert.deepEqual(
+    shown.flatMap((g) => g.rows.flatMap((r) => r.records)).map((r) => r.decision_id),
+    ['0', '1', '2', '3', '4'],
+  )
+})
+
+test('没有可信委托版本的记录不合并，不把执行版本或当前目标冒充旧约定', () => {
+  const make = (id: string) =>
+    ({
+      execution_id: id,
+      status: 'failed',
+      revision: 9,
+      updated_at: now - 1,
+      result: { error: '未知原因' },
+    }) as any
+  const events = dashboardEvents([item({ executions: [make('unknown-a'), make('unknown-b')] })], [])
+  assert.equal(groupChanges(events).length, 2)
+  assert.ok(events.every((e) => e.source === '约定版本待核对'))
+})
+
+test('历史判断未知必须在合并摘要中保留待核实提示', () => {
+  const base = dashboardEvents([], [notice])[0]
+  const research = {
+    ...base,
+    kind: 'research' as const,
+    mandateId: 'm',
+    revision: 1,
+    outcome: 'succeeded' as const,
+    records: [],
+  }
+  const group = groupChanges([
+    { ...research, id: 'new', warning: undefined },
+    { ...research, id: 'old', warning: '部分判断待核实' },
+  ])[0]
+  assert.equal(group.uncertain, 1)
+})

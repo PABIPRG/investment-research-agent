@@ -10,6 +10,17 @@ class IntegratedPartnerTests(unittest.TestCase):
     result = fixtures.FollowupTests.result
     enable = fixtures.FollowupTests.enable
 
+    def test_execution_exposes_mandate_revision_not_execution_counter(self):
+        item = self.create()
+        mid = item['mandate']['mandate_id']
+        self.core.tick()
+        job = self.repo.claim('revision-test')
+        self.assertIsNotNone(job)
+        view = self.core.get('alice', mid)
+        execution = next(e for e in view['executions'] if e['execution_id'] == job['execution_id'])
+        self.assertEqual(execution['mandate_revision'], item['mandate']['current_revision'])
+        self.assertGreater(execution['revision'], execution['mandate_revision'])
+
     def holding(self, quantity):
         inv=self.core.investment
         p=inv.preview('alice',{'command':'holding','payload':{'ticker':'600519','name':'贵州茅台','quantity':quantity,'cost_price':1500,'effective_at':'2026-01-01T00:00:00Z','reason':'合成集成验收'}})

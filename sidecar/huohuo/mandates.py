@@ -88,7 +88,7 @@ class Mandates:
                     label=next((h.get('display_name') or h.get('name') for h in saved['holdings'] if h['ticker']==marker['ticker']),None)
             view['display_name']=label
             view['position_risk']={**marker,'reason':self.position_risk.reason(mid) if position else 'position_plan_inactive'}
-        view['executions']=[self.repo._view(r) for r in db.execute('SELECT e.* FROM executions e JOIN execution_jobs x ON e.id=x.execution_id WHERE x.mandate_id=? ORDER BY e.created_at DESC',(mid,))]
+        view['executions']=[self.repo._view(r) | {'mandate_revision': r['mandate_revision']} for r in db.execute('SELECT e.*,x.revision AS mandate_revision FROM executions e JOIN execution_jobs x ON e.id=x.execution_id WHERE x.mandate_id=? ORDER BY e.created_at DESC',(mid,))]
         view['evidence']=[ev for ex in view['executions'] for ev in self.repo.evidence(principal,ex['execution_id'])]
         view['results']=[dict(r) | {'structured_result':json.loads(r['structured_result_json']), 'stale':bool(r['stale'])} for r in db.execute('SELECT r.* FROM research_job_results r JOIN research_jobs j ON j.job_id=r.job_id WHERE j.mandate_id=? ORDER BY r.received_at DESC',(mid,))]
         baseline=db.execute('SELECT p.baseline_json,j.mandate_revision FROM mandate_progress p LEFT JOIN research_job_results r ON r.result_id=p.last_result_id LEFT JOIN research_jobs j ON j.job_id=r.job_id WHERE p.mandate_id=?',(mid,)).fetchone()

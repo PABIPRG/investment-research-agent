@@ -11,6 +11,7 @@ export interface Execution {
   question: string
   status: string
   revision: number
+  mandate_revision?: number
   scope: { entity_id: string; exchange: string; operation: string }
   current_attempt: string | null
   created_at: number

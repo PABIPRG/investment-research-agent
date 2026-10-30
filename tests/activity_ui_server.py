@@ -69,10 +69,30 @@ def seed(service):
     finish(selected, '【合成验收】报价资料已绑定，条件判断与本次执行关联；仅验证应用内提醒记录。', 'met')
     core.notifications.tick()
     # 保存一个失败、一个运行中和一个排队状态，均只写入本次新建实例。
-    create('activity-failed-001', '【合成验收】上次资料复核失败')
+    failed, selected = create('activity-failed-001', '【合成验收】上次资料复核失败')
     job = core.repo.claim('activity-fixture')
     core.repo.finish(job['attempt_id'], job['lease_token'], {'status': 'failed', 'error': '【合成验收】来源返回不足，未形成研究结论'})
     core.tick()
+    # 同一委托保存多次失败及最终成功，验证归并、失败计数与每次记录回访。
+    mid = failed['mandate']['mandate_id']
+    for index in range(6):
+        current = core.get(p, mid)
+        core.command(p, mid, 'retry_baseline', {'request_key': f'activity-repeat-{index}', 'expected_revision': current['mandate']['current_revision'], 'expected_generation': current['generation']})
+        core.tick()
+        if index == 5:
+            finish(selected, '【合成验收】恢复后已保存新的研究结果')
+        else:
+            job = core.repo.claim('activity-fixture')
+            assert job is not None
+            core.repo.finish(job['attempt_id'], job['lease_token'], {'status': 'failed', 'error': f'【合成验收】资料暂缺，失败记录 {index + 2}'})
+            core.tick()
+    # 多个独立委托用于验证首屏上限及“查看更多”。
+    for index in range(3):
+        create(f'activity-extra-{index}', f'【合成验收】独立研究 {index + 1}')
+        job = core.repo.claim('activity-fixture')
+        assert job is not None
+        core.repo.finish(job['attempt_id'], job['lease_token'], {'status': 'failed', 'error': f'【合成验收】独立任务 {index + 1} 暂未完成'})
+        core.tick()
     create('activity-running-001', '【合成验收】正在核对资料')
     core.repo.claim('activity-fixture')
     create('activity-queued-001', '【合成验收】等待研究')
