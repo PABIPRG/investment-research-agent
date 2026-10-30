@@ -59,7 +59,7 @@ def validate_brief_basis(raw, period, calendar, *, now: datetime | None = None):
         return fail("news_invalid", "新闻资料格式缺失")
     if news.get("status") == "empty" and news_data["items"]:
         return fail("news_invalid", "新闻空结果与条目内容矛盾")
-    stamps = []
+    stamps, dated_close_used = [], False
     for name in ("quotes", "indices"):
         section = data.get(name)
         if not isinstance(section, dict) or section.get("status") != "ok" or section.get("complete") is not True:
@@ -81,7 +81,14 @@ def validate_brief_basis(raw, period, calendar, *, now: datetime | None = None):
             if row.get("time_known") is not True or stamp is None:
                 return fail("quote_time_unknown", "报价来源时间未知，不能以采集时间代替收盘时间")
             source_local = datetime.fromisoformat(stamp).astimezone(CN)
-            if source_local.date() != reference or source_local.time() < time(15):
+            if row.get("price_basis") == "daily_close":
+                # 日线收盘只标到交易日（日期精度），不满足“15:00 之后”的盘中快照口径。
+                if row.get("time_precision") != "date":
+                    return fail("quote_basis_unknown", "日线收盘口径必须明确标注日期精度")
+                if source_local.date() != reference or source_local.time() != time(0):
+                    return fail("quote_not_reference_close", "日线收盘日期不是所需交易日")
+                dated_close_used = True
+            elif source_local.date() != reference or source_local.time() < time(15):
                 return fail("quote_not_reference_close", "报价不是所需交易日 15:00 之后的收盘时点")
             if source_local > local:
                 return fail("quote_time_future", "报价来源时间晚于校验时点")
@@ -93,5 +100,7 @@ def validate_brief_basis(raw, period, calendar, *, now: datetime | None = None):
             if units.get("price") != unit or units.get("previous_close") != unit or units.get("pct_change") != "%":
                 return fail("quote_unit_unknown", "报价单位不匹配，不能混用指数点数与股票价格")
             stamps.append(stamp)
-    return {**base, "status": "ok", "as_of": max(stamps),
-            "warnings": [f"采用 {reference.isoformat()} 收盘参考；保留原报价过期标记，不表示盘中实时行情"]}
+    note = f"采用 {reference.isoformat()} 收盘参考；保留原报价过期标记，不表示盘中实时行情"
+    if dated_close_used:
+        note += "；部分或全部价格为日线收盘，仅精确到交易日"
+    return {**base, "status": "ok", "as_of": max(stamps), "warnings": [note]}

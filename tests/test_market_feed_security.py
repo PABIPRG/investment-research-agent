@@ -84,5 +84,55 @@ class FeedSecurityTests(unittest.TestCase):
                 wallstreetcn(1)
 
 
+class FakeResponse:
+    status_code = 200
+
+    def __init__(self, body=b'ok'):
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def raise_for_status(self):
+        pass
+
+    def iter_content(self, size):
+        yield self.body
+
+
+class RetryTests(unittest.TestCase):
+    """读超时只在显式开启时重试一次；建连失败始终重试一次。"""
+
+    def read(self, *responses, **kwargs):
+        with patch('huohuo.market.http.requests.get', side_effect=list(responses)) as get, \
+                patch('huohuo.market.http.time.sleep'):
+            try:
+                return read(GOOGLE, **kwargs), get.call_count
+            except Exception as exc:
+                return exc, get.call_count
+
+    def test_read_timeout_retried_once_only_when_requested(self):
+        import requests
+        value, calls = self.read(requests.Timeout('read timed out'), FakeResponse(), retry_timeouts=True)
+        self.assertEqual((value, calls), ('ok', 2))
+        value, calls = self.read(requests.Timeout('read timed out'), FakeResponse())
+        self.assertIsInstance(value, requests.Timeout)
+        self.assertEqual(calls, 1)
+
+    def test_retry_never_loops_beyond_one_extra_attempt(self):
+        import requests
+        value, calls = self.read(requests.Timeout('a'), requests.Timeout('b'), retry_timeouts=True)
+        self.assertIsInstance(value, requests.Timeout)
+        self.assertEqual(calls, 2)
+
+    def test_connect_errors_retried_by_default(self):
+        import requests
+        value, calls = self.read(requests.ConnectionError('reset'), FakeResponse(), retry_timeouts=False)
+        self.assertEqual((value, calls), ('ok', 2))
+
+
 if __name__ == '__main__':
     unittest.main()
