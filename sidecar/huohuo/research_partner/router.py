@@ -168,6 +168,10 @@ class EventRouter:
         dedupe_key: str,
         now: datetime,
     ) -> int:
+        from .research_priority import score_for as research_score
+
+        mandate = self.store.get_mandate_internal(mandate_id)
+        priority = research_score(self.store, mandate, revision, action) if mandate else None
         job = ResearchJob(
             job_id=f"JOB_{secrets.token_hex(16)}",
             mandate_id=mandate_id,
@@ -176,6 +180,8 @@ class EventRouter:
             action=action,
             status="pending",
             next_run_at=now,
+            priority=priority["score"] if priority else 50,
+            priority_version=priority["version"] if priority else "v1",
             dedupe_key=dedupe_key,
             budget={"max_attempts": 3},
             created_at=now,

@@ -6,6 +6,7 @@ from .configuration import CHANNELS, FIELDS, configured, public_config, merge_co
 from .channels import build_adapter
 from .delivery import DeliveryError, DeliverySuppressed
 from .market_gate import current_for_delivery
+from .priority import score_for
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from ..contracts import Invalid, canonical
 from ..execution import Conflict
@@ -66,12 +67,15 @@ class Notifications:
         policy=parse_contact_policy(revision.contact_policy)
         cfg=self.config(mandate.principal_id)
         now=self.core.repo.clock()
+        # 优先级只用于队列排序；同一决定的所有渠道共用一份分数。
+        priority=score_for(decision,mandate,revision,policy,self.store,now)
+        detail=json.dumps(priority['factors'],ensure_ascii=False,sort_keys=True)
         for channel in policy.channels:
             if channel not in cfg['channels'] or channel not in CHANNELS:continue
-            self.store._connect().execute("INSERT OR IGNORE INTO notification_queue(decision_id,principal,mandate_id,revision,generation,channel,status,eligible_at,expires_at,updated_at,config_revision) VALUES(?,?,?,?,?,?,'queued',?,?,?,?)",(decision.decision_id,mandate.principal_id,mandate.mandate_id,decision.mandate_revision,generation,channel,decision.eligible_at.timestamp() if decision.eligible_at else now,decision.expires_at.timestamp() if decision.expires_at else now+86400,now,self.channel_revision(mandate.principal_id,channel)))
+            self.store._connect().execute("INSERT OR IGNORE INTO notification_queue(decision_id,principal,mandate_id,revision,generation,channel,status,eligible_at,expires_at,updated_at,config_revision,priority,priority_version,priority_detail) VALUES(?,?,?,?,?,?,'queued',?,?,?,?,?,?,?)",(decision.decision_id,mandate.principal_id,mandate.mandate_id,decision.mandate_revision,generation,channel,decision.eligible_at.timestamp() if decision.eligible_at else now,decision.expires_at.timestamp() if decision.expires_at else now+86400,now,self.channel_revision(mandate.principal_id,channel),priority['score'],priority['version'],detail))
 
     def list(self, principal):
-        rows=self.store._connect().execute('SELECT q.*,d.reason_code,d.condition_result,d.detail AS decision_detail,d.evidence_ref FROM notification_queue q JOIN contact_decisions d USING(decision_id) WHERE principal=? ORDER BY updated_at DESC LIMIT 200',(principal,)).fetchall()
+        rows=self.store._connect().execute('SELECT q.*,d.reason_code,d.condition_result,d.detail AS decision_detail,d.evidence_ref FROM notification_queue q JOIN contact_decisions d USING(decision_id) WHERE principal=? ORDER BY q.priority DESC,q.eligible_at ASC,q.updated_at DESC LIMIT 200',(principal,)).fetchall()
         return {'items':[dict(r) for r in rows]}
 
     def in_app(self, principal):
@@ -143,7 +147,7 @@ class Notifications:
         with self.store.transaction():
             db=self.store._connect();now=self.core.repo.clock()
             db.execute("UPDATE notification_queue SET status='unknown',detail='发送后未取得确定回执，禁止自动重发',updated_at=? WHERE status='in_flight' AND updated_at<?",(now,now-60))
-            ids=[(r[0],r[1]) for r in db.execute("SELECT decision_id,channel FROM notification_queue WHERE status IN ('queued','deferred','retry') AND eligible_at<=?",(now,))]
+            ids=[(r[0],r[1]) for r in db.execute("SELECT decision_id,channel FROM notification_queue WHERE status IN ('queued','deferred','retry') AND eligible_at<=? ORDER BY priority DESC,eligible_at ASC,decision_id,channel",(now,))]
         for did,channel in ids:
             permit=self.reserve(did,channel)
             if not permit:continue

@@ -289,6 +289,16 @@ class ContactRepository(Protocol):
         reason_codes: Sequence[str] | None = None,
     ) -> ContactDecision | None: ...
 
+    def list_recent_contact_decisions(
+        self,
+        mandate_id: str,
+        *,
+        since: datetime,
+        condition_key: str | None = None,
+        kinds: Sequence[str] = ("send", "aggregate"),
+        limit: int = 50,
+    ) -> list[ContactDecision]: ...
+
     def save_contact_record(self, record: ContactRecord) -> None: ...
 
 

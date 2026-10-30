@@ -3,7 +3,7 @@ import json
 import threading
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from huohuo.execution import Repository, Conflict
@@ -138,6 +138,66 @@ class FollowupTests(unittest.TestCase):
         self.core.notifications.save('alice',{'expected_revision':2,'enabled':True,'channels':['app'],'timezone':'Asia/Shanghai','quiet_hours':None})
         with self.core.store.transaction():self.core.store._connect().execute('UPDATE notification_queue SET eligible_at=? WHERE decision_id=?',(clock-1,q['decision_id']))
         count=len(self.jobs());self.core.notifications.tick();self.assertEqual(len(self.jobs()),count);self.assertEqual(self.core.notifications.list('alice')['items'][0]['status'],'delivered')
+    def test_notification_priority_is_versioned_and_explainable(self):
+        _,q=self.prepare_queue()
+        row=self.core.store._connect().execute('SELECT priority,priority_version,priority_detail FROM notification_queue WHERE decision_id=? AND channel=?',(q['decision_id'],'app')).fetchone()
+        self.assertEqual(row['priority_version'],'v2');self.assertTrue(0<=row['priority']<=100)
+        detail=json.loads(row['priority_detail'])
+        self.assertEqual(detail['mode'],0.8);self.assertEqual(detail['interest'],0.5)
+        self.assertEqual(set(detail),{'mode','scope','freshness','deadline','interest','repeat'})
+        self.assertEqual(detail['repeat'],0)
+    def test_priority_scope_uses_recorded_holdings(self):
+        db=self.core.store._connect()
+        with self.core.store.transaction():
+            db.execute("INSERT OR REPLACE INTO investment_facts(principal,version,document,updated_at) VALUES('alice',1,?,?)",(json.dumps({'default':[{'ticker':'600519','quantity':10,'cost_price':1500}],'watchlist':[],'manual_trades':[],'snapshots':[],'trade_revisions':[],'corrections':[],'holdings_recorded':True,'watchlist_recorded':True}),datetime.now(timezone.utc).isoformat()))
+        _,q=self.prepare_queue()
+        detail=json.loads(db.execute('SELECT priority_detail FROM notification_queue WHERE decision_id=? AND channel=?',(q['decision_id'],'app')).fetchone()[0])
+        self.assertEqual(detail['scope'],1.0)
+    def test_low_priority_still_delivers(self):
+        _,q=self.prepare_queue()
+        with self.core.store.transaction():self.core.store._connect().execute('UPDATE notification_queue SET priority=0 WHERE decision_id=?',(q['decision_id'],))
+        self.core.notifications.tick()
+        self.assertEqual(self.core.notifications.list('alice')['items'][0]['status'],'delivered')
+    def test_priority_interest_requires_explicit_learning(self):
+        db=self.core.store._connect()
+        with self.core.store.transaction():
+            db.execute("INSERT OR REPLACE INTO personalization_state VALUES('alice',1,?)",(json.dumps({'preferences':{'local_learning':{'enabled':True}},'behavior':{'events':[{'event_id':'e1','action':'follow','context':{'ticker':'600519'}}],'default':[]}}),))
+        _,q=self.prepare_queue()
+        detail=json.loads(db.execute('SELECT priority_detail FROM notification_queue WHERE decision_id=? AND channel=?',(q['decision_id'],'app')).fetchone()[0])
+        self.assertGreater(detail['interest'],0.5)
+    def test_research_priority_uses_action_and_holdings(self):
+        db=self.core.store._connect()
+        with self.core.store.transaction():
+            db.execute("INSERT OR REPLACE INTO investment_facts(principal,version,document,updated_at) VALUES('alice',1,?,?)",(json.dumps({'default':[{'ticker':'600519','quantity':10,'cost_price':1500}],'watchlist':[],'manual_trades':[],'snapshots':[],'trade_revisions':[],'corrections':[],'holdings_recorded':True,'watchlist_recorded':True}),datetime.now(timezone.utc).isoformat()))
+        m=self.create();self.core.tick()
+        row=db.execute('SELECT priority,priority_version FROM research_jobs WHERE mandate_id=? AND action=?',(m['mandate']['mandate_id'],'baseline_review')).fetchone()
+        self.assertEqual(row['priority_version'],'v1');self.assertEqual(row['priority'],100)
+    def test_merge_anchor_prefers_send_over_newer_aggregate(self):
+        from huohuo.research_partner.contact import select_merge_anchor
+        from huohuo.research_partner.models import ContactDecision
+        now=datetime.now(timezone.utc)
+        common=dict(mandate_id='MND_'+'1'*32,mandate_revision=1,reason_code='level_met',condition_result='met',condition_key='notable_change',dedupe_key='dedupe-key-1')
+        send=ContactDecision(decision_id='DEC_'+'a'*32,decision='send',created_at=now-timedelta(seconds=60),**common)
+        aggregate=ContactDecision(decision_id='DEC_'+'b'*32,decision='aggregate',created_at=now,**common)
+        self.assertIs(select_merge_anchor([aggregate,send],now),send)
+    def test_semantic_confidence_calibration_is_opt_in(self):
+        from huohuo.research_partner.conditions import evaluate_condition
+        from huohuo.research_partner.models import ResearchJobResult
+        at=datetime.now(timezone.utc)
+        def result(refs):
+            return ResearchJobResult(result_id='RES_'+'0'*32,job_id='JOB_'+'0'*32,run_id='synthetic',outcome='completed',structured_result={'evidence_ids':['e1','e2']},evidence_batch_id='batch-1',contact_suggestion={'judgements':{'notable_change':{'judgement':'met','confidence':0.8,'evidence_refs':refs}}},received_at=at)
+        condition={'type':'semantic','claim':'notable_change','source':'contact_suggestion','min_confidence':0.7,'calibrate_evidence':True}
+        self.assertEqual(evaluate_condition(condition,result(['e1'])).result,'unknown')
+        self.assertEqual(evaluate_condition(condition,result(['e1','e2'])).result,'met')
+        del condition['calibrate_evidence']
+        self.assertEqual(evaluate_condition(condition,result(['e1'])).result,'met')
+    def test_priority_orders_list_without_filtering(self):
+        _,q=self.prepare_queue();db=self.core.store._connect()
+        with self.core.store.transaction():
+            db.execute("INSERT INTO notification_queue(decision_id,principal,mandate_id,revision,generation,channel,status,eligible_at,expires_at,updated_at,config_revision,priority,priority_version,priority_detail) SELECT decision_id,principal,mandate_id,revision,generation,'email',status,eligible_at,expires_at,updated_at,config_revision,90,'v1','{}' FROM notification_queue WHERE decision_id=? AND channel='app'",(q['decision_id'],))
+            db.execute('UPDATE notification_queue SET priority=10 WHERE decision_id=? AND channel=?',(q['decision_id'],'app'))
+        items=self.core.notifications.list('alice')['items']
+        self.assertEqual([(i['channel'],i['priority']) for i in items][:2],[('email',90),('app',10)])
     def test_expiry_and_inflight_timeout(self):
         _,q=self.prepare_queue();original=self.repo.clock;self.repo.clock=lambda:original()+86401
         self.assertIsNone(self.core.notifications.reserve(q['decision_id']));self.assertEqual(self.core.notifications.list('alice')['items'][0]['status'],'cancelled')

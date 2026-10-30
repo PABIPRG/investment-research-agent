@@ -141,6 +141,10 @@ def validate_condition_definition(condition: Mapping[str, Any] | None) -> None:
             condition["evidence_required"], bool
         ):
             raise ConditionDefinitionError("evidence_required 必须是布尔值")
+        if "calibrate_evidence" in condition and not isinstance(
+            condition["calibrate_evidence"], bool
+        ):
+            raise ConditionDefinitionError("calibrate_evidence 必须是布尔值")
         return
     if kind in {"all", "any"}:
         children = condition.get("conditions")
@@ -407,6 +411,13 @@ def _series_points(entry: Mapping[str, Any]) -> list[tuple[str | None, float]] |
 # ── 语义条件 ───────────────────────────────────────────────────────
 
 
+def _calibrated_confidence(raw: float, evidence: tuple[str, ...]) -> float:
+    """按证据条数做保守校准：单条证据降权，不提高原始置信度。"""
+
+    factor = 1.0 if len(evidence) >= 2 else 0.85
+    return min(1.0, max(0.0, raw * factor))
+
+
 def _evaluate_semantic(
     condition: Mapping[str, Any], result: ResearchJobResult
 ) -> ConditionOutcome:
@@ -418,6 +429,9 @@ def _evaluate_semantic(
     if not _is_number(min_confidence) or not 0 <= float(min_confidence) <= 1:
         raise ConditionDefinitionError("min_confidence 必须在 0 到 1 之间")
     evidence_required = condition.get("evidence_required", True)
+    calibrate_evidence = condition.get("calibrate_evidence", False)
+    if not isinstance(calibrate_evidence, bool):
+        raise ConditionDefinitionError("calibrate_evidence 必须是布尔值")
 
     judgement = _judgement(result, claim, condition.get("source"))
     if judgement is None:
@@ -438,8 +452,18 @@ def _evaluate_semantic(
         if confidence is not None:
             if not _is_number(confidence) or not 0 <= float(confidence) <= 1:
                 return ConditionOutcome("error", f"invalid_confidence: {claim}", evidence)
-            if float(confidence) < float(min_confidence):
-                return ConditionOutcome("unknown", f"low_confidence: {claim}", evidence)
+            calibrated = _calibrated_confidence(
+                float(confidence), evidence
+            ) if calibrate_evidence else float(confidence)
+            if calibrated < float(min_confidence):
+                suffix = (
+                    f"（校准后 {calibrated:.3f}，原始 {float(confidence):.3f}）"
+                    if calibrate_evidence
+                    else ""
+                )
+                return ConditionOutcome(
+                    "unknown", f"low_confidence: {claim}{suffix}", evidence
+                )
 
         if evidence_required:
             if result.evidence_batch_id is None:

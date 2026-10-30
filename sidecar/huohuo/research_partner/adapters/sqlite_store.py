@@ -223,11 +223,14 @@ class SqliteBusinessStore:
                 raise StorageUnavailable("数据库包含当前版本不认识的迁移，禁止降级打开")
             if applied and available - applied:
                 pending = available-applied
-                suffix = '.before-unified-strategy' if '017_unified_strategy_work' in pending else '.before-legacy-transfer' if '016_legacy_transfer' in pending else '.before-source-heads' if '015_source_heads' in pending else '.before-strategy-subjects' if '011_strategy_run_subjects' in pending and '010_strategies' not in pending else '.before-strategies' if '010_strategies' in pending else '.before-notification-channels' if '009_notification_channels' in pending and not {'008_followup_notifications','008_investment'} & pending else '.before-v14-integration' if {'008_followup_notifications','008_investment'} <= pending else '.before-followup' if '008_followup_notifications' in pending else '.before-investment' if '008_investment' in pending else '.before-research-tools' if '007_research_tool_calls' in pending else '.before-entity-confirmation' if '006_entity_confirmation' in pending else '.before-notification-tests' if '020_notification_tests' in pending else '.before-v14'
+                suffix = '.before-unified-strategy' if '017_unified_strategy_work' in pending else '.before-legacy-transfer' if '016_legacy_transfer' in pending else '.before-source-heads' if '015_source_heads' in pending else '.before-strategy-subjects' if '011_strategy_run_subjects' in pending and '010_strategies' not in pending else '.before-strategies' if '010_strategies' in pending else '.before-notification-channels' if '009_notification_channels' in pending and not {'008_followup_notifications','008_investment'} & pending else '.before-v14-integration' if {'008_followup_notifications','008_investment'} <= pending else '.before-followup' if '008_followup_notifications' in pending else '.before-investment' if '008_investment' in pending else '.before-research-tools' if '007_research_tool_calls' in pending else '.before-entity-confirmation' if '006_entity_confirmation' in pending else '.before-notification-tests' if '020_notification_tests' in pending else '.before-notification-priority' if '021_notification_priority' in pending else '.before-research-priority' if '022_research_job_priority' in pending else '.before-v14'
                 backup = self.path.with_suffix(self.path.suffix + suffix)
                 if not backup.exists():
-                    with sqlite3.connect(backup) as target:
+                    target = sqlite3.connect(backup)
+                    try:
                         connection.backup(target)
+                    finally:
+                        target.close()
                 backup.chmod(0o600)
             for path in sorted(_MIGRATIONS_DIR.glob("*.sql")):
                 version = path.stem
@@ -388,6 +391,8 @@ class SqliteBusinessStore:
             checkpoint=_loads(row["checkpoint_json"], {}),
             cancel_generation=row["cancel_generation"],
             next_run_at=_parse(row["next_run_at"]),
+            priority=row["priority"],
+            priority_version=row["priority_version"],
             dedupe_key=row["dedupe_key"],
             last_error=row["last_error"],
             created_at=_parse(row["created_at"]),
@@ -1354,9 +1359,9 @@ class SqliteBusinessStore:
                 INSERT INTO research_jobs(
                     job_id, mandate_id, mandate_revision, trigger_event_id, action,
                     status, lease_token, lease_expires_at, attempt_count, budget_json,
-                    checkpoint_json, cancel_generation, next_run_at, dedupe_key,
-                    last_error, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    checkpoint_json, cancel_generation, next_run_at, priority,
+                    priority_version, dedupe_key, last_error, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     job.job_id,
@@ -1372,6 +1377,8 @@ class SqliteBusinessStore:
                     _dumps(job.checkpoint),
                     job.cancel_generation,
                     _iso(job.next_run_at),
+                    job.priority,
+                    job.priority_version,
                     job.dedupe_key,
                     job.last_error,
                     _iso(job.created_at),
@@ -1775,6 +1782,34 @@ class SqliteBusinessStore:
         sql += " ORDER BY created_at DESC, decision_id DESC LIMIT 1"
         row = self._connect().execute(sql, params).fetchone()
         return None if row is None else self._decision_from_row(row)
+
+    def list_recent_contact_decisions(
+        self,
+        mandate_id: str,
+        *,
+        since: datetime,
+        condition_key: str | None = None,
+        kinds: Sequence[str] = ("send", "aggregate"),
+        limit: int = 50,
+    ) -> list[ContactDecision]:
+        """合并窗口的候选决定；顺序由调用方按锚点分选择。"""
+
+        if not kinds:
+            return []
+        size = max(1, min(int(limit), 200))
+        placeholders = ", ".join("?" for _ in kinds)
+        params: list[Any] = [mandate_id, _iso(since), *kinds]
+        sql = (
+            "SELECT * FROM contact_decisions WHERE mandate_id = ? "
+            f"AND created_at >= ? AND decision IN ({placeholders})"
+        )
+        if condition_key is not None:
+            sql += " AND condition_key = ?"
+            params.append(condition_key)
+        sql += " ORDER BY created_at DESC, decision_id DESC LIMIT ?"
+        params.append(size)
+        rows = self._connect().execute(sql, params).fetchall()
+        return [self._decision_from_row(row) for row in rows]
 
     # ── 消推配置与暂缓 ──────────────────────────────────────────────
 

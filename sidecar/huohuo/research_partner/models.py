@@ -209,6 +209,8 @@ class ResearchJob(_StrictModel):
     checkpoint: dict[str, Any] = Field(default_factory=dict)
     cancel_generation: int = Field(default=0, ge=0)
     next_run_at: AwareDatetime
+    priority: int = Field(default=50, ge=0, le=100)
+    priority_version: str = Field(default="v1", min_length=1, max_length=40)
     dedupe_key: str = Field(min_length=8, max_length=300)
     last_error: str | None = None
     created_at: AwareDatetime

@@ -209,7 +209,7 @@ class Mandates:
                 return f'baseline:{mandate.mandate_id}:{mandate.current_revision}:{generation}'
             self.event_router(baseline_key).route()
             db=self.store._connect()
-            rows=db.execute("SELECT j.*,m.principal_id,m.status AS mandate_status,m.current_revision,g.generation,r.scope_json,r.goal FROM research_jobs j JOIN mandates m USING(mandate_id) JOIN mandate_generation g USING(mandate_id) JOIN mandate_revisions r ON r.mandate_id=j.mandate_id AND r.revision=j.mandate_revision LEFT JOIN execution_jobs x ON x.job_id=j.job_id WHERE j.status='pending' AND x.job_id IS NULL AND j.next_run_at<=?",(datetime.now(timezone.utc).isoformat(),)).fetchall()
+            rows=db.execute("SELECT j.*,m.principal_id,m.status AS mandate_status,m.current_revision,g.generation,r.scope_json,r.goal FROM research_jobs j JOIN mandates m USING(mandate_id) JOIN mandate_generation g USING(mandate_id) JOIN mandate_revisions r ON r.mandate_id=j.mandate_id AND r.revision=j.mandate_revision LEFT JOIN execution_jobs x ON x.job_id=j.job_id WHERE j.status='pending' AND x.job_id IS NULL AND j.next_run_at<=? ORDER BY j.priority DESC,j.next_run_at,j.job_id",(datetime.now(timezone.utc).isoformat(),)).fetchall()
             for row in rows:
                 if row['action'].startswith('strategy.'):
                     continue  # 有类型的策略任务由同一核心交接器创建执行。

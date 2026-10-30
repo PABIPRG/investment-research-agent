@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import math
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -41,6 +42,28 @@ from .models import (
 from .ports import BusinessStore
 
 DEFAULT_TIMEZONE = "Asia/Shanghai"
+
+_MERGE_RESULT_WEIGHTS = {"met": 1.0, "unmet": 0.5, "unknown": 0.4, "error": 0.3}
+
+
+def merge_anchor_score(decision: ContactDecision, at: datetime) -> float:
+    """合并窗口展示锚点分：只决定合并后先展示哪条，不影响是否合并。"""
+
+    kind = 1.0 if decision.decision == "send" else 0.6
+    result = _MERGE_RESULT_WEIGHTS.get(decision.condition_result, 0.5)
+    age = max(0.0, (at - decision.created_at).total_seconds())
+    freshness = math.exp(-age / (6 * 3600))
+    return 0.5 * kind + 0.3 * result + 0.2 * freshness
+
+
+def select_merge_anchor(
+    decisions: list[ContactDecision], at: datetime
+) -> ContactDecision | None:
+    """从窗口内决定中选展示锚点；同分时取较新的决定。"""
+
+    if not decisions:
+        return None
+    return max(decisions, key=lambda item: (merge_anchor_score(item, at), item.created_at))
 
 
 @runtime_checkable
@@ -495,15 +518,16 @@ class ContactDecisionService:
 
         if policy.merge_window_seconds:
             since = at - timedelta(seconds=policy.merge_window_seconds)
-            recent = self.store.find_recent_contact_decision(
+            recent = self.store.list_recent_contact_decisions(
                 mandate.mandate_id, since=since, condition_key=key
             )
-            if recent is not None:
+            anchor = select_merge_anchor(recent, at)
+            if anchor is not None:
                 return _Outcome(
                     "aggregate",
                     "merged_with_recent",
                     candidate.condition_result,
-                    f"与 {recent.decision_id} 合并展示",
+                    f"与 {anchor.decision_id} 合并展示（窗口内 {len(recent)} 条）",
                     key,
                 )
 
