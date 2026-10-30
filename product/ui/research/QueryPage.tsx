@@ -54,7 +54,7 @@ export function QueryPage({ goChat, switcher }: { goChat: () => void; switcher: 
             {list.data?.executions.length ?? '—'} 条记录 · 最近读取 {time(list.at)}
           </p>
         </div>
-        <button disabled={list.loading} onClick={() => setRefresh((n) => n + 1)}>
+        <button disabled={list.loading || list.refreshing} onClick={list.refresh}>
           刷新记录
         </button>
       </header>

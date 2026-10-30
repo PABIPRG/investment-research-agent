@@ -62,6 +62,7 @@ export function NotificationTestDialog({
     } finally {
       setBusy(false)
       changed()
+      window.dispatchEvent(new Event('huohuo-notification-test-sent'))
     }
   }
   const inspect = async () => {

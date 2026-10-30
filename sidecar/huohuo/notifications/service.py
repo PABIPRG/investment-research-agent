@@ -1,4 +1,5 @@
 import json
+import hashlib
 import uuid
 from datetime import datetime, timezone
 from .configuration import CHANNELS, FIELDS, configured, public_config, merge_config, validate_channels
@@ -72,6 +73,24 @@ class Notifications:
     def list(self, principal):
         rows=self.store._connect().execute('SELECT q.*,d.reason_code,d.condition_result,d.detail AS decision_detail,d.evidence_ref FROM notification_queue q JOIN contact_decisions d USING(decision_id) WHERE principal=? ORDER BY updated_at DESC LIMIT 200',(principal,)).fetchall()
         return {'items':[dict(r) for r in rows]}
+
+    def in_app(self, principal):
+        with self.store.read_snapshot():
+            return self._in_app(principal)
+
+    def _in_app(self, principal):
+        # Read projection only: delivery eligibility remains owned by reserve/send.
+        items=[]
+        for row in self.list(principal)['items']:
+            if row['channel']!='app' or row['status']!='delivered':continue
+            revision=self.store.get_revision(row['mandate_id'],row['revision'])
+            items.append({'id':'decision:'+row['decision_id'],'kind':'mandate','title':revision.goal,'body':row['decision_detail'],'mandate_id':row['mandate_id'],'decision_id':row['decision_id'],'created_at':row['updated_at']})
+        for row in self.store._connect().execute("SELECT * FROM notification_tests WHERE principal=? AND channel='app' AND status='delivered' ORDER BY created_at DESC LIMIT 20",(principal,)):
+            if row['channel']=='app' and row['status']=='delivered':
+                from .testing import TITLE,CONTENT
+                items.append({'id':'test:'+row['test_id'],'kind':'test','title':TITLE,'body':CONTENT,'created_at':row['updated_at']})
+        scope=hashlib.sha256((self.core.instance+':'+principal).encode()).hexdigest()[:32]
+        return {'scope':scope,'items':sorted(items,key=lambda x:(x['created_at'],x['id']))}
 
     def reserve(self, decision_id, channel='app'):
         # 与暂停/撤权/配置命令共享 BEGIN IMMEDIATE；commit 是发送起点。

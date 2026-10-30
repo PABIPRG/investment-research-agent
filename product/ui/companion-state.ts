@@ -6,6 +6,7 @@ export type CompanionMotion =
   | 'working'
   | 'speaking'
   | 'awaiting_reply'
+  | 'gentle_knock'
   | 'sigh'
 export function companionMotion(input: {
   failed?: boolean

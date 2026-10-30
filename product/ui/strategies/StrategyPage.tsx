@@ -1,3 +1,5 @@
+import { useSnapshot } from '../shared/useSnapshot.js'
+import { ReadFeedback } from '../shared/ReadFeedback.js'
 import { ReadStatus } from '../shared/ReadStatus.js'
 import { useEffect, useState } from 'react'
 import { request, errorText } from '../shared/api.js'
@@ -20,34 +22,27 @@ import page from '../shared/Page.module.css'
 import css from '../Business.module.css'
 import local from './Strategy.module.css'
 export function StrategyPage() {
-  const [view, setView] = useState<StrategyView>(),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState(''),
-    [notice, setNotice] = useState(''),
+  const [commandError, setError] = useState('')
+  const [notice, setNotice] = useState(''),
     [revision, refresh] = useState(0),
     [selected, setSelected] = useState<string>(),
     [edit, setEdit] = useState<Edit>()
-  useEffect(() => {
-    const abort = new AbortController()
-    setLoading(true)
-    setError('')
-    request<StrategyView>('strategies', undefined, abort.signal)
-      .then((data) => {
-        if (!abort.signal.aborted) setView(data)
-      })
-      .catch((e) => {
-        if (!abort.signal.aborted) setError(errorText(e))
-      })
-      .finally(() => {
-        if (!abort.signal.aborted) setLoading(false)
-      })
-    return () => abort.abort()
-  }, [revision])
-  useEffect(() => {
-    if (!view?.automation?.enabled && !view?.runs.some((r) => r.status === 'running')) return
-    const timer = setTimeout(() => refresh((v) => v + 1), 3000)
-    return () => clearTimeout(timer)
-  }, [view])
+  const snapshot = useSnapshot<StrategyView>(
+    `strategies:${revision}`,
+    (signal) => request('strategies', undefined, signal),
+    {
+      paused: !!edit,
+      pollMs: (data) =>
+        data.runs.some((r) => r.status === 'running')
+          ? 3000
+          : data.automation?.enabled
+            ? 60000
+            : undefined,
+    },
+  )
+  const view = snapshot.data,
+    loading = snapshot.loading,
+    error = commandError || snapshot.error
   const strategy = view?.strategies.find((s) => s.id === selected)
   const hasStrategies = !!view?.strategies.length
   const active = view?.strategies.filter((s) => s.status === 'active').length ?? 0
@@ -76,18 +71,12 @@ export function StrategyPage() {
               生成全池预案
             </button>
           )}
-          <button disabled={loading} onClick={() => refresh((v) => v + 1)}>
+          <button disabled={loading || snapshot.refreshing} onClick={snapshot.refresh}>
             刷新记录
           </button>
         </div>
       </header>
-      {error && (
-        <p role="alert">
-          {error}
-          {view ? ' 当前显示上次读取结果，可能过期。' : ''}
-        </p>
-      )}
-      {notice && <p role="status">{notice}</p>}
+      <ReadFeedback error={error} notice={notice} />
       <ReadStatus loading={loading} hasData={view !== undefined} label="正在读取策略与验证记录…" />
       {view && (
         <>

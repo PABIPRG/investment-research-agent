@@ -218,6 +218,7 @@ class Handler(BaseHTTPRequestHandler):
                     if self.command=="GET":return self.reply(200,service.config(config["principal"]))
                     if self.command=="POST":return self.reply(200,service.save(config["principal"],self.body()))
                 if parts==["notifications"] and self.command=="GET":return self.reply(200,service.list(config["principal"]))
+                if parts==["notifications","in-app"] and self.command=="GET":return self.reply(200,service.in_app(config["principal"]))
                 if parts==["notifications","tests"] and self.command=="GET":return self.reply(200,service.tests.list(config["principal"]))
                 if len(parts)==3 and parts[:2]==["notifications","tests"] and self.command=="POST":
                     action=parts[2];body=self.body()

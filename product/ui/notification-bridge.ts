@@ -4,6 +4,7 @@ export const notificationPaths = [
   '/api/huohuo/notifications',
   '/api/huohuo/notification-tests',
   '/api/huohuo/notification-test-command',
+  '/api/huohuo/app-notifications',
 ]
 export function createNotificationBridge(address: string, token: string) {
   const base = new URL(address)
@@ -36,7 +37,9 @@ export function createNotificationBridge(address: string, token: string) {
           ? '/notifications'
           : url.pathname === notificationPaths[2]
             ? '/notifications/tests'
-            : ''
+            : url.pathname === notificationPaths[4]
+              ? '/notifications/in-app'
+              : ''
       if (!path) return reply(405, { detail: '不支持的请求' })
     } else if (request.method === 'POST' && (config || url.pathname === notificationPaths[3])) {
       if (request.headers.get('Content-Type')?.split(';')[0] !== 'application/json')

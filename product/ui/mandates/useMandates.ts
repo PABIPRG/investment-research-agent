@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSnapshot } from '../shared/useSnapshot.js'
 import type { MandateView } from './model.js'
 import { semanticCondition, type ContactRule } from './ContactRuleEditor.js'
 async function api(path: string, signal?: AbortSignal, body?: unknown) {
@@ -11,16 +12,18 @@ async function api(path: string, signal?: AbortSignal, body?: unknown) {
   })
   const data = await response.json()
   if (!response.ok)
-    throw new Error(
-      response.status === 403
-        ? '无权访问此实例。请重新连接。'
-        : data.detail || '读取失败，请稍后重试。',
+    throw Object.assign(
+      new Error(
+        response.status === 403
+          ? '无权访问此实例。请重新连接。'
+          : data.detail || '读取失败，请稍后重试。',
+      ),
+      { http_status: response.status },
     )
   return data
 }
 export function useMandates() {
-  const [items, setItems] = useState<MandateView[]>([]),
-    [selected, setSelected] = useState<string | undefined>(() => {
+  const [selected, setSelected] = useState<string | undefined>(() => {
       try {
         return JSON.parse(sessionStorage.getItem('huohuo-return') || '{}').mandate
       } catch {
@@ -28,11 +31,8 @@ export function useMandates() {
       }
     }),
     [refresh, setRefresh] = useState(0),
-    [loaded, setLoaded] = useState(false),
     [trigger, setTrigger] = useState('all')
-  const [loading, setLoading] = useState(true),
-    [error, setError] = useState(''),
-    [busy, setBusy] = useState(false),
+  const [busy, setBusy] = useState(false),
     [feedback, setFeedback] = useState('')
   const [filter, setFilter] = useState('all'),
     [editing, setEditing] = useState(false),
@@ -49,39 +49,24 @@ export function useMandates() {
   const [briefPeriod, setBriefPeriod] = useState('post')
   const pending = useRef<{ fingerprint: string; key: string }>()
   const heading = useRef<HTMLHeadingElement>(null)
-  useEffect(() => {
-    const controller = new AbortController()
-    setLoading(true)
-    setError('')
-    api('mandates', controller.signal)
-      .then((data) => {
-        if (!controller.signal.aborted) {
-          setItems(data.items)
-          setLoaded(true)
-          setLoading(false)
-        }
-      })
-      .catch((e) => {
-        if (!controller.signal.aborted) {
-          setError(e.message)
-          setLoading(false)
-          if (e.message.includes('无权')) setItems([])
-        }
-      })
-    return () => controller.abort()
-  }, [refresh])
-  useEffect(() => {
-    if (
-      items.some(
-        (x) =>
-          x.executions.some((e) => ['queued', 'running'].includes(e.status)) ||
-          (x.mandate.status === 'tracking' && !x.executions.length),
-      )
-    ) {
-      const timer = setTimeout(() => setRefresh((x) => x + 1), 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [items])
+  const snapshot = useSnapshot<{ items: MandateView[] }>(
+    `mandates:${refresh}`,
+    (signal) => api('mandates', signal),
+    {
+      paused: busy || editing,
+      pollMs: (data) =>
+        data.items.some((x) => x.executions.some((e) => ['queued', 'running'].includes(e.status)))
+          ? 3000
+          : 60000,
+    },
+  )
+  const items = snapshot.data?.items ?? [],
+    loading = snapshot.loading,
+    error = snapshot.error,
+    loaded = snapshot.data !== undefined
+  const setItems = (update: (old: MandateView[]) => MandateView[]) =>
+    snapshot.replace((old) => (old ? { ...old, items: update(old.items) } : old))
+  const located = useRef('')
   useEffect(() => {
     const open = (event: Event) => {
       setSelected((event as CustomEvent<string>).detail)
@@ -99,10 +84,14 @@ export function useMandates() {
   })()
   const current = items.find((x) => x.mandate.mandate_id === selected)
   useEffect(() => {
-    if (current && returnDecision) {
+    const key = `${selected}:${returnDecision}`
+    if (current && returnDecision && located.current !== key) {
       const el = document.getElementById(returnDecision)
-      el?.scrollIntoView({ block: 'center' })
-      el?.focus()
+      if (el) {
+        located.current = key
+        el.scrollIntoView({ block: 'center' })
+        el.focus()
+      }
     }
   }, [current, returnDecision])
   useEffect(() => {
@@ -139,6 +128,7 @@ export function useMandates() {
     const fingerprint = JSON.stringify(payload)
     if (pending.current?.fingerprint !== fingerprint)
       pending.current = { fingerprint, key: crypto.randomUUID() }
+    snapshot.invalidate()
     setBusy(true)
     setFeedback('')
     try {
@@ -159,6 +149,8 @@ export function useMandates() {
   return {
     items,
     loaded,
+    refreshing: snapshot.refreshing,
+    refreshNow: snapshot.refresh,
     trigger,
     setTrigger,
     selected,

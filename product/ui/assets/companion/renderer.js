@@ -1,3 +1,5 @@
+import { configureAction } from './knock-motion.js'
+import { createInteraction } from './interaction-motion.js'
 import * as THREE from './vendor/three.module.js'
 import { GLTFLoader } from './vendor/GLTFLoader.js'
 import { RoomEnvironment } from './vendor/RoomEnvironment.js'
@@ -12,9 +14,8 @@ export async function mount(canvas, onReady, onError) {
     active,
     motion = 'idle',
     ready = false,
-    turning = false,
-    turnTime = 0,
-    sighTime = 0
+    sighTime = 0,
+    visible = true
   const reduced = matchMedia('(prefers-reduced-motion: reduce)')
   const renderer = new THREE.WebGLRenderer({
     canvas,
@@ -31,6 +32,7 @@ export async function mount(canvas, onReady, onError) {
     camera = new THREE.OrthographicCamera(-2, 2, 2.325, -2.325, 0.1, 100)
   // Rotate the actual model in 3D; never flip the 2D canvas into a flat line.
   const pivot = new THREE.Group()
+  const interaction = createInteraction(pivot, canvas)
   scene.add(pivot)
   camera.position.set(0, 2.05, 9)
   camera.lookAt(0, 1.7, 0)
@@ -58,7 +60,7 @@ export async function mount(canvas, onReady, onError) {
   }
   function tick(t) {
     frame = 0
-    if (dead || document.hidden || reduced.matches || !ready) return
+    if (dead || !visible || document.hidden || reduced.matches || !ready) return
     const dt = Math.min((t - (last || t)) / 1000, 0.05)
     last = t
     mixer.update(dt)
@@ -78,21 +80,12 @@ export async function mount(canvas, onReady, onError) {
       canvas.dataset.sighProgress = String(progress)
       if (progress === 1) play('idle')
     }
-    if (turning) {
-      turnTime = Math.min(turnTime + dt, 0.48)
-      const progress = turnTime / 0.48
-      pivot.rotation.y = Math.PI * 2 * (progress * progress * (3 - 2 * progress))
-      if (progress === 1) {
-        turning = false
-        pivot.rotation.y = 0
-        canvas.dataset.turning = 'false'
-      }
-    }
+    interaction.tick(dt)
     draw()
     frame = requestAnimationFrame(tick)
   }
   function resume() {
-    if (!frame && !dead && !document.hidden && !reduced.matches && ready)
+    if (!frame && !dead && visible && !document.hidden && !reduced.matches && ready)
       frame = requestAnimationFrame(tick)
     else draw()
   }
@@ -139,7 +132,10 @@ export async function mount(canvas, onReady, onError) {
     }
     const old = active
     active = next
-    next.reset().setEffectiveWeight(1).play()
+    configureAction(next, name, canvas, THREE.LoopOnce, THREE.LoopRepeat)
+      .reset()
+      .setEffectiveWeight(1)
+      .play()
     next.time = offset
     if (old) old.crossFadeTo(next, 0.25, false)
     if (reduced.matches) {
@@ -158,9 +154,7 @@ export async function mount(canvas, onReady, onError) {
   function preference() {
     stop()
     if (reduced.matches) {
-      turning = false
-      pivot.rotation.y = 0
-      canvas.dataset.turning = 'false'
+      interaction.reset()
     }
     active = null
     play(motion)
@@ -285,11 +279,13 @@ export async function mount(canvas, onReady, onError) {
   )
   function turn() {
     if (!ready || dead || reduced.matches || document.hidden) return
-    turning = true
-    turnTime = 0
-    canvas.dataset.turning = 'true'
-    canvas.dataset.turnCount = String(Number(canvas.dataset.turnCount || 0) + 1)
+    interaction.turn()
     resume()
   }
-  return { play, turn, dispose }
+  function setVisible(value) {
+    visible = value
+    stop()
+    if (visible) resume()
+  }
+  return { play, turn, setVisible, dispose }
 }

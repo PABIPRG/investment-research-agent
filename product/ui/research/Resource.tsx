@@ -1,3 +1,4 @@
+import { useSnapshot } from '../shared/useSnapshot.js'
 import { useEffect, useState } from 'react'
 import { label, message, read, states } from '../model.js'
 import css from '../Query.module.css'
@@ -6,6 +7,8 @@ export interface Resource<T> {
   data?: T
   error?: string
   loading: boolean
+  refreshing?: boolean
+  refresh?: () => void
   at?: number
 }
 
@@ -15,21 +18,20 @@ export function useRead<T>(
   refresh: number,
   id?: string,
 ): Resource<T> {
-  const [state, setState] = useState<Resource<T>>({ loading: true })
-  useEffect(() => {
-    const controller = new AbortController()
-    setState((old) => ({ ...old, loading: true, error: undefined }))
-    void read<T>(kind, controller.signal, id)
-      .then((data) => {
-        if (!controller.signal.aborted) setState({ data, loading: false, at: Date.now() / 1000 })
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted)
-          setState((old) => ({ ...old, error: message(error), loading: false }))
-      })
-    return () => controller.abort()
-  }, [kind, id, refresh])
-  return state
+  const snapshot = useSnapshot<T>(
+    `${kind}:${id || ''}:${refresh}`,
+    (signal) => read<T>(kind, signal, id),
+    {
+      pollMs: (value) => {
+        const data = value as any
+        return data.executions?.some((x: any) => ['queued', 'running'].includes(x.status)) ||
+          ['queued', 'running'].includes(data.execution?.status)
+          ? 3000
+          : 60000
+      },
+    },
+  )
+  return { ...snapshot, at: snapshot.at || undefined }
 }
 export function State({ value }: { value: string }) {
   return (

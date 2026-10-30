@@ -1,3 +1,5 @@
+import { useSnapshot } from '../shared/useSnapshot.js'
+import { ReadFeedback } from '../shared/ReadFeedback.js'
 import business from '../Business.module.css'
 import { recordedName } from '../business-model.js'
 import { useEffect, useState } from 'react'
@@ -18,36 +20,21 @@ export function PositionRiskPlans({
   visit?: (mid: string) => void
 }) {
   const [edit, setEdit] = useState<RiskEdit>()
-  const [latest, setLatest] = useState<Facts['position_risk']>()
-  const [statusError, setStatusError] = useState('')
+  const snapshot = useSnapshot<Facts>(
+    `position-risk:${facts.version}:${refreshKey}`,
+    (signal) => request('investment', undefined, signal),
+    { paused: !!edit, pollMs: () => 15000 },
+  )
   useEffect(() => {
-    const abort = new AbortController()
-    setLatest(undefined)
-    const refresh = () =>
-      void request<Facts>('investment', undefined, abort.signal)
-        .then((current) => {
-          if (abort.signal.aborted) return
-          if (current.version === facts.version) {
-            setLatest(current.position_risk)
-            setStatusError('')
-          } else window.dispatchEvent(new Event('huohuo-investment-changed'))
-        })
-        .catch(() => {
-          if (!abort.signal.aborted)
-            setStatusError('风险状态刷新失败，以下为上次记录；请用顶部刷新核对。')
-        })
-    refresh()
-    const timer = setInterval(refresh, 5000)
-    return () => {
-      clearInterval(timer)
-      abort.abort()
-    }
-  }, [facts.version, refreshKey])
-  const view = latest || facts.position_risk
+    if (snapshot.data && snapshot.data.version > facts.version)
+      window.dispatchEvent(new Event('huohuo-investment-changed'))
+  }, [snapshot.data?.version, facts.version])
+  const view =
+    snapshot.data?.version === facts.version ? snapshot.data.position_risk : facts.position_risk
   if (!view) return <p role="alert">当前后端未提供持仓风险计划，请确认实例版本后重试。</p>
   return (
     <section aria-label="持仓风险计划" className={ui.stack}>
-      {statusError && <p role="alert">{statusError}</p>}
+      <ReadFeedback error={snapshot.error} />
       <FieldGroup
         title="持仓止盈止损"
         hint="按激活时成本设定目标，成本变化后需明确重新布防；触发后仅提醒，不下单。"
