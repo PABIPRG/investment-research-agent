@@ -7,7 +7,14 @@ import {
 } from './model.js'
 const key = 'huohuo.activity-seen.v1'
 const listeners = new Set<() => void>()
-let snapshot = { items: [] as ActivityRecord[], count: 0, loaded: false, loading: true, error: '' }
+let snapshot = {
+  items: [] as ActivityRecord[],
+  count: 0,
+  loaded: false,
+  loading: true,
+  refreshing: false,
+  error: '',
+}
 let seen: SeenActivity = {}
 let pending: Promise<void> | undefined
 let timer: ReturnType<typeof setInterval> | undefined
@@ -24,9 +31,16 @@ function emit() {
   snapshot = { ...snapshot, count: unseenActivity(snapshot.items, seen) }
   for (const listener of listeners) listener()
 }
-export function refreshActivity(): Promise<void> {
-  if (pending) return pending
-  snapshot = { ...snapshot, loading: true }
+export function refreshActivity(manual = false): Promise<void> {
+  if (document.hidden) return Promise.resolve()
+  if (pending) {
+    if (manual) {
+      snapshot = { ...snapshot, refreshing: true }
+      emit()
+    }
+    return pending
+  }
+  snapshot = { ...snapshot, loading: !snapshot.loaded, refreshing: manual }
   emit()
   pending = fetch('api/huohuo/notifications', { cache: 'no-store' })
     .then(async (response) => {
@@ -47,7 +61,7 @@ export function refreshActivity(): Promise<void> {
     })
     .finally(() => {
       pending = undefined
-      snapshot = { ...snapshot, loading: false }
+      snapshot = { ...snapshot, loading: false, refreshing: false }
       emit()
     })
   return pending

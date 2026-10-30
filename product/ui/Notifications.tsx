@@ -1,3 +1,5 @@
+import { useSnapshot } from './shared/useSnapshot.js'
+import { ReadFeedback } from './shared/ReadFeedback.js'
 import page from './shared/Page.module.css'
 import { ReadStatus } from './shared/ReadStatus.js'
 import { useEffect, useState } from 'react'
@@ -23,37 +25,26 @@ export function NotificationsPage({
 }: {
   visit: (mandate: string, decision: string) => void
 }) {
-  const [config, setConfig] = useState<Config>(),
-    [rows, setRows] = useState<Receipt[]>([]),
-    [section, setSection] = useState<EditSection>(),
+  const [section, setSection] = useState<EditSection>(),
     [revision, setRevision] = useState(0),
-    [loading, setLoading] = useState(true),
-    [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
     [testChannel, setTestChannel] = useState<string>(),
     [testRefresh, setTestRefresh] = useState(0)
-  useEffect(() => {
-    const abort = new AbortController()
-    setLoading(true)
-    setError('')
-    void Promise.all([
-      request<Config>('notification-config', undefined, abort.signal),
-      request<{ items: Receipt[] }>('notifications', undefined, abort.signal),
-    ])
-      .then(([cfg, data]) => {
-        if (!abort.signal.aborted) {
-          setConfig(cfg)
-          setRows(data.items)
-        }
-      })
-      .catch((e) => {
-        if (!abort.signal.aborted) setError(errorText(e))
-      })
-      .finally(() => {
-        if (!abort.signal.aborted) setLoading(false)
-      })
-    return () => abort.abort()
-  }, [revision])
+  const snapshot = useSnapshot<{ config: Config; rows: Receipt[] }>(
+    `notifications:${revision}`,
+    async (signal) => {
+      const [config, result] = await Promise.all([
+        request<Config>('notification-config', undefined, signal),
+        request<{ items: Receipt[] }>('notifications', undefined, signal),
+      ])
+      return { config, rows: result.items }
+    },
+    { paused: !!section || !!testChannel, pollMs: () => 60000 },
+  )
+  const config = snapshot.data?.config,
+    rows = snapshot.data?.rows ?? [],
+    loading = snapshot.loading,
+    error = snapshot.error
   return (
     <main className={`${page.surface} ${business.page}`}>
       <header className={`${page.header} ${business.header}`}>
@@ -61,13 +52,12 @@ export function NotificationsPage({
           <h1>提醒方式</h1>
           <p className={business.note}>选择联系渠道，安排不被打扰的时间</p>
         </div>
-        <button disabled={loading} onClick={() => setRevision((n) => n + 1)}>
+        <button disabled={loading || snapshot.refreshing} onClick={snapshot.refresh}>
           刷新
         </button>
       </header>
       <ReadStatus loading={loading} hasData={config !== undefined} />
-      {error && <p role="alert">{error} 已显示的配置可能过期。</p>}
-      {notice && <p role="status">{notice}</p>}
+      <ReadFeedback error={error} notice={notice} />
       {config && (
         <>
           <div className={business.metrics}>
@@ -152,7 +142,7 @@ export function NotificationsPage({
           config={config}
           close={() => setSection(undefined)}
           saved={(next) => {
-            setConfig(next)
+            snapshot.replace((old) => (old ? { ...old, config: next } : old))
             setSection(undefined)
             setNotice('修改已保存。')
           }}

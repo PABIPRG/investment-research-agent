@@ -37,7 +37,7 @@ function exact(value: unknown, keys: string[]): Record<string, any> {
   return value as Record<string, any>
 }
 
-export function createChatTools(address: string, token: string, ask?: StrategyQuestion, created?: Parameters<typeof createDeliverableTools>[2]): ToolDefinition[] {
+export function createChatTools(address: string, token: string, ask?: StrategyQuestion, created?: Parameters<typeof createDeliverableTools>[2], webOrigin?: Parameters<typeof createNavigationTools>[2]): ToolDefinition[] {
   const base = new URL(address)
   if (base.protocol !== 'http:' || base.hostname !== '127.0.0.1' || !base.port || base.pathname !== '/'
     || base.username || base.password || base.search || base.hash || !token) throw new Error('聊天 API 配置无效')
@@ -95,12 +95,16 @@ export function createChatTools(address: string, token: string, ask?: StrategyQu
           guidance: '后台连接中断。写操作可能已被接受；先查询最近任务核对，不要创建另一项重复研究。' }
       }
     },
-  })), ...createMandateTools(address, token, ask), ...createResearchTools(address, token), ...createResearchReviewTools(address, token), ...createInvestmentTools(address, token, ask), ...createRiskTools(address, token, ask), ...createPersonalizationTools(address, token, ask), ...createPositionRiskTools(address, token), ...createNotificationTools(address, token, ask), ...createNavigationTools(address, token), ...createStrategyTools(address, token, ask), ...createMarketTools(address, token), ...createIndustryChainTools(address, token, ask), ...createTransferTools(address, token, ask), ...createDeliverableTools(address, token, created)]
+  })), ...createMandateTools(address, token, ask), ...createResearchTools(address, token), ...createResearchReviewTools(address, token), ...createInvestmentTools(address, token, ask), ...createRiskTools(address, token, ask), ...createPersonalizationTools(address, token, ask), ...createPositionRiskTools(address, token), ...createNotificationTools(address, token, ask), ...createNavigationTools(address, token, webOrigin), ...createStrategyTools(address, token, ask), ...createMarketTools(address, token), ...createIndustryChainTools(address, token, ask), ...createTransferTools(address, token, ask), ...createDeliverableTools(address, token, created)]
     .sort((a, b) => chatToolNames.indexOf(a.name) - chatToolNames.indexOf(b.name))
 }
 
 export async function apply(ctx: Context): Promise<void> {
-  for (const tool of createChatTools(process.env.HUOHUO_CHAT_API ?? '', process.env.HUOHUO_USER_TOKEN ?? '', nativeEntityQuestion(ctx), deliveryRecorder(ctx))) ctx.tools.register(tool)
+  for (const tool of createChatTools(process.env.HUOHUO_CHAT_API ?? '', process.env.HUOHUO_USER_TOKEN ?? '', nativeEntityQuestion(ctx), deliveryRecorder(ctx), () => {
+    // DSH owns the advertised publicUrl and local listener fallback. Read it lazily after assembly.
+    const web = ctx.get('webApp' as any) as { getAdvertisedUrl(): string } | undefined
+    return web?.getAdvertisedUrl() ?? process.env.HUOHUO_CHAT_WEB_ORIGIN
+  })) ctx.tools.register(tool)
   ctx.tools.register(createEntityConfirmationTool(process.env.HUOHUO_CHAT_API ?? '', process.env.HUOHUO_USER_TOKEN ?? '', nativeEntityQuestion(ctx)))
   ctx.plugin(skillFilesystem, { providerName: 'huohuo-bundled', includeDefaultRoots: false,
     bundledSkillDir: fileURLToPath(new URL('../../../product/skills/chat/', import.meta.url)), watch: false })

@@ -6,14 +6,25 @@ let modelPoster: string | undefined
 export function Mascot({
   motion,
   arrival,
+  visible = true,
+  onState,
 }: {
   motion: ReturnType<typeof companionMotion>
   arrival: boolean
+  visible?: boolean
+  onState?: (state: string) => void
 }) {
+  const requestedVisible = useRef(visible)
+  requestedVisible.current = visible
   const requestedMotion = useRef(motion)
   requestedMotion.current = motion
   const canvas = useRef<HTMLCanvasElement>(null),
-    player = useRef<{ play: (name: string) => void; turn: () => void; dispose: () => void }>(),
+    player = useRef<{
+      play: (name: string) => void
+      turn: () => void
+      setVisible: (visible: boolean) => void
+      dispose: () => void
+    }>(),
     lastTurn = useRef(-Infinity),
     introStarted = useRef(0),
     [ready, setReady] = useState(false),
@@ -41,6 +52,7 @@ export function Mascot({
         else {
           player.current = instance
           instance.play(requestedMotion.current)
+          instance.setVisible(requestedVisible.current)
         }
       })
       .catch(() => setFailed(true))
@@ -53,6 +65,12 @@ export function Mascot({
   useEffect(() => {
     player.current?.play(motion)
   }, [motion])
+  useEffect(() => {
+    onState?.(ready ? 'ready' : failed ? 'failed' : 'loading')
+  }, [ready, failed, onState])
+  useEffect(() => {
+    player.current?.setVisible(visible)
+  }, [visible])
   const turn = () => {
     const now = performance.now()
     if (now - lastTurn.current < 750 || !player.current) return
@@ -71,7 +89,7 @@ export function Mascot({
     return () => window.clearTimeout(timer)
   }, [arrival, ready])
   useEffect(() => {
-    const root = canvas.current?.closest('[data-huohuo-conversation]')
+    const root = canvas.current?.closest('[data-huohuo-global-companion]')
     root?.addEventListener('huohuo-companion-travel', turn)
     return () => root?.removeEventListener('huohuo-companion-travel', turn)
   }, [])
@@ -81,7 +99,7 @@ export function Mascot({
       data-motion={motion}
       data-companion-model={ready ? 'ready' : failed ? 'failed' : 'loading'}
       role="img"
-      aria-label={`火火 · ${{ sigh: '轻叹后继续陪你', idle: '在这里', listening: '聆听', thinking: '咬笔思考', working: '查阅与整理资料', speaking: '回应中', awaiting_reply: '等待你的回答' }[motion]}`}
+      aria-label={`火火 · ${{ sigh: '轻叹后继续陪你', idle: '在这里', listening: '聆听', thinking: '咬笔思考', working: '查阅与整理资料', speaking: '回应中', awaiting_reply: '等待你的回答', gentle_knock: '轻敲窗户' }[motion]}`}
     >
       <canvas ref={canvas} hidden={!ready || failed} />
       {!ready && !failed && modelPoster && <img data-model-poster src={modelPoster} alt="" />}

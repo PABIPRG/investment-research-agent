@@ -106,7 +106,7 @@ export async function launchChat(config: Instance, port = 18387, noOpen = false)
   const child = spawn(process.execPath, [executable, '--profile', chatProfileName, '--host', '127.0.0.1', '--port', String(port), ...(noOpen ? ['--no-open'] : [])], {
     cwd: config.workspace, stdio: 'inherit',
     // 只把用户 API 能力交给聊天工具；没有 worker token、attempt token 或完整配置路径。
-    env: { ...runtimeEnvironment(config), HUOHUO_CHAT_API: `http://127.0.0.1:${config.port}`, HUOHUO_USER_TOKEN: config.user_token, HUOHUO_CHAT_WEB_ORIGIN: `http://127.0.0.1:${port}` },
+    env: { ...runtimeEnvironment(config), HUOHUO_CHAT_API: `http://127.0.0.1:${config.port}`, HUOHUO_USER_TOKEN: config.user_token, HUOHUO_CHAT_WEB_ORIGIN: process.env.HUOHUO_CHAT_WEB_ORIGIN || process.env.HUOHUO_PUBLIC_URL },
   })
   await new Promise<void>((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject) })
   return child

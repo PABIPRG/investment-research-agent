@@ -158,6 +158,8 @@ export function apply(ctx: Context): void {
     ['companion/huohuo-animated.glb', 'model/gltf-binary'],
     ...[
       'renderer.js',
+      'knock-motion.js',
+      'interaction-motion.js',
       'vendor/three.module.js',
       'vendor/three.core.js',
       'vendor/GLTFLoader.js',

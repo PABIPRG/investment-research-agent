@@ -28,7 +28,7 @@ const tabs = {
 export function InvestmentPage({ visit }: { visit?: (mandate: string) => void }) {
   const root = useRef<HTMLElement>(null)
   const [viewRefresh, setViewRefresh] = useState(0)
-  const { facts, loading, error, refresh } = useInvestment()
+  const { facts, loading, refreshing, error, refresh } = useInvestment()
   const [tab, setTab] = useState<keyof typeof tabs>('holdings'),
     [query, setQuery] = useState(''),
     [edit, setEdit] = useState<EditTarget>(),
@@ -91,7 +91,7 @@ export function InvestmentPage({ visit }: { visit?: (mandate: string) => void })
           </p>
         </div>
         <div className={business.tools}>
-          <button disabled={loading} onClick={reload}>
+          <button disabled={loading || refreshing} onClick={reload}>
             刷新
           </button>
           {!['history', 'risk', 'personal', 'protection'].includes(tab) && (

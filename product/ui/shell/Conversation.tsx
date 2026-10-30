@@ -11,7 +11,7 @@ import css from './Conversation.module.css'
 import questionsCss from './Questions.module.css'
 import { History } from './History.js'
 import { isHistoryTransition } from './history-transition.js'
-import { Mascot } from './Mascot.js'
+import { presentCompanion } from './companion-presentation.js'
 import type { Actions } from './types.js'
 import { ViewTabs } from './ViewTabs.js'
 import { useConversationFeedback } from './useConversationFeedback.js'
@@ -104,6 +104,14 @@ export function Conversation(props: ChatRuntime & Actions) {
     failed,
     draft: input?.draft,
   })
+  useLayoutEffect(() => {
+    presentCompanion({
+      motion,
+      arrival: intro && blank && !isHistoryTransition(props.sessionId),
+      visible: !quiet && view === 'chat',
+    })
+    return () => presentCompanion({ motion: 'idle', arrival: false, visible: false })
+  }, [motion, intro, blank, quiet, view, props.sessionId])
   return (
     <View.Provider value={view}>
       <section
@@ -159,12 +167,7 @@ export function Conversation(props: ChatRuntime & Actions) {
           )}
           {blank && view === 'chat' && <Account select={props.select} />}
           {!quiet && view === 'chat' && (
-            <div className={motionCss.dock} data-huohuo-companion>
-              <Mascot
-                motion={motion}
-                arrival={intro && blank && !isHistoryTransition(props.sessionId)}
-              />
-            </div>
+            <div className={motionCss.dock} data-huohuo-companion aria-hidden="true" />
           )}
           {historyLoading && (
             <p className={css.historyLoading} role="status">

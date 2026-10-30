@@ -35,6 +35,14 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+.feedback {
+  height: 24px;
+  flex: none;
+  overflow: auto;
+  color: var(--hh-muted);
+  font-size: 0.8571rem;
+  line-height: 24px;
+}
 @media (max-width: 600px) {
   .surface {
     --hh-control-height: 40px;

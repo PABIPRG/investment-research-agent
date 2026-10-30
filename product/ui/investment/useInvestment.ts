@@ -6,15 +6,18 @@ export function useInvestment() {
   const [facts, setFacts] = useState<Facts>(),
     [loading, setLoading] = useState(true),
     [error, setError] = useState('')
+  const hasData = useRef(false)
+  const [refreshing, setRefreshing] = useState(false)
   const generation = useRef(0)
   const refresh = useCallback(async (signal?: AbortSignal) => {
     const current = ++generation.current
     const active = () => !signal?.aborted && current === generation.current
-    setLoading(true)
+    setLoading(!hasData.current)
     setError('')
     try {
       const next = await request<Facts>('investment', undefined, signal)
       if (active()) {
+        hasData.current = true
         setFacts(next)
         // Show saved quantities immediately; optional label lookup never blocks the table.
         void hydrateDisplayNames(
@@ -36,7 +39,10 @@ export function useInvestment() {
         if (e instanceof ApiError && e.status === 403) setFacts(undefined)
       }
     } finally {
-      if (active()) setLoading(false)
+      if (active()) {
+        setLoading(false)
+        setRefreshing(false)
+      }
     }
   }, [])
   useEffect(() => {
@@ -50,5 +56,14 @@ export function useInvestment() {
       window.removeEventListener('huohuo-investment-changed', changed)
     }
   }, [refresh])
-  return { facts, loading, error, refresh: () => void refresh() }
+  return {
+    facts,
+    loading,
+    error,
+    refreshing,
+    refresh: () => {
+      setRefreshing(true)
+      void refresh()
+    },
+  }
 }

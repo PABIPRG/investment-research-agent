@@ -105,11 +105,6 @@ export function PersonalizationPage({
           {error} 内容可能未更新。<button onClick={refresh}>重试读取</button>
         </p>
       )}
-      {loading && data && (
-        <p role="status" className={ui.muted}>
-          正在更新，保留上次内容…
-        </p>
-      )}
       {!data ? (
         <p role={loading ? 'status' : undefined}>
           {loading ? '正在读取相关资讯…' : '暂时无法读取，请用顶部刷新重试。'}

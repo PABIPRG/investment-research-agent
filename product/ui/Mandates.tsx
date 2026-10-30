@@ -1,6 +1,7 @@
 import page from './shared/Page.module.css'
 import business from './Business.module.css'
 import { MandateDetail } from './mandates/MandateDetail.js'
+import { ReadFeedback } from './shared/ReadFeedback.js'
 import { ReadStatus } from './shared/ReadStatus.js'
 import { TriggerFilter } from './mandates/TriggerFilter.js'
 import { MandateTable } from './mandates/MandateTable.js'
@@ -21,18 +22,14 @@ export function MandatesPage({ switcher }: { goChat: () => void; switcher: React
           </p>
         </div>
         <div className={business.tools}>
-          <button onClick={() => model.setRefresh((n) => n + 1)} disabled={loading || busy}>
+          <button onClick={model.refreshNow} disabled={loading || model.refreshing || busy}>
             刷新记录
           </button>
         </div>
       </header>
       {switcher}
       <p className={business.note}>你交代火火持续关注的研究；按各项约定跟进并保留依据。</p>
-      {error && (
-        <p role="alert">
-          {error} {items.length ? '当前内容可能过期。' : ''}
-        </p>
-      )}
+      <ReadFeedback error={error} />
       <ReadStatus loading={loading} hasData={model.loaded} label="正在读取委托…" />
       <div className={business.tabs}>
         {Object.entries({ all: '全部', tracking: '跟进中', paused: '已暂停', ended: '已结束' }).map(

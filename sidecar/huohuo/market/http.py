@@ -10,7 +10,7 @@ HOSTS = {"push2.eastmoney.com", "push2his.eastmoney.com", "hq.sinajs.cn",
          "api-one.wallstcn.com", "www.ithome.com", "news.google.com"}
 
 
-def read(url, params=None, *, encoding="utf-8", referer=None, timeout=(3, 5)):
+def read(url, params=None, *, encoding="utf-8", referer=None, timeout=(3, 5), retry_timeouts=False):
     from urllib.parse import urlsplit
     parsed = urlsplit(url)
     if parsed.scheme != "https" or parsed.hostname not in HOSTS or parsed.username or parsed.port:
@@ -18,8 +18,9 @@ def read(url, params=None, *, encoding="utf-8", referer=None, timeout=(3, 5)):
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json,text/plain,*/*"}
     if referer:
         headers["Referer"] = referer
-    # 只重试建连失败（含 ConnectTimeout）；读超时重试通常仍会超时，还会顶到上层硬截止。
-    transient = (requests.ConnectionError,)
+    # 默认只重试建连失败（含 ConnectTimeout）；读超时重试通常仍会超时，还会顶到上层硬截止。
+    # 报价类小响应可以显式开启 retry_timeouts，把一次读超时也算作可重试。
+    transient = (requests.ConnectionError, requests.Timeout) if retry_timeouts else (requests.ConnectionError,)
     for attempt in (0, 1):
         try:
             with requests.get(url, params=params, headers=headers, timeout=timeout, stream=True, allow_redirects=False) as response:

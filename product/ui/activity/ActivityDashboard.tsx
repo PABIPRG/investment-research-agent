@@ -25,10 +25,9 @@ const filters = { all: '全部', research: '研究结果', reminder: '提醒' } 
 export function ActivityDashboard(props: ActivityProps) {
   const [refresh, setRefresh] = useState(0),
     [filter, setFilter] = useState<keyof typeof filters>('all'),
-    [historyOpen, setHistoryOpen] = useState(false),
-    [manualRefreshing, setManualRefreshing] = useState(false)
+    [historyOpen, setHistoryOpen] = useState(false)
   const notifications = useActivity(),
-    mandates = useActivityMandates(refresh),
+    mandates = useActivityMandates(),
     conversations = useConversationProgress(props, refresh)
   const changes = splitChanges(
     dashboardEvents(mandates.items, notifications.items),
@@ -52,18 +51,10 @@ export function ActivityDashboard(props: ActivityProps) {
     if (notifications.loaded && !notifications.error && !notifications.loading)
       markActivitySeen(JSON.parse(shownKey))
   }, [shownKey, notifications.loaded, notifications.error, notifications.loading])
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (!document.hidden) setRefresh((n) => n + 1)
-    }, 30000)
-    return () => clearInterval(timer)
-  }, [])
-  useEffect(() => {
-    if (!notifications.loading && !mandates.loading) setManualRefreshing(false)
-  }, [notifications.loading, mandates.loading])
+  const manualRefreshing = notifications.refreshing || mandates.refreshing
   const reload = () => {
-    setManualRefreshing(true)
-    void refreshActivity()
+    void refreshActivity(true)
+    mandates.refresh()
     setRefresh((n) => n + 1)
   }
   return (

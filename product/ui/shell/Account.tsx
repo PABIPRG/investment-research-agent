@@ -4,7 +4,7 @@ import { useAccount } from '../investment/useAccount.js'
 import css from './Account.module.css'
 import type { Actions } from './types.js'
 export function Account({ select }: Pick<Actions, 'select'>) {
-  const { account, error, loading, refresh } = useAccount()
+  const { account, error, loading, refreshing, refresh } = useAccount()
   const [hidden, setHidden] = useState(() => {
     try {
       return localStorage.getItem('huohuo.hide-account') === 'true'
@@ -29,8 +29,8 @@ export function Account({ select }: Pick<Actions, 'select'>) {
         >
           {hidden ? '显示金额' : '隐藏金额'}
         </button>
-        <button onClick={refresh} disabled={loading} aria-label="刷新账户行情">
-          {loading ? '读取中…' : '刷新'}
+        <button onClick={refresh} disabled={loading || refreshing} aria-label="刷新账户行情">
+          刷新
         </button>
         <small>
           {error ? '账户读取失败' : account?.holdings_status === 'not_recorded' ? '本地未录入' : ''}
