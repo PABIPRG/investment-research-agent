@@ -1,3 +1,4 @@
+import { GlobalCompanion } from '../reminders/GlobalCompanion.js'
 import { useEffect, useRef } from 'react'
 import type { ChatRuntime } from '../dsh-face.js'
 import { historyRows } from '../history.js'
@@ -32,6 +33,7 @@ export function ProductRoot(props: ChatRuntime & Actions) {
   }, [list.phase, workspaces.phase, selected])
   return (
     <div className={css.root} data-huohuo-navigation="1.4-r1">
+      <GlobalCompanion panel={panel} select={props.select} />
       <header className={css.top}>
         <a
           className={css.brand}

@@ -1,6 +1,6 @@
 {
   "designVersion": "1.4",
-  "revision": "r4-live-motion",
+  "revision": "r6-authored-knock-return",
   "threeRevision": "180",
   "origin": "保留既有 12 动作 GLB；采用已批准的放大镜扒栏图标和暖橙柔粉腮红，母版见 design/huohuo",
   "sha256": {
@@ -13,7 +13,9 @@
     "vendor/RoomEnvironment.js": "faf5469bea1b9961e4b82d1da6a1671ec16137b6cc5b482a6d75a64a05bdc903",
     "vendor/THREE-LICENSE.txt": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601",
     "header-peek.png": "8bb965edcaf97317f489ad41c3fa6f7af76cd6adf6ea144d45067ea97fdf31c7",
-    "renderer.js": "1c1612522f118711304004a44ddace42c72b6d02f219aab3db068d0c82bc218f"
+    "renderer.js": "59208e9e108e2db7c5f1112a82e5373650a545f301ce20a746249abf9a7282ee",
+    "knock-motion.js": "d93d8e18b923163932024811e147781bc25df9aef2084caddfb2e806b93afac4",
+    "interaction-motion.js": "b0dbcd8a281d4132d23cd7af821fc6b6456723820e5a671a6877a3d77f2c5733"
   },
   "brandSha256": {
     "brand.png": "d75fdd6758157d298c57eb0aa6a8bd1092aa2a18cfa8e58a4747511179dc70e6",

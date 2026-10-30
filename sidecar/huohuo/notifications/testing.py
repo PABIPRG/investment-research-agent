@@ -46,7 +46,7 @@ class NotificationTests:
         return config
     @staticmethod
     def target(channel,config):
-        if channel=='app':return '当前火火实例的测试记录'
+        if channel=='app':return '当前火火网页内提示，并保存测试记录'
         if channel=='email':
             name,domain=config['destination'].rsplit('@',1)
             return name[:1]+'***@'+domain
@@ -80,7 +80,7 @@ class NotificationTests:
             if self.owner.channel_revision(principal,row['channel'])!=row['channel_revision']:raise Conflict('接收目标已变化，请重新核对')
             self.store._connect().execute("UPDATE notification_tests SET status='in_flight',detail='正在发送测试提醒，请勿重复提交',updated_at=? WHERE test_id=?",(self.clock(),row['test_id']))
         # 事务提交是发送起点。静默时间仅在此显式测试路径忽略；正式通知门禁不变。
-        status,detail='delivered','测试提醒已保存到本实例，不代表用户已读'
+        status,detail='delivered','测试提醒已保存，网页可显示提示；不代表已展示，不代表用户已读'
         if row['channel']!='app':
             try:
                 adapter=self.owner.adapters.get(row['channel']) or build_adapter(row['channel'],config)

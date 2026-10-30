@@ -1,3 +1,6 @@
+import { useSnapshot } from './shared/useSnapshot.js'
+import { request } from './shared/api.js'
+import { ReadFeedback } from './shared/ReadFeedback.js'
 import {
   ConversationProgress,
   type ConversationProgressProps,
@@ -16,39 +19,17 @@ export function ActivityPage(
   props: ConversationProgressProps & { visit: (mandate: string, decision: string) => void },
 ) {
   const { visit } = props
-  const { items, error: activityError, loading, loaded } = useActivity()
-  const [mandates, setMandates] = useState<MandateView[]>([]),
-    [error, setError] = useState(''),
-    [detailsLoading, setDetailsLoading] = useState(true),
-    [refresh, setRefresh] = useState(0),
-    [readAt, setReadAt] = useState(0)
-  useEffect(() => {
-    const abort = new AbortController()
-    setError('')
-    setDetailsLoading(true)
-    fetch('api/huohuo/mandates', { signal: abort.signal, cache: 'no-store' })
-      .then(async (response) => {
-        if (!response.ok) throw Error('相关委托暂时无法读取。')
-        return response.json()
-      })
-      .then((data) => {
-        if (!abort.signal.aborted) {
-          setMandates(data.items)
-          setReadAt(Date.now() / 1000)
-        }
-      })
-      .catch((e) => {
-        if (!abort.signal.aborted) setError(e.message)
-      })
-      .finally(() => {
-        if (!abort.signal.aborted) setDetailsLoading(false)
-      })
-    return () => abort.abort()
-  }, [refresh])
-  useEffect(() => {
-    const timer = setInterval(() => setRefresh((n) => n + 1), 30000)
-    return () => clearInterval(timer)
-  }, [])
+  const { items, error: activityError, loading, loaded, refreshing } = useActivity()
+  const [refresh, setRefresh] = useState(0)
+  const details = useSnapshot<{ items: MandateView[] }>(
+    'activity-mandates',
+    (signal) => request('mandates', undefined, signal),
+    { pollMs: () => 30000 },
+  )
+  const mandates = details.data?.items ?? [],
+    error = details.error,
+    detailsLoading = details.loading,
+    readAt = details.at
   useEffect(() => {
     if (!loading && !detailsLoading && !activityError && !error) markActivitySeen(items)
   }, [items, loading, detailsLoading, activityError, error])
@@ -62,10 +43,11 @@ export function ActivityPage(
         </div>
         <button
           onClick={() => {
-            void refreshActivity()
+            void refreshActivity(true)
+            details.refresh()
             setRefresh((n) => n + 1)
           }}
-          disabled={loading || detailsLoading}
+          disabled={loading || detailsLoading || refreshing || details.refreshing}
         >
           刷新动态
         </button>
@@ -81,7 +63,7 @@ export function ActivityPage(
       <h2>提醒记录</h2>
       <p className={css.note}>{items.length} 条已保存联系记录 · 可回到委托核对依据</p>
       <ReadStatus loading={loading} hasData={loaded} />
-      {failure && <p role="alert">{failure} 已显示内容可能过期。</p>}
+      <ReadFeedback error={failure} />
       <div className={css.tableWrap}>
         <table className={css.table}>
           <thead>
