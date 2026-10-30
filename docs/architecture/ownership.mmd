@@ -1,42 +1,50 @@
+---
+title: 代码所有权边界｜实线：调用与数据 · 虚线：装配与启停
+config:
+  flowchart:
+    wrappingWidth: 320
+---
 flowchart TB
-  life["distribution<br/>安装、实例、产品进程生命周期"]
-  chat["huohuo-chat Profile<br/>交互式 DSH Agent"]
-  worker["一个后台 worker 进程<br/>研究与策略资源消费者"]
-  sdk["huohuo-worker Profile<br/>一次 DSH 研究"]
-  planner["huohuo-strategy-worker Profile<br/>DSH 生成策略候选 · 无工具权限"]
-  ui["product/ui<br/>委托、持仓、策略、资料与导入"]
-  tools["product/chat<br/>工具桥与聊天 guard"]
-  bounded["product/tools<br/>read_security_snapshot"]
-  api["sidecar API<br/>身份、权限与业务接口"]
-  subgraph side["同一个侧车进程：程序拥有正式业务状态"]
-    core["委托核心 + 执行子域<br/>证券 / 策略类型化委托<br/>research_jobs → executions → attempts"]
-    research["研究能力<br/>行情、新闻、财务、技术、产业链"]
-    facts["投资事实 / 旧数据导入<br/>版本、预览、确认与事务"]
-    notice["通知<br/>联系资格复核、投递与回执"]
-    strategy["策略研究能力<br/>规则、回测、影子验证、归因<br/>候选与待确认预案"]
+  subgraph DSH["① 上游 DSH｜本地 npm 依赖 · Agent 运行内核"]
+    agent["DSH Web / SDK 运行时<br/>规划 · 模型调用 · 工具循环<br/>会话事件 · Skill 加载<br/>业务授权与发送许可由火火核验"]
+    sessions[("DSH 持久状态<br/>会话与模型配置")]
+    agent <--> sessions
   end
-  db[("实例 SQLite<br/>各领域正式状态")]
-  sessions[("DSH 会话与模型配置<br/>与业务库分别持久化")]
-  life -.->|"管理进程"| chat
-  life -.->|"管理进程"| worker
-  life -.->|"管理进程"| api
-  chat <-->|"对话与工具调用"| tools
-  chat <--> sessions
-  ui <-->|"受控 Host 接口"| api
-  tools <-->|"业务命令与查询"| api
-  worker -->|"启动一次执行"| sdk
-  worker -->|"启动一次候选生成"| planner
-  sdk <-->|"本次 Scope"| bounded
-  bounded <-->|"有界研究"| api
-  worker <-->|"发现、领取、续租、回写"| api
-  api <--> core
-  api <--> research
-  api <--> facts
-  api <--> strategy
-  core <-->|"派发策略任务 / 原子接收结果"| strategy
-  core -->|"批准的联系决定"| notice
-  core <--> db
-  research <--> db
-  facts <--> db
-  notice <--> db
-  strategy <--> db
+
+  subgraph PRODUCT["② 火火接入层｜本仓 product"]
+    profiles["Profile / Bundle<br/>聊天 · 研究 · 策略的运行配置"]
+    plugins["火火扩展插件<br/>UI · Tool · Skill · guard<br/>在 DSH 宿主内加载<br/>正式业务状态由 sidecar 持有"]
+  end
+
+  subgraph BUSINESS["③ 火火业务内核｜本仓 sidecar · Python 进程"]
+    api["受控 API 与领域服务<br/>委托与执行 · 证据 · 投资事实<br/>策略验证 · 联系决定 · 通知<br/>程序校验授权、版本与副作用"]
+    db[("实例业务 SQLite<br/>委托 / 证据 / 投资事实 / 通知")]
+    api <--> db
+  end
+
+  subgraph RUNTIME["④ 火火运行管理｜本仓 distribution / runtime"]
+    life["安装与实例管理<br/>环境适配 · 版本匹配 · 进程启停"]
+    worker["后台 worker · 业务执行驱动<br/>领取 · 续租 · 取消 · 回写<br/>按任务选择程序执行或 DSH 研究<br/>Agent 循环仍由 DSH 执行"]
+    life -.->|"管理生命周期"| worker
+  end
+
+  profiles -.->|"装配配置与权限集合"| agent
+  agent <-->|"DSH 扩展协议<br/>工具调用 / 方法加载 / UI 接入"| plugins
+  plugins <-->|"受控命令与查询"| api
+  worker <-->|"官方 HarnessClient<br/>提交研究 / 接收事件与结果"| agent
+  worker <-->|"资料发现 / 任务与结果交接"| api
+  life -.->|"启动 DSH 宿主"| agent
+  life -.->|"启动侧车"| api
+
+  classDef upstream fill:#eaf2ff,stroke:#3c67a5,color:#153254
+  classDef extension fill:#fff3df,stroke:#b57524,color:#593c16
+  classDef business fill:#eaf5ed,stroke:#44825a,color:#183e28
+  classDef runtime fill:#f0f2f5,stroke:#64748b,color:#27364a
+  class agent,sessions upstream
+  class profiles,plugins extension
+  class api,db business
+  class life,worker runtime
+  style DSH fill:#f3f7ff,stroke:#3c67a5,stroke-width:2px
+  style PRODUCT fill:#fffaf1,stroke:#b57524,stroke-width:2px
+  style BUSINESS fill:#f2faf4,stroke:#44825a,stroke-width:2px
+  style RUNTIME fill:#f7f8fa,stroke:#64748b,stroke-width:2px

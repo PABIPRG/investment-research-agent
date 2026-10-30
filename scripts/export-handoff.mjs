@@ -13,7 +13,7 @@ const roots=['distribution','product','runtime','sidecar','tests','third-party',
 const files=['.gitignore','.prettierrc.json','scripts/check-capabilities.mjs','scripts/check-ui-source.mjs','AGENTS.md','README.md','package.json','npm-shrinkwrap.json','tsconfig.json',
  'scripts/build-chat-ui.mjs','scripts/generate-research-tools.mjs','scripts/start.mjs','scripts/update-instance.mjs','scripts/smoke.mjs','scripts/smoke-provenance.mjs','scripts/smoke-skills.mjs','scripts/uat-skills.mjs','scripts/package-release.mjs','scripts/export-handoff.mjs','scripts/export-handoff-guard.mjs','scripts/render-architecture.py','scripts/verify-release.mjs',
  'scripts/export-brand-assets.py','docs/火火外观接入.md','scripts/uat-deliverables.mjs','scripts/uat-deliverables-restart.mjs','docs/研究成果交付设计与实施.md',
- 'docs/Skill与Tool能力目录.md','docs/聊天业务操作实施计划.md','docs/聊天业务操作验收.md','docs/策略能力使用指南.md','docs/阅读入口.md','docs/当前架构与装配.md','docs/架构对齐与验证.md','docs/启动指引.md','docs/开发指引.md','docs/交付与验收.md']
+ 'docs/Skill与Tool能力目录.md','docs/聊天业务操作实施计划.md','docs/聊天业务操作验收.md','docs/策略能力使用指南.md','docs/阅读入口.md','docs/消推机制与代码审核.md','docs/消推算法.md','docs/本机使用流程与交付工作.md','docs/当前架构与装配.md','docs/架构对齐与验证.md','docs/启动指引.md','docs/开发指引.md','docs/交付与验收.md']
 const forbidden=/(^|\/)(?:node_modules|lib|artifacts|__pycache__|\.git|\.venv|\.instance|\.cache)(\/|$)|(?:^|\/)(?:instance|credentials|secrets)\.json$|(?:^|\/)\.env(?:\.|$)|\.(?:blend|blend1|pyc|sqlite3?|db|tgz|pem|key)$/i
 async function walk(rel){for(const item of await readdir(join(root,rel),{withFileTypes:true})){
  const path=`${rel}/${item.name}`
