@@ -1,3 +1,4 @@
+import { ExpandableText } from '../shared/ExpandableText.js'
 import { mandateName } from '../business-model.js'
 import type { ChatRuntime } from '../dsh-face.js'
 import type { MandateView } from '../mandates/model.js'
@@ -28,11 +29,16 @@ export function Arrival({
   }
   return (
     <div className={css.arrival} data-huohuo-arrival>
-      <div className={css.task}>
-        <small>
-          {current ? `${mandateName(current.item)} · 当前跟进` : '有些事，交给我慢慢跟。'}
-        </small>
-        <h2>{error ? '暂时没有读到跟进情况' : current?.state.title || '今天，先看哪件事？'}</h2>
+      <div className={css.task} role="region" aria-label="当前跟进摘要" tabIndex={0}>
+        <ExpandableText
+          text={current ? `${mandateName(current.item)} · 当前跟进` : '有些事，交给我慢慢跟。'}
+          label="跟进对象"
+          lines={1}
+          tone="muted"
+        />
+        <h2 title={error ? '暂时没有读到跟进情况' : current?.state.title}>
+          {error ? '暂时没有读到跟进情况' : current?.state.title || '今天，先看哪件事？'}
+        </h2>
         <p>
           {error
             ? '你仍可以直接提问，已有委托不会因此消失。'
@@ -43,7 +49,9 @@ export function Arrival({
             <button data-variant="primary" onClick={visit}>
               {current.state.action} →
             </button>
-            <small className={css.goal}>{current.item.revision.goal}</small>
+            <div className={css.goal}>
+              <ExpandableText text={current.item.revision.goal} label="研究目标" tone="muted" />
+            </div>
           </>
         ) : (
           <div className={css.quick}>

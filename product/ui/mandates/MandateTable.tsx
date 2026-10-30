@@ -1,3 +1,4 @@
+import { ExpandableText } from '../shared/ExpandableText.js'
 import { matchesTrigger, nextTrigger, mandateHooks } from './triggers.js'
 import { mandateName } from '../business-model.js'
 import business from '../Business.module.css'
@@ -34,8 +35,8 @@ export function MandateTable({ model }: { model: MandateController }) {
           {rows.map((x) => (
             <tr key={x.mandate.mandate_id}>
               <td>
-                <strong>{mandateName(x)}</strong>
-                <small>{x.revision.goal}</small>
+                <ExpandableText text={mandateName(x)} label="对象名称" tone="strong" />
+                <ExpandableText text={x.revision.goal} label="研究目标" tone="muted" />
                 <small>{x.revision.scope.entity_id.split(':').at(-1)}</small>
               </td>
               <td>
@@ -62,7 +63,7 @@ export function MandateTable({ model }: { model: MandateController }) {
                 </small>
               </td>
               <td>
-                {nextTrigger(x)}
+                <ExpandableText text={nextTrigger(x)} label="跟进安排" />
                 <small>
                   {mandateHooks(x)
                     .map((h) => h.label)
@@ -70,7 +71,10 @@ export function MandateTable({ model }: { model: MandateController }) {
                 </small>
               </td>
               <td>
-                {x.revision.basis.contact_note || '未补充约定'}
+                <ExpandableText
+                  text={x.revision.basis.contact_note || '未补充约定'}
+                  label="联系约定"
+                />
                 <small>
                   {(x.revision.contact_policy?.channels || ['app'])
                     .map((c) => channelLabels[c] || c)

@@ -7,6 +7,9 @@
   --hh-muted: light-dark(#58698e, #b6c5e3);
   --hh-line: light-dark(#d2ddf2, #44516e);
   --hh-on-accent: light-dark(#fff, #20283b);
+  --hh-warning: light-dark(#8c5714, #e9bd7e);
+  --hh-warning-bg: light-dark(#fcf7ed, #383329);
+  --hh-warning-line: light-dark(#ead8b5, #66563b);
   --hh-danger: light-dark(#ad3b44, #ffb4ab);
   --hh-accent: light-dark(#4054ca, #afbcff);
   --hh-soft: light-dark(#e1ecfc, #303f60);

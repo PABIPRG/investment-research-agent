@@ -44,9 +44,16 @@ export function refreshActivity(manual = false): Promise<void> {
   emit()
   pending = fetch('api/huohuo/notifications', { cache: 'no-store' })
     .then(async (response) => {
-      if (!response.ok) throw Error('动态暂时无法读取，请重试。')
+      if (!response.ok)
+        throw Error(
+          response.status === 401
+            ? '登录已失效，请重新打开本机认证入口。'
+            : response.status === 403
+              ? '无权读取当前实例的提醒记录。'
+              : '提醒记录暂时无法读取，请重试。',
+        )
       const data = await response.json()
-      if (!Array.isArray(data.items)) throw Error('动态记录格式暂不可用。')
+      if (!Array.isArray(data.items)) throw Error('提醒记录格式暂不可用。')
       snapshot = { ...snapshot, items: data.items, loaded: true, error: '' }
     })
     .catch((error) => {

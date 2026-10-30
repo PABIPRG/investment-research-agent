@@ -3,7 +3,13 @@ import { EvidenceCard } from '../shared/EvidenceCard.js'
 import { researchFinding } from '../shared/evidence-display.js'
 import css from '../Query.module.css'
 import { statuses, type MandateView } from './model.js'
-export function ResearchHistory({ current }: { current: MandateView }) {
+export function ResearchHistory({
+  current,
+  returnExecution,
+}: {
+  current: MandateView
+  returnExecution?: string
+}) {
   if (!current.executions.length)
     return <p className={css.note}>尚未开始研究，有结果后可在这里查看内容和依据。</p>
   return (
@@ -15,7 +21,13 @@ export function ResearchHistory({ current }: { current: MandateView }) {
         )
         const pending = ['queued', 'running'].includes(x.status)
         return (
-          <article className={css.evidence} key={x.execution_id}>
+          <article
+            className={css.evidence}
+            key={x.execution_id}
+            id={`execution-${x.execution_id}`}
+            tabIndex={-1}
+            aria-label={x.execution_id === returnExecution ? '本次回访的研究记录' : '研究记录'}
+          >
             <div className={css.rowHeading}>
               <strong>{pending ? statuses[x.status] : finding.title}</strong>
               <time className={css.note}>{time(x.updated_at)}</time>
@@ -28,7 +40,7 @@ export function ResearchHistory({ current }: { current: MandateView }) {
                 : ''}{' '}
               · {evidence.length} 份引用资料
             </p>
-            <details className={css.readMore}>
+            <details className={css.readMore} open={x.execution_id === returnExecution}>
               <summary>查看这次研究的内容与依据</summary>
               <div className={css.readBody}>
                 <h4>保存的研究摘要</h4>

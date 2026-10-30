@@ -54,8 +54,8 @@ export function apply(ctx: DshUiContext): void {
         CapabilitiesSection as any,
       ),
     )
-    const visit = (mandate: string, decision: string) => {
-      sessionStorage.setItem('huohuo-return', JSON.stringify({ mandate, decision }))
+    const visit = (mandate: string, decision: string, execution?: string) => {
+      sessionStorage.setItem('huohuo-return', JSON.stringify({ mandate, decision, execution }))
       ctx.layout.selectPanel('huohuo-research')
     }
     ctx.slots.inject('main', () =>
@@ -66,6 +66,10 @@ export function apply(ctx: DshUiContext): void {
           label: '动态',
           inject: () => ({
             visit,
+            allMandates: () => {
+              sessionStorage.removeItem('huohuo-return')
+              ctx.layout.selectPanel('huohuo-research')
+            },
             connectionState: ctx.connection.state,
             openConversation: (id: string) => {
               ctx.layout.selectPanel(null)
@@ -93,10 +97,7 @@ export function apply(ctx: DshUiContext): void {
           key: 'huohuo-notifications',
           label: '消推配置',
           inject: () => ({
-            visit: (mandate: string, decision: string) => {
-              sessionStorage.setItem('huohuo-return', JSON.stringify({ mandate, decision }))
-              ctx.layout.selectPanel('huohuo-research')
-            },
+            visit,
           }),
         },
         NotificationsPage,
