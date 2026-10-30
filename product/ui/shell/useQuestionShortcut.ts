@@ -1,12 +1,18 @@
 import { useLayoutEffect, type RefObject } from 'react'
 
-/** Decorate the native submit action; DSH continues to own keyboard and answer handling. */
+/** Add presentation/accessibility hints; DSH still owns questions and answer handling. */
 export function useQuestionShortcut(root: RefObject<HTMLDivElement>) {
   useLayoutEffect(() => {
     const el = root.current
     if (!el) return
     const selector = '[data-question-key] .Mbwy4a_footerActions > button:last-child'
+    const headings = '[data-question-key] .Mbwy4a_headingBlock'
     const update = () => {
+      for (const heading of el.querySelectorAll<HTMLElement>(headings)) {
+        heading.tabIndex = 0
+        heading.setAttribute('role', 'region')
+        heading.setAttribute('aria-label', '问题全文')
+      }
       for (const button of el.querySelectorAll<HTMLButtonElement>(selector)) {
         const submit = ['提交', 'Submit'].includes(button.textContent?.trim() ?? '')
         if (submit) {
@@ -25,6 +31,11 @@ export function useQuestionShortcut(root: RefObject<HTMLDivElement>) {
     update()
     return () => {
       observer.disconnect()
+      for (const heading of el.querySelectorAll<HTMLElement>(headings)) {
+        heading.removeAttribute('tabindex')
+        heading.removeAttribute('role')
+        heading.removeAttribute('aria-label')
+      }
       for (const button of el.querySelectorAll<HTMLButtonElement>(
         '[data-huohuo-question-submit]',
       )) {
